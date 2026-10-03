@@ -6,7 +6,7 @@
 ---
 
 ## Phase 0 – Chuẩn bị tài khoản & hạ tầng (làm NGAY, Oracle hay khó đăng ký)
-- [ ] Tạo GitHub repo (monorepo: `backend/`, `frontend/`, `deploy/`)
+- [x] Tạo GitHub repo (monorepo: `backend/`, `frontend/`, `deploy/`) – *private `VanNguyen100103/tryum`, đã push (`.env`/`*.pem` excluded)*
 - [x] Đăng ký Oracle Cloud – chọn Home Region: Tokyo / Osaka / Seoul (tránh Singapore) *(đã đăng ký, home region: ap-osaka-1)*
 - [ ] Nâng tài khoản lên Pay As You Go (tránh bị thu hồi VM idle) + đặt Budget Alert 1 USD
 - [x] Tạo VM (Ubuntu 24.04) – *thực tế: E2.1.Micro **x86_64** (không phải ARM), đang chạy 24/7*
@@ -16,7 +16,7 @@
 - [x] DuckDNS: tạo `tryum-api.duckdns.org` trỏ về IP VM *(A record + cron update 30p trên VM)*
 - [x] Cloudflare: tạo tài khoản + project Pages/UI (`tryum-web.nganhvan1609.workers.dev`, deploy bằng wrangler CLI, CORS API đã mở)
 - [x] Cloudflare: bucket R2 `tryum-backups` (APAC) + API token `tryum-backup` (Object Read & Write)
-- [ ] UptimeRobot: tạo tài khoản
+- [x] UptimeRobot: tạo tài khoản + 2 monitor HTTP(S) `Tryum API` (`/health`) và `Tryum UI` (interval 5p)
 
 ## Phase 1 – Khung dự án (tuần 1)
 **Backend**
