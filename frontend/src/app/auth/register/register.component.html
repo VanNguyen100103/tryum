@@ -1,0 +1,80 @@
+<div class="auth-page">
+  <p-card header="Đăng ký cửa hàng trên Tryum" styleClass="auth-card">
+    <form (ngSubmit)="register()" class="auth-form">
+      <div class="field">
+        <label for="shopName">Tên cửa hàng</label>
+        <input
+          id="shopName"
+          pInputText
+          name="shopName"
+          [(ngModel)]="shopName"
+          placeholder="Phở Thảo"
+        />
+      </div>
+
+      <div class="field">
+        <label for="ownerName">Họ tên chủ cửa hàng</label>
+        <input
+          id="ownerName"
+          pInputText
+          name="ownerName"
+          [(ngModel)]="ownerName"
+          autocomplete="name"
+          placeholder="Nguyễn Văn A"
+        />
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          pInputText
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          autocomplete="username"
+          placeholder="email@domain.com"
+        />
+      </div>
+
+      <div class="field">
+        <label for="phone">Số điện thoại (không bắt buộc)</label>
+        <input
+          id="phone"
+          pInputText
+          name="phone"
+          [(ngModel)]="phone"
+          autocomplete="tel"
+          placeholder="0901234567"
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <input
+          id="password"
+          pPassword
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          autocomplete="new-password"
+          [feedback]="false"
+          placeholder="Tối thiểu 8 ký tự, có chữ và số"
+        />
+      </div>
+
+      <p-button
+        type="submit"
+        label="Tạo cửa hàng"
+        styleClass="auth-btn"
+        [loading]="loading()"
+        [disabled]="loading()"
+      />
+
+      <small class="auth-hint">
+        Đã có tài khoản?
+        <a class="link" routerLink="/auth/login">Đăng nhập ngay</a>
+      </small>
+    </form>
+  </p-card>
+</div>

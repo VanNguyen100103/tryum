@@ -1,0 +1,19 @@
+<div class="page">
+  <div class="flex justify-content-between align-items-center mb-3">
+    <h2 class="m-0">Hàng hóa</h2>
+    <button pButton label="+ Thêm sản phẩm"></button>
+  </div>
+  <p-card>
+    <p-table [value]="[]" [rows]="10" [loading]="true">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Mã SKU</th>
+          <th>Tên</th>
+          <th>ĐVT</th>
+          <th>Giá bán</th>
+          <th>Thao tác</th>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</div>

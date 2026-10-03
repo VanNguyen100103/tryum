@@ -1,0 +1,34 @@
+# Docker build context = repo root (cả backend/Dockerfile lẫn frontend/Dockerfile dùng chung)
+# Chỉ file .dockerignore ở thư mục gốc được áp dụng.
+
+# .NET
+**/bin/
+**/obj/
+**/TestResults/
+**/artifacts/
+*.user
+
+# Node / Angular
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+
+# IDE & OS
+**/.vs/
+**/.vscode/
+**/.idea/
+Thumbs.db
+.DS_Store
+
+# Secrets & docs (không cần trong image)
+**/.env
+**/.env.*
+**/*.pem
+**/*.md
+
+# Deploy (Caddyfile được mount từ host, chỉ deploy/nginx/ cần nằm trong context)
+deploy/.env
+deploy/.env.*
+docker-compose*.yml
+**/Dockerfile

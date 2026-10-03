@@ -1,0 +1,49 @@
+<div class="auth-page">
+  <p-card header="Đăng nhập Tryum" styleClass="auth-card">
+    <form (ngSubmit)="login()" class="auth-form">
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          pInputText
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          autocomplete="username"
+          placeholder="email@domain.com"
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <input
+          id="password"
+          pPassword
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          autocomplete="current-password"
+          [feedback]="false"
+          placeholder="Nhập mật khẩu"
+        />
+      </div>
+
+      <div class="field field-row">
+        <p-checkbox [(ngModel)]="remember" name="remember" inputId="remember" label="Ghi nhớ" />
+        <a class="link" routerLink="/auth/register">Chưa có tài khoản? Đăng ký</a>
+      </div>
+
+      <p-button
+        type="submit"
+        label="Đăng nhập"
+        styleClass="auth-btn"
+        [loading]="loading()"
+        [disabled]="loading()"
+      />
+
+      <small class="auth-hint">
+        Tài khoản demo sẽ có ở Phase 8 — hiện tại hãy đăng ký cửa hàng mới.
+      </small>
+    </form>
+  </p-card>
+</div>

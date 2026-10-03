@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Tryum.Api/Tryum.Api.csproj" />
+    <Project Path="src/Tryum.Application/Tryum.Application.csproj" />
+    <Project Path="src/Tryum.Domain/Tryum.Domain.csproj" />
+    <Project Path="src/Tryum.Infrastructure/Tryum.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tryum.UnitTests/Tryum.UnitTests.csproj" />
+  </Folder>
+</Solution>

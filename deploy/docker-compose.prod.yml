@@ -1,0 +1,96 @@
+# Production-like stack: Caddy (HTTPS) + API + PostgreSQL + web (SPA)
+#
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
+#
+# Lưu ý production:
+#   - Đặt file deploy/.env trên VM (KHÔNG commit).
+#   - Database KHÔNG expose port ra ngoài; chỉ Caddy mở 80/443.
+
+name: tryum
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tryum_db}
+      POSTGRES_USER: ${POSTGRES_USER:-tryum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?thiếu POSTGRES_PASSWORD trong .env}
+      # Tăng tốc + giữ encoding UTF-8 (tiếng Việt trong tên sản phẩm)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tryum} -d ${POSTGRES_DB:-tryum_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  api:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    image: ${API_IMAGE:-tryum-api:latest}
+    # Oracle Ampere A1 = arm64; máy local có thể đặt TARGET_PLATFORM=linux/amd64 trong .env
+    platform: ${TARGET_PLATFORM:-linux/arm64}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URL: http://+:8080
+      ConnectionStrings__DefaultConnection: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-tryum_db};Username=${POSTGRES_USER:-tryum};Password=${POSTGRES_PASSWORD}
+      Jwt__Issuer: ${JWT_ISSUER:-tryum-api}
+      Jwt__Audience: ${JWT_AUDIENCE:-tryum-web}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:?thiếu JWT_SECRET_KEY trong .env}
+      Jwt__ExpiresInMinutes: ${JWT_EXPIRES_IN_MINUTES:-60}
+      Jwt__RefreshTokenExpiresInDays: ${JWT_REFRESH_EXPIRES_IN_DAYS:-30}
+      Cors__AllowedOrigins__0: ${WEB_ORIGIN:-https://localhost:7080}
+      Cors__AllowedOrigins__1: ${WEB_ORIGIN_1:-}
+      # Migration do CI/CD chạy lệnh `migrate`; bật true khi muốn API tự migrate lúc start.
+      Database__ApplyMigrationsOnStartup: ${APPLY_MIGRATIONS_ON_STARTUP:-false}
+    networks: [internal]
+    # Không expose port: chỉ Caddy gọi nội bộ qua network "internal".
+
+  web:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    image: ${WEB_IMAGE:-tryum-web:latest}
+    platform: ${TARGET_PLATFORM:-linux/arm64}
+    restart: unless-stopped
+    environment:
+      API_URL: ${API_PUBLIC_URL:-https://localhost:7080}
+    expose:
+      - "80"
+    networks: [internal]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [api, web]
+    environment:
+      # Tên miền phục vụ (bỏ port để Caddy bind 443 trong container).
+      # Dry-run: localhost · Production: tryum-api.duckdns.org
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # certs – nhớ backup
+      - caddy_config:/config
+    networks: [internal]
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge

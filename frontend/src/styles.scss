@@ -1,0 +1,22 @@
+/* Inter (global) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* PrimeIcons */
+@import 'primeicons/primeicons.css';
+
+/* Reset cơ bản */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 84px; // chừa chỗ cho header sticky khi click anchor
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background: var(--p-surface-ground);
+  color: var(--p-text-color);
+}

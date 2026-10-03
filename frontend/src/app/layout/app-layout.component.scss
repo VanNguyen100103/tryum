@@ -1,0 +1,234 @@
+:host {
+  display: block;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--p-surface-100);
+}
+
+/* ── Sidebar ──────────────────────────────────────────────── */
+.app-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 260px;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--p-surface-900);
+  color: var(--p-surface-100);
+  transition: width 0.25s ease;
+}
+
+.sidebar-collapsed .app-sidebar {
+  width: 72px;
+
+  .app-sidebar__name,
+  .app-sidebar__label,
+  .app-sidebar__badge,
+  .app-sidebar__footer {
+    display: none;
+  }
+}
+
+.app-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-sidebar__logo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+  font-size: 1.1rem;
+}
+
+.app-sidebar__name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.app-sidebar__nav {
+  flex: 1;
+  padding: 12px 10px;
+  overflow-y: auto;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.app-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--p-surface-400);
+  text-decoration: none;
+  font-size: 0.925rem;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  i {
+    width: 20px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 1.05rem;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--p-surface-0);
+  }
+
+  &--active {
+    background: var(--p-primary-color);
+    color: var(--p-primary-contrast-color);
+  }
+}
+
+.app-sidebar__badge {
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--p-orange-color);
+  color: var(--p-orange-contrast-color);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.app-sidebar__footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--p-surface-600);
+  font-size: 0.75rem;
+}
+
+/* ── Main ─────────────────────────────────────────────────── */
+.app-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  flex-shrink: 0;
+  padding: 0 20px;
+  background: var(--p-surface-0);
+  border-bottom: 1px solid var(--p-surface-200);
+
+  &__search {
+    flex: 1;
+    max-width: 440px;
+
+    input {
+      width: 100%;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--p-surface-100);
+    }
+  }
+
+  &__avatar {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--p-primary-color);
+    color: var(--p-primary-contrast-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  &__name {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  &__role {
+    color: var(--p-text-muted-color);
+    font-size: 0.72rem;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+}
+
+@media (max-width: 992px) {
+  .app-sidebar {
+    width: 72px;
+
+    .app-sidebar__name,
+    .app-sidebar__label,
+    .app-sidebar__badge,
+    .app-sidebar__footer {
+      display: none;
+    }
+  }
+
+  .app-topbar__search {
+    display: none;
+  }
+}

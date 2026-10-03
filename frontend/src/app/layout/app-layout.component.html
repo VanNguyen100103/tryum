@@ -1,0 +1,83 @@
+<div class="app-shell" [class.sidebar-collapsed]="!sidebarOpen()">
+  <!-- ── Sidebar ────────────────────────────────────────────── -->
+  <aside class="app-sidebar">
+    <div class="app-sidebar__brand">
+      <div class="app-sidebar__logo">
+        <i class="pi pi-shopping-bag"></i>
+      </div>
+      @if (sidebarOpen()) {
+        <span class="app-sidebar__name">Tryum</span>
+      }
+    </div>
+
+    <nav class="app-sidebar__nav">
+      <ul>
+        @for (item of navItems; track item.route) {
+          <li>
+            <a
+              [routerLink]="item.route"
+              routerLinkActive
+              [routerLinkActiveOptions]="{ exact: false }"
+              class="app-sidebar__item"
+              [class.app-sidebar__item--active]="isActive(item.route)"
+            >
+              <i [class]="item.icon"></i>
+              @if (sidebarOpen()) {
+                <span class="app-sidebar__label">{{ item.label }}</span>
+                @if (item.badge) {
+                  <span class="app-sidebar__badge">{{ item.badge }}</span>
+                }
+              }
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    @if (sidebarOpen()) {
+      <div class="app-sidebar__footer">
+        <small>{{ shopName() || 'Tryum' }} · Phase 2</small>
+      </div>
+    }
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────── -->
+  <div class="app-main">
+    <header class="app-topbar">
+      <p-button
+        icon="pi pi-bars"
+        [text]="true"
+        [rounded]="true"
+        severity="secondary"
+        (onClick)="toggleSidebar()"
+        ariaLabel="Ẩn/hiện thanh điều hướng"
+      />
+
+      <div class="app-topbar__search">
+        <p-iconfield>
+          <i class="pi pi-search"></i>
+          <input pInputText type="text" placeholder="Tìm kiếm..." disabled />
+        </p-iconfield>
+      </div>
+
+      <div class="app-topbar__actions">
+        <p-button icon="pi pi-bell" [text]="true" [rounded]="true" severity="secondary" ariaLabel="Thông báo" />
+        <p-button icon="pi pi-cog" [text]="true" [rounded]="true" severity="secondary" ariaLabel="Cài đặt" />
+
+        <div class="app-topbar__user" (click)="logout()" [title]="'Đăng xuất (' + shopName() + ')'">
+          <div class="app-topbar__avatar">{{ initials() }}</div>
+          @if (user(); as current) {
+            <div class="app-topbar__info">
+              <span class="app-topbar__name">{{ current.fullName }}</span>
+              <small class="app-topbar__role">{{ current.roleName }} · {{ current.tenantName }}</small>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

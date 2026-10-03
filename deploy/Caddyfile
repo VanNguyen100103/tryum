@@ -1,0 +1,52 @@
+# ── Caddy: reverse proxy + tự cấp HTTPS ──────────────────────────────────────
+# Dry-run local:  https://localhost:7080  (Caddy tự dùng CA nội bộ cho localhost)
+# Production:     đổi API_DOMAIN sang domain DuckDNS thật, Caddy tự lấy Let's Encrypt
+#                 cert (cần mở port 80/443 ở Security List của Oracle + iptables trên VM).
+#
+# Một domain duy nhất phục vụ cả API (/api/*, /health) và SPA (phần còn lại) =>
+# không lo CORS khi dry-run. Ở production frontend nằm trên Cloudflare Pages
+# (domain riêng) nên chỉ phần /api/* là dùng tới.
+
+{
+	email {$ACME_EMAIL:admin@example.com}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+{$API_DOMAIN} {
+	import security_headers
+
+	encode zstd gzip
+
+	request_body {
+		max_size 10MB
+	}
+
+	# Health check – public cho UptimeRobot theo dõi.
+	handle /health {
+		reverse_proxy api:8080
+	}
+
+	# API
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	# Web (SPA) – chỉ dùng cho dry-run giống production.
+	handle {
+		reverse_proxy web:80
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tryum_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tryum_db
+      POSTGRES_USER: tryum
+      POSTGRES_PASSWORD: tryum_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tryum -d tryum_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev_data:
