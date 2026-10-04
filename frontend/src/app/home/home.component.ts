@@ -3,11 +3,13 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 
 interface NavGroup {
+  label: string;
   title: string;
-  items: { label: string; href: string }[];
+  items: { label: string; href: string; badge?: string }[];
 }
 
 interface IndustryCol {
+  label?: string;
   title: string;
   items: string[];
 }
@@ -123,6 +125,7 @@ export class HomeComponent {
 
   protected readonly solutionGroups: NavGroup[] = [
     {
+      label: 'Giải pháp',
       title: 'Bán hàng',
       items: [
         { label: 'Bán buôn, bán lẻ', href: '#solutions' },
@@ -132,37 +135,41 @@ export class HomeComponent {
       ],
     },
     {
+      label: 'Giải pháp',
       title: 'Kế toán & Thuế',
       items: [
-        { label: 'Kế toán hộ kinh doanh', href: '#accounting' },
-        { label: 'Hóa đơn điện tử', href: '#accounting' },
+        { label: 'Kế toán hộ kinh doanh', href: '#accounting', badge: 'Miễn phí' },
+        { label: 'Hoá đơn điện tử', href: '#accounting', badge: 'Miễn phí' },
         { label: 'Tư vấn thuế', href: '#accounting' },
       ],
     },
     {
+      label: 'Giải pháp',
       title: 'Tài chính',
       items: [
-        { label: 'Thanh toán QR', href: '#finance' },
-        { label: 'Vay vốn kinh doanh', href: '#finance' },
+        { label: 'Giải pháp thanh toán QR', href: '#finance' },
+        { label: 'Giải pháp vay vốn kinh doanh', href: '#finance' },
       ],
     },
     {
+      label: 'Giải pháp',
       title: 'Bán hàng Online',
       items: [
-        { label: 'Sàn TMĐT & MXH', href: '#online' },
+        { label: 'Đồng bộ sàn TMĐT và mạng xã hội', href: '#online' },
         { label: 'Tích hợp FoodApp', href: '#online' },
         { label: 'Tích hợp OTA', href: '#online' },
-        { label: 'Website bán hàng', href: '#online' },
+        { label: 'Tạo website bán hàng', href: '#online' },
         { label: 'Giải pháp giao hàng', href: '#online' },
       ],
     },
     {
+      label: 'Giải pháp',
       title: 'Quản lý nhân viên',
       items: [
-        { label: 'Chấm công', href: '#staff' },
-        { label: 'Tính lương', href: '#staff' },
+        { label: 'Bảng chấm công', href: '#staff' },
+        { label: 'Bảng tính lương', href: '#staff' },
         { label: 'Lịch làm việc', href: '#staff' },
-        { label: 'Hoa hồng', href: '#staff' },
+        { label: 'Bảng hoa hồng', href: '#staff' },
       ],
     },
   ];

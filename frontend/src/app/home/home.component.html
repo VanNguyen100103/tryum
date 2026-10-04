@@ -11,27 +11,31 @@
       <div class="dd">
         <span class="dd__trigger">Giải pháp <i class="pi pi-chevron-down"></i></span>
         <div class="dd__panel dd__panel--wide">
-          @for (g of solutionGroups; track g.title) {
-            <div class="dd__col">
-              <h4>{{ g.title }}</h4>
-              @for (it of g.items; track it.label) {
-                <a [href]="it.href">{{ it.label }}</a>
-              }
-            </div>
-          }
+          <div class="dd__cols">
+            @for (g of solutionGroups; track g.title) {
+              <div class="dd__col">
+                <h4><small>{{ g.label }}</small><span>{{ g.title }}</span></h4>
+                @for (it of g.items; track it.label) {
+                  <a [href]="it.href">{{ it.label }} @if (it.badge) { <em class="dd__badge">{{ it.badge }}</em> }</a>
+                }
+              </div>
+            }
+          </div>
         </div>
       </div>
       <div class="dd">
         <span class="dd__trigger">Ngành hàng <i class="pi pi-chevron-down"></i></span>
         <div class="dd__panel dd__panel--wide">
-          @for (g of industryMenu; track g.title) {
-            <div class="dd__col">
-              <h4>{{ g.title }}</h4>
-              @for (it of g.items; track it) {
-                <a href="#industries">{{ it }}</a>
-              }
-            </div>
-          }
+          <div class="dd__cols dd__cols--4">
+            @for (g of industryMenu; track g.title) {
+              <div class="dd__col">
+                <h4><small>Ngành hàng</small><span>{{ g.title }}</span></h4>
+                @for (it of g.items; track it) {
+                  <a href="#industries">{{ it }}</a>
+                }
+              </div>
+            }
+          </div>
         </div>
       </div>
       <a class="dd__plain" href="#features">Tính năng</a>

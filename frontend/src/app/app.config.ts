@@ -42,6 +42,7 @@ export const appConfig: ApplicationConfig = {
         },
       },
       ripple: true,
+      license: 'community',
     }),
     MessageService,
   ],

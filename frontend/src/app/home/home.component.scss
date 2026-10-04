@@ -125,7 +125,7 @@ i.pi { font-size: 1em; }
   gap: 28px;
 }
 .hdr__nav { display: flex; align-items: center; gap: 4px; flex: 1; }
-.dd { position: relative; }
+.dd { position: relative; height: 72px; display: flex; align-items: center; }
 .dd__trigger, .dd__plain {
   display: inline-flex;
   align-items: center;
@@ -142,36 +142,47 @@ i.pi { font-size: 1em; }
 .dd__trigger i { font-size: 11px; color: #98a1ae; }
 .dd__panel {
   display: none;
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  z-index: 60;
   background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--rad);
-  box-shadow: 0 18px 48px rgba(22, 32, 46, 0.14);
-  padding: 18px;
-  min-width: 280px;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 28px 56px rgba(22, 32, 46, 0.14);
 }
-.dd:hover .dd__panel { display: grid; }
-.dd__panel--wide { grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 22px; width: max-content; max-width: min(920px, 92vw); }
-.dd__col h4 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #98a1ae;
-  margin-bottom: 10px;
-  font-weight: 800;
+.dd:hover .dd__panel { display: block; }
+.dd__cols {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 30px 24px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
 }
+.dd__cols--4 { grid-template-columns: repeat(4, 1fr); }
+.dd__col + .dd__col { border-left: 1px solid var(--line); padding-left: 26px; }
+.dd__col h4 { margin: 0 0 14px; display: grid; gap: 3px; }
+.dd__col h4 small { font-size: 12px; font-weight: 600; color: #98a1ae; }
+.dd__col h4 span { font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; }
 .dd__col a {
-  display: block;
-  padding: 6px 0;
-  font-size: 14.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 15px;
   font-weight: 500;
-  color: var(--ink);
-  white-space: nowrap;
+  color: #3a4353;
 }
 .dd__col a:hover { color: var(--p2); }
+.dd__badge {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--p2);
+  background: #ffe9e3;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
 .hdr__actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .hdr__burger {
   display: none;
