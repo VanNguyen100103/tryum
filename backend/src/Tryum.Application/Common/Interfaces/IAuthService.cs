@@ -12,7 +12,13 @@ public interface IAuthService
     /// <summary>Đăng ký cửa hàng mới: tạo tenant + tài khoản chủ (role Owner), trả về token.</summary>
     Task<AuthResponse> RegisterAsync(RegisterRequest request, string? ip = null, CancellationToken cancellationToken = default);
 
-    /// <summary>Đăng nhập bằng email + mật khẩu, trả về access token và refresh token mới.</summary>
+    /// <summary>
+    /// Kiểm tra SĐT đã được dùng để đăng ký chưa. Ném ConflictException nếu đã có tài khoản.
+    /// Endpoint gửi OTP gọi hàm này TRƯỚC khi phát tin để không lãng phí SMS.
+    /// </summary>
+    Task EnsurePhoneAvailableAsync(string phone, CancellationToken cancellationToken = default);
+
+    /// <summary>Đăng nhập bằng email HOẶC số điện thoại + mật khẩu, trả về access token và refresh token mới.</summary>
     Task<AuthResponse> LoginAsync(LoginRequest request, string? ip = null, CancellationToken cancellationToken = default);
 
     /// <summary>Đổi refresh token lấy access token mới (có rotation: token cũ bị revoke).</summary>

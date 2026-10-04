@@ -49,11 +49,17 @@ public class AuthServiceTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    /// <summary>Sản xuất RegisterRequest kèm mã OTP hợp lệ (đã issue cho SĐT 0901234567).</summary>
-    private async Task<RegisterRequest> ShopAsync(string name = "Phở Thảo", string email = "owner@phothao.vn")
+    /// <summary>
+    /// Sản xuất RegisterRequest kèm mã OTP hợp lệ.
+    /// Mỗi lần gọi dùng một SĐT khác nhau vì OtpService giới hạn gửi lại trong 30 giây.
+    /// </summary>
+    private async Task<RegisterRequest> ShopAsync(
+        string name = "Phở Thảo",
+        string email = "owner@phothao.vn",
+        string phone = "0901234567")
     {
-        var (code, _) = await _otpService.IssueAsync("0901234567");
-        return new RegisterRequest(name, "Nguyễn Văn A", email, "Matkhau@123", "0901234567", code);
+        var result = await _otpService.IssueAsync(phone);
+        return new RegisterRequest(name, "Nguyễn Văn A", email, "Matkhau@123", phone, result.Code);
     }
 
     [Fact]
@@ -104,16 +110,68 @@ public class AuthServiceTests : IDisposable
         await _authService.RegisterAsync(await ShopAsync());
 
         var ex = await Assert.ThrowsAsync<ConflictException>(
-            async () => await _authService.RegisterAsync(await ShopAsync(name: "Quán Khác", email: "OWNER@phothao.vn")));
+            async () => await _authService.RegisterAsync(await ShopAsync(
+                name: "Quán Khác", email: "OWNER@phothao.vn", phone: "0909999999")));
 
         Assert.Equal("email_already_exists", ex.ErrorCode);
     }
 
     [Fact]
+    public async Task RegisterAsync_ShouldRejectDuplicatePhone()
+    {
+        await _authService.RegisterAsync(await ShopAsync(phone: "0355951359"));
+
+        // SĐT đã có tài khoản => chặn ngay, không tạo tenant thứ hai cho cùng 1 số.
+        // Dùng service không cooldown vì OTP cho số này vừa được phát ở bước trên.
+        var otpService = new OtpService(
+            new LogSmsSender(), options: new OtpOptions { CooldownSeconds = 0 });
+
+        var second = await otpService.IssueAsync("0355951359");
+        var ex = await Assert.ThrowsAsync<ConflictException>(
+            async () => await _authService.RegisterAsync(new RegisterRequest(
+                "Quán Khác", "Nguyễn Văn B", "khac@phothao.vn", "Matkhau@123",
+                "0355951359", second.Code)));
+
+        Assert.Equal("phone_already_registered", ex.ErrorCode);
+        Assert.Equal(1, await _context.Tenants.IgnoreQueryFilters().CountAsync());
+    }
+
+    [Fact]
+    public async Task EnsurePhoneAvailableAsync_ShouldThrow_WhenPhoneRegistered()
+    {
+        await _authService.RegisterAsync(await ShopAsync(phone: "0355951359"));
+
+        await Assert.ThrowsAsync<ConflictException>(
+            async () => await _authService.EnsurePhoneAvailableAsync("0355951359"));
+    }
+
+    [Fact]
+    public async Task EnsurePhoneAvailableAsync_ShouldPass_ForNewPhone()
+    {
+        await _authService.EnsurePhoneAvailableAsync("0901234567");
+    }
+
+    [Fact]
+    public async Task LoginAsync_ShouldAcceptPhoneNumber()
+    {
+        await _authService.RegisterAsync(await ShopAsync(phone: "0355951359"));
+
+        // KiotViet đăng nhập bằng SĐT – Tryum hỗ trợ cả SĐT lẫn email.
+        var byPhone = await _authService.LoginAsync(
+            new LoginRequest("0355951359", "Matkhau@123"), ip: "127.0.0.1");
+
+        var byE164 = await _authService.LoginAsync(
+            new LoginRequest("+84355951359", "Matkhau@123"), ip: "127.0.0.1");
+
+        Assert.Equal(byPhone.User.Id, byE164.User.Id);
+        Assert.Equal("+84355951359", byPhone.User.Phone);
+    }
+
+    [Fact]
     public async Task RegisterAsync_ShouldGenerateUniqueSlug()
     {
-        await _authService.RegisterAsync(await ShopAsync(name: "Phở Thảo", email: "a@phothao.vn"));
-        await _authService.RegisterAsync(await ShopAsync(name: "Phở Thảo", email: "b@phothao.vn"));
+        await _authService.RegisterAsync(await ShopAsync(name: "Phở Thảo", email: "a@phothao.vn", phone: "0901111111"));
+        await _authService.RegisterAsync(await ShopAsync(name: "Phở Thảo", email: "b@phothao.vn", phone: "0902222222"));
 
         var slugs = await _context.Tenants.IgnoreQueryFilters().Select(t => t.Slug).ToListAsync();
         Assert.Equal(["pho-thao", "pho-thao-2"], slugs.OrderBy(s => s));

@@ -9,15 +9,35 @@ public sealed record RegisterRequest(
     string Phone,
     string OtpCode);
 
-/// <summary>Input gửi mã OTP tới số điện thoại.</summary>
-public sealed record SendOtpRequest(string Phone);
+/// <summary>
+/// Input gửi mã OTP tới số điện thoại.
+/// Kèm captcha server-side (chống bot đốt SMS). <paramref name="IsResend"/> = true khi người
+/// dùng đang ở bước nhập OTP và bấm "Gửi lại": đây là hành động có chủ ý sau khi đã vượt captcha,
+/// và vẫn bị giới hạn bởi cooldown + quota/ngày nên không cần captcha mới.
+/// </summary>
+public sealed record SendOtpRequest(
+    string Phone,
+    string? CaptchaId = null,
+    string? CaptchaCode = null,
+    bool IsResend = false);
+
+/// <summary>Ảnh captcha do server sinh: id + data-uri để hiển thị, không cần thư viện ảnh.</summary>
+public sealed record CaptchaResponse(string CaptchaId, string ImageDataUrl);
+
+/// <summary>
+/// Input đăng nhập. <paramref name="Identifier"/> nhận email HOẶC số điện thoại
+/// (KiotViet cho đăng nhập bằng SĐT; Tryum hỗ trợ cả hai).
+/// </summary>
+public sealed record LoginRequest(string Identifier, string Password);
 
 /// <summary>Kết quả gửi OTP.</summary>
 /// <param name="DemoOtp">Chỉ có khi chạy chế độ demo (mô phỏng SMS) – production gộp SMS gateway thì null.</param>
-public sealed record SendOtpResponse(bool Sent, int ResendAfterSeconds, string? DemoOtp);
-
-/// <summary>Input đăng nhập.</summary>
-public sealed record LoginRequest(string Email, string Password);
+/// <param name="ExpiresInSeconds">Hạn sử dụng của mã (để UI hiển thị "Mã có hiệu lực trong N phút").</param>
+public sealed record SendOtpResponse(
+    bool Sent,
+    int ResendAfterSeconds,
+    string? DemoOtp,
+    int ExpiresInSeconds);
 
 /// <summary>Input đổi access token bằng refresh token.</summary>
 public sealed record RefreshRequest(string RefreshToken);

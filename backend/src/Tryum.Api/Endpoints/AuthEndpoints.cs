@@ -17,16 +17,46 @@ public static class AuthEndpoints
         var group = app.MapGroup("/api/v1/auth")
             .WithTags("Auth");
 
+        group.MapGet("/captcha", (ICaptchaService captchaService) =>
+            {
+                var challenge = captchaService.Create();
+
+                return Results.Ok(new CaptchaResponse(challenge.CaptchaId, challenge.ImageDataUrl));
+            })
+            .AllowAnonymous()
+            .RequireRateLimiting("auth")
+            .WithSummary("Sinh ảnh captcha (server-side) cho form đăng ký")
+            .Produces<CaptchaResponse>()
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         group.MapPost("/otp/send", async (
                 SendOtpRequest request,
                 IOtpService otpService,
+                IAuthService authService,
+                ICaptchaService captchaService,
                 IValidator<SendOtpRequest> validator,
                 IConfiguration configuration,
                 CancellationToken ct) =>
             {
                 await ValidateAsync(validator, request, ct);
 
-                var (code, resendAfterSeconds) = await otpService.IssueAsync(request.Phone, ct);
+                // 1) Kiểm captcha SERVER-SIDE trước: nếu không, bot gọi thẳng API sẽ đốt quota SMS.
+                // Lần gửi đầu bắt buộc captcha; lần "gửi lại" ở bước OTP thì không (đã bị cooldown chặn).
+                var captchaRequired = !request.IsResend && !string.Equals(
+                    configuration["Captcha:Required"],
+                    "false",
+                    StringComparison.OrdinalIgnoreCase);
+
+                if (captchaRequired && !captchaService.Validate(request.CaptchaId, request.CaptchaCode))
+                    throw new Tryum.Application.Common.Exceptions.ValidationException(
+                        "Mã xác thực không đúng hoặc đã hết hạn. Vui lòng tải lại ảnh và thử lại.",
+                        "captcha_invalid");
+
+                // 2) SĐT đã có tài khoản thì báo luôn, không tốn 1 tin SMS.
+                await authService.EnsurePhoneAvailableAsync(request.Phone, ct);
+
+                // 3) Mới phát tin SMS (OtpService tự kiểm cooldown + giới hạn/ngày).
+                var result = await otpService.IssueAsync(request.Phone, ct);
 
                 // Demo mode (mô phỏng SMS, 0đ): trả về mã để UI hiển thị.
                 // Production (cắm SMS gateway thật): xoá dòng này / tắt flag.
@@ -34,16 +64,21 @@ public static class AuthEndpoints
                         configuration["Auth:DemoOtpInResponse"],
                         "true",
                         StringComparison.OrdinalIgnoreCase)
-                    ? code
+                    ? result.Code
                     : null;
 
-                return Results.Ok(new SendOtpResponse(Sent: true, resendAfterSeconds, demoOtp));
+                return Results.Ok(new SendOtpResponse(
+                    Sent: true,
+                    result.ResendAfterSeconds,
+                    demoOtp,
+                    result.ExpiresInSeconds));
             })
             .AllowAnonymous()
             .RequireRateLimiting("auth")
-            .WithSummary("Gửi mã OTP tới SĐT (demo: trả về mã thay vì gọi SMS gateway)")
+            .WithSummary("Gửi mã OTP tới SĐT (yêu cầu captcha hợp lệ; demo: trả mã thay vì gọi SMS gateway)")
             .Produces<SendOtpResponse>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         group.MapPost("/register", async (

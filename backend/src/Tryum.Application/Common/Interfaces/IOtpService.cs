@@ -2,15 +2,17 @@ namespace Tryum.Application.Common.Interfaces;
 
 /// <summary>
 /// Phát hành &amp; xác thực mã OTP cho số điện thoại (chống spam, brute force).
-/// Demo mode: chỉ "phát hành" vào bộ nhớ, chưa gọi SMS gateway thật.
+/// Mỗi lần gửi đều đi qua <see cref="ISmsSender"/> nên đòi captcha server-side ở tầng API
+/// trước khi gọi vào đây (giống KiotViet) – nếu không, bot sẽ đốt hết quota SMS.
 /// </summary>
 public interface IOtpService
 {
     /// <summary>
     /// Phát hành mã OTP 6 số cho SĐT (chuẩn hoá E.164).
-    /// Trùng lặp trong cooldown → RateLimitedException; SĐT sai → ValidationException.
+    /// - SĐT sai → <c>ValidationException("phone_invalid")</c>.
+    /// - Gửi lại trong cooldown hoặc vượt giới hạn/ngày → <c>RateLimitedException</c>.
     /// </summary>
-    Task<(string Code, int ResendAfterSeconds)> IssueAsync(string phone, CancellationToken cancellationToken = default);
+    Task<OtpIssueResult> IssueAsync(string phone, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Xác thực mã: đúng → consume (xoá mã, không dùng lại được).
@@ -18,3 +20,6 @@ public interface IOtpService
     /// </summary>
     Task ConsumeAsync(string phone, string code, CancellationToken cancellationToken = default);
 }
+
+/// <summary>Kết quả phát hành OTP: mã (chỉ dev dùng), số giây chờ gửi lại, số giây còn hiệu lực.</summary>
+public sealed record OtpIssueResult(string Code, int ResendAfterSeconds, int ExpiresInSeconds);

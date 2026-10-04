@@ -6,8 +6,10 @@ import { environment } from '../../../environments/environment';
 import type {
   ApiProblem,
   AuthResponse,
+  CaptchaResponse,
   LoginRequest,
   RegisterRequest,
+  SendOtpRequest,
   SendOtpResponse,
   UserInfo,
 } from '../models/auth.models';
@@ -56,9 +58,18 @@ export class AuthService {
     );
   }
 
+  /**
+   * Lấy ảnh captcha do SERVER sinh (SVG data-uri) + captchaId.
+   * Bắt buộc phải có để gửi OTP: không có captcha thì API từ chối, nhờ vậy bot
+   * không thể gọi thẳng endpoint để đốt quota SMS.
+   */
+  getCaptcha(): Observable<CaptchaResponse> {
+    return this.http.get<CaptchaResponse>(`${this.baseUrl}/captcha`);
+  }
+
   /** Gửi mã OTP tới SĐT (demo mode: server trả về mã để hiển thị thay vì SMS). */
-  sendOtp(phone: string): Observable<SendOtpResponse> {
-    return this.http.post<SendOtpResponse>(`${this.baseUrl}/otp/send`, { phone });
+  sendOtp(request: SendOtpRequest): Observable<SendOtpResponse> {
+    return this.http.post<SendOtpResponse>(`${this.baseUrl}/otp/send`, request);
   }
 
   register(request: RegisterRequest): Observable<AuthResponse> {

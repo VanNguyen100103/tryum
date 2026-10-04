@@ -1,5 +1,4 @@
 import { Component, DestroyRef, ElementRef, inject, signal, ViewChildren, QueryList } from '@angular/core';
-import { NgStyle } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -7,17 +6,11 @@ import { PasswordModule } from 'primeng/password';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '../../core/services/auth.service';
 
-interface CaptchaChar {
-  ch: string;
-  rot: number;
-  dy: number;
-}
-
 type Step = 'form' | 'otp';
 
 @Component({
   selector: 'app-register',
-  imports: [InputTextModule, PasswordModule, FormsModule, RouterLink, NgStyle],
+  imports: [InputTextModule, PasswordModule, FormsModule, RouterLink],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
@@ -39,11 +32,16 @@ export class RegisterComponent {
   protected readonly loading = signal(false);
   protected readonly sendingOtp = signal(false);
   protected readonly showPromo = signal(true);
-  protected readonly captchaChars = signal<CaptchaChar[]>([]);
   protected readonly otpDigits = signal<string[]>(Array(6).fill(''));
   protected readonly resendIn = signal(0);
   protected readonly sentPhone = signal('');
   protected readonly demoOtp = signal('');
+
+  // Captcha do server sinh (SVG data-uri). Đây là điều kiện bắt buộc để API
+  // chịu gửi SMS — không có nó thì một bot có thể đốt hết quota gateway.
+  protected readonly captchaId = signal('');
+  protected readonly captchaImage = signal('');
+  protected readonly otpTtlMinutes = signal(5);
 
   @ViewChildren('otpBox') private otpBoxes!: QueryList<ElementRef<HTMLInputElement>>;
 
@@ -95,16 +93,27 @@ export class RegisterComponent {
     }
   }
 
+  /**
+   * Lấy ảnh captcha mới từ server. Mỗi lần gọi trả về captchaId mới và ảnh SVG,
+   * nên nút "refresh" và lúc báo sai captcha đều gọi lại hàm này.
+   */
   refreshCaptcha(): void {
-    const safe = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-    this.captchaChars.set(
-      Array.from({ length: 4 }, () => ({
-        ch: safe[Math.floor(Math.random() * safe.length)],
-        rot: Math.round((Math.random() * 24 - 12) * 10) / 10,
-        dy: Math.round((Math.random() * 6 - 3) * 10) / 10,
-      }))
-    );
-    this.captchaInput = '';
+    this.auth.getCaptcha().subscribe({
+      next: (res) => {
+        this.captchaId.set(res.captchaId);
+        this.captchaImage.set(res.imageDataUrl);
+        this.captchaInput = '';
+      },
+      error: () => {
+        this.captchaId.set('');
+        this.captchaImage.set('');
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Không tải được mã xác thực',
+          detail: 'Vui lòng kiểm tra kết nối rồi bấm biểu tượng làm mới.',
+        });
+      },
+    });
   }
 
   /** Bước 1: validate form + captcha rồi gọi /auth/otp/send. */
@@ -122,21 +131,19 @@ export class RegisterComponent {
       return;
     }
 
-    const code = this.captchaChars().map((c) => c.ch).join('');
-    if (this.captchaInput.trim().toUpperCase() !== code) {
+    // Captcha được kiểm ở SERVER (xem /auth/otp/send). Ở đây chỉ kiểm "đã nhập chưa"
+// để không gửi request vô ích; sai mã thì API trả captcha_invalid và ta tải ảnh mới.
+    if (this.captchaInput.trim().length !== 4) {
       this.messageService.add({
-        severity: 'error',
-        summary: 'Mã xác thực sai',
-        detail: 'Vui lòng nhập đúng mã hiển thị.',
+        severity: 'warn',
+        summary: 'Thiếu mã xác thực',
+        detail: 'Vui lòng nhập đúng 4 ký tự mã hiển thị trong ảnh.',
       });
-      this.refreshCaptcha();
       return;
     }
 
-    // Prefix +84 chỉ visual → user nhập 9 số; chuẩn hóa thành 0xxxxxxxxx trước khi validate.
-    const digits = this.phone.replace(/\D/g, '');
-    const phoneForApi = digits.length === 9 ? `0${digits}` : digits;
-    if (!/^(0\d{9}|84\d{9})$/.test(phoneForApi)) {
+    const phoneForApi = this.normalizePhone(this.phone);
+    if (!phoneForApi) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Số điện thoại chưa đúng',
@@ -157,11 +164,16 @@ export class RegisterComponent {
 
     this.sendingOtp.set(true);
 
-    this.auth.sendOtp(this.phone).subscribe({
+    this.auth.sendOtp({
+      phone: this.phone,
+      captchaId: this.captchaId(),
+      captchaCode: this.captchaInput.trim(),
+    }).subscribe({
       next: (res) => {
         this.sendingOtp.set(false);
         this.sentPhone.set(this.formatPhone(this.phone));
         this.demoOtp.set(res.demoOtp ?? '');
+        this.otpTtlMinutes.set(Math.max(1, Math.round(res.expiresInSeconds / 60)));
         this.otpDigits.set(Array(6).fill(''));
         this.step.set('otp');
         this.startResendTimer(res.resendAfterSeconds);
@@ -176,6 +188,10 @@ export class RegisterComponent {
       },
       error: (error: unknown) => {
         this.sendingOtp.set(false);
+
+        // Mỗi captcha chỉ dùng 1 lần nên luôn tải ảnh mới cho lần nhập sau.
+        this.refreshCaptcha();
+
         this.messageService.add({
           severity: 'error',
           summary: 'Không gửi được mã OTP',
@@ -185,30 +201,39 @@ export class RegisterComponent {
     });
   }
 
-  /** Gửi lại mã OTP (đang ở bước 2). */
+  /**
+   * Gửi lại mã OTP (đang ở bước 2).
+   *
+   * Không cần nhập lại captcha: người dùng đã vượt captcha ở lần gửi đầu và đang chủ động
+   * bấm nút, đồng thời vẫn bị giới hạn bởi cooldown 30s + quota theo ngày ở server.
+   */
   resendOtp(): void {
     if (this.sendingOtp() || this.resendIn() > 0) {
       return;
     }
 
     this.sendingOtp.set(true);
-    this.auth.sendOtp(this.phone).subscribe({
-      next: (res) => {
-        this.sendingOtp.set(false);
-        this.demoOtp.set(res.demoOtp ?? '');
-        this.otpDigits.set(Array(6).fill(''));
-        this.startResendTimer(res.resendAfterSeconds);
-        setTimeout(() => this.focusBox(0), 60);
-      },
-      error: (error: unknown) => {
-        this.sendingOtp.set(false);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Không gửi lại được',
-          detail: AuthService.problemMessage(error),
-        });
-      },
-    });
+
+    this.auth
+      .sendOtp({ phone: this.phone, isResend: true })
+      .subscribe({
+        next: (res) => {
+          this.sendingOtp.set(false);
+          this.demoOtp.set(res.demoOtp ?? '');
+          this.otpTtlMinutes.set(Math.max(1, Math.round(res.expiresInSeconds / 60)));
+          this.otpDigits.set(Array(6).fill(''));
+          this.startResendTimer(res.resendAfterSeconds);
+          setTimeout(() => this.focusBox(0), 60);
+        },
+        error: (error: unknown) => {
+          this.sendingOtp.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Không gửi lại được',
+            detail: AuthService.problemMessage(error),
+          });
+        },
+      });
   }
 
   /** Bước 2: xác nhận OTP + tạo tài khoản. */
@@ -273,6 +298,24 @@ export class RegisterComponent {
       clearInterval(this.resendTimer);
       this.resendTimer = null;
     }
+  }
+
+  /**
+   * Chuẩn hoá SĐT về dạng 0xxxxxxxxx trước khi gửi API.
+   * Chấp nhận: 9 số (901234567), 0 + 9 số, 84..., +84... — trả về chuỗi rỗng nếu sai.
+   */
+  private normalizePhone(raw: string): string {
+    let digits = raw.replace(/\D/g, '');
+
+    if (digits.startsWith('84') && (digits.length === 11 || digits.length === 12)) {
+      digits = digits.slice(2);
+    } else if (digits.startsWith('0') && digits.length === 10) {
+      digits = digits.slice(1);
+    } else if (digits.length === 9) {
+      return `0${digits}`;
+    }
+
+    return /^0\d{9}$/.test(digits) ? digits : '';
   }
 
   private formatPhone(raw: string): string {

@@ -54,6 +54,15 @@ services:
       Database__ApplyMigrationsOnStartup: ${APPLY_MIGRATIONS_ON_STARTUP:-false}
       # OTP demo (trả mã trong response) – production nên false, gửi SMS thật qua SMSGate.
       Auth__DemoOtpInResponse: ${DEMO_OTP_IN_RESPONSE:-false}
+      # ── Captcha server-side (chống bot đốt quota SMS) ────────────────────────
+      Captcha__Required: ${CAPTCHA_REQUIRED:-true}
+      Captcha__TtlSeconds: ${CAPTCHA_TTL_SECONDS:-300}
+      # ── OTP: chống spam + bảo vệ quota gateway ───────────────────────────────
+      Otp__TtlSeconds: ${OTP_TTL_SECONDS:-300}
+      Otp__CooldownSeconds: ${OTP_COOLDOWN_SECONDS:-30}
+      Otp__MaxAttempts: ${OTP_MAX_ATTEMPTS:-5}
+      # textbee free tier chỉ 50 tin/ngày => giữ thấp, mỗi SĐT tối đa 5 tin/24h.
+      Otp__MaxSendsPerDay: ${OTP_MAX_SENDS_PER_DAY:-5}
       # ── SMS (self-host, MIỄN PHÍ – https://sms-gate.app) ────────────────
       Sms__Provider: ${SMS_PROVIDER:-SmsGate}
       Sms__SmsGate__SendUrl: ${SMS_GATE_URL:-https://api.sms-gate.app/3rdparty/v1/messages}

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Tryum.Application.Common.Interfaces;
 using Tryum.Domain.Users;
@@ -47,7 +48,33 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<IOtpService, OtpService>();
+
+        // ── Options: OTP + Captcha (chống spam/quota) ──────────────────────────
+        services
+            .AddOptions<OtpOptions>()
+            .Bind(configuration.GetSection(OtpOptions.SectionName))
+            .Validate(o => o.TtlSeconds > 0, "Otp:TtlSeconds phải > 0.")
+            .Validate(o => o.CooldownSeconds >= 0, "Otp:CooldownSeconds phải >= 0.")
+            .Validate(o => o.MaxAttempts > 0, "Otp:MaxAttempts phải > 0.")
+            .Validate(o => o.MaxSendsPerDay > 0, "Otp:MaxSendsPerDay phải > 0.")
+            .ValidateOnStart();
+
+        services
+            .AddOptions<CaptchaOptions>()
+            .Bind(configuration.GetSection(CaptchaOptions.SectionName))
+            .Validate(o => o.TtlSeconds > 0, "Captcha:TtlSeconds phải > 0.")
+            .ValidateOnStart();
+
+        // ── Services ────────────────────────────────────────────────────────────
+        services.AddSingleton<IOtpService>(sp =>
+            new OtpService(
+                sp.GetRequiredService<ISmsSender>(),
+                sp.GetService<ILogger<OtpService>>(),
+                sp.GetRequiredService<IOptions<OtpOptions>>().Value));
+
+        // Captcha singleton: store dùng chung cho cả sinh ảnh và kiểm mã.
+        services.AddSingleton<ICaptchaService>(sp =>
+            new CaptchaService(sp.GetRequiredService<IOptions<CaptchaOptions>>().Value));
         services.AddScoped<ITokenService>(sp =>
             new TokenService(
                 sp.GetRequiredService<IApplicationDbContext>(),

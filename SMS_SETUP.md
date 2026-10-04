@@ -1,4 +1,4 @@
-# Gửi SMS thật cho OTP (production)
+﻿# Gửi SMS thật cho OTP (production)
 
 Trang đăng ký Tryum xác thực số điện thoại bằng **mã OTP 6 số**. Ở production, OTP phải
 được gửi **qua SMS thật** tới người dùng.
@@ -10,6 +10,28 @@ Trang đăng ký Tryum xác thực số điện thoại bằng **mã OTP 6 số*
 > hoặc `Provider=Textbee` mà thiếu `ApiKey`, ứng dụng **không khởi động** và log rõ lý do —
 > tránh việc production chạy mà không gửi được SMS.
 
+## Luong dang ky (giai doan KiotViet)
+
+```
+GET  /auth/captcha    -> anh SVG (captchaId)      <- bat buoc, chong bot
+POST /auth/otp/send   -> kiem captcha -> check SĐT đã co tai khoan -> gui SMS
+      dien thoai nhan: "Tryum: Ma OTP dang ky cua ban la 123456. ..."
+POST /auth/register   -> xac thuc OTP -> tao cua hang + tai khoan chu
+```
+
+Cac hang rao chong spam (vi **moi lan gui deu ton 1 tin SMS**):
+
+| Lop chan | Mac dinh | Cau hinh |
+|---|---|---|
+| Captcha server-side | bat buoc | `CAPTCHA_REQUIRED` |
+| Cho giua 2 lan gui (cooldown) | 30s | `OTP_COOLDOWN_SECONDS` |
+| So tin toi da / SĐT / 24h | 5 | `OTP_MAX_SENDS_PER_DAY` |
+| So lan nhap sai ma | 5 | `OTP_MAX_ATTEMPTS` |
+| SĐT đã co tai khoan | tu choi (409) | — |
+
+> Canh bao: **Dung dat CAPCHA_REQUIRED=false o production.** Neu khong co captcha, chi can goi
+
+> thang `POST /auth/otp/send` la dot het quota gateway (textbee free tier chi 50 tin/ngay).
 ---
 
 ## Cách 1 (MIỄN PHÍ, mặc định) — SMS Gate for Android
@@ -135,12 +157,17 @@ sửa `OtpService`** — kiến trúc đã tách sẵn.
 # 1) API sống
 curl https://<domain>/health
 
-# 2) Gửi thử OTP tới số của bạn (xem SMS có về máy không)
+# 2) Lấy captcha (bắt buộc trước khi gửi OTP)
+curl https://<domain>/api/v1/auth/captcha
+# -> {"captchaId":"abc...","imageDataUrl":"data:image/svg+xml;base64,..."}
+#    mở imageDataUrl trên trình duyệt để đọc 4 ký tự.
+
+# 3) Gửi thử OTP (thay captchaId/mã vừa đọc)
 curl -X POST https://<domain>/api/v1/auth/otp/send \
   -H "Content-Type: application/json" \
-  -d '{"phone":"0901234567"}'
+  -d '{"phone":"0901234567","captchaId":"abc...","captchaCode":"4RUP"}'
 ```
-Kỳ vọng: `200` với `{"sent":true,"resendAfterSeconds":30,"demoOtp":null}` và điện thoại nhận SMS.
+Kỳ vọng: `200` với `{"sent":true,"resendAfterSeconds":30,"demoOtp":null,"expiresInSeconds":300}` và điện thoại nhận SMS.
 (`demoOtp` phải là `null` ở production — nếu có mã tức là đang bật chế độ demo.)
 
 ## Xử lý lỗi thường gặp
@@ -167,3 +194,9 @@ Kỳ vọng: `200` với `{"sent":true,"resendAfterSeconds":30,"demoOtp":null}` 
 | `Sms:Textbee:SimSubscriptionId` | `TEXTBEE_SIM` | SIM dùng để gửi (bỏ trống = SIM mặc định) |
 | `Sms:Textbee:TimeoutSeconds` | — | Timeout HTTP (giây, mặc định 15) |
 | `Auth:DemoOtpInResponse` | `DEMO_OTP_IN_RESPONSE` | `true` = trả mã trong response (chỉ dev) |
+| `Captcha:Required` | `CAPTCHA_REQUIRED` | `true` = bắt buộc captcha khi gửi OTP (KHÔNG tắt ở production) |
+| `Captcha:TtlSeconds` | `CAPTCHA_TTL_SECONDS` | Hạn của ảnh captcha (mặc định 300) |
+| `Otp:TtlSeconds` | `OTP_TTL_SECONDS` | Hạn hiệu lực của mã OTP (mặc định 300 = 5 phút) |
+| `Otp:CooldownSeconds` | `OTP_COOLDOWN_SECONDS` | Chờ giữa 2 lần gửi cùng SĐT (mặc định 30) |
+| `Otp:MaxAttempts` | `OTP_MAX_ATTEMPTS` | Số lần nhập sai mã trước khi khoá (mặc định 5) |
+| `Otp:MaxSendsPerDay` | `OTP_MAX_SENDS_PER_DAY` | Số tin OTP tối đa / SĐT / 24h (mặc định 5) |

@@ -2,15 +2,15 @@
   <p-card header="Đăng nhập Tryum" styleClass="auth-card">
     <form (ngSubmit)="login()" class="auth-form">
       <div class="field">
-        <label for="email">Email</label>
+        <label for="identifier">Số điện thoại hoặc email</label>
         <input
-          id="email"
+          id="identifier"
           pInputText
-          type="email"
-          name="email"
-          [(ngModel)]="email"
+          name="identifier"
+          [(ngModel)]="identifier"
           autocomplete="username"
-          placeholder="email@domain.com"
+          inputmode="tel"
+          placeholder="0355951359 hoặc email@domain.com"
         />
       </div>
 

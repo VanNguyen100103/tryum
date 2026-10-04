@@ -28,7 +28,8 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
 
-  email = '';
+  /** Nhận SĐT di động VN hoặc email (KiotViet đăng nhập bằng SĐT). */
+  identifier = '';
   password = '';
   remember = false;
 
@@ -39,11 +40,11 @@ export class LoginComponent {
       return;
     }
 
-    if (!this.email.trim() || !this.password) {
+    if (!this.identifier.trim() || !this.password) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Thiếu thông tin',
-        detail: 'Vui lòng nhập email và mật khẩu.',
+        detail: 'Vui lòng nhập số điện thoại (hoặc email) và mật khẩu.',
       });
       return;
     }
@@ -51,7 +52,7 @@ export class LoginComponent {
     this.loading.set(true);
 
     this.auth
-      .login({ email: this.email.trim(), password: this.password })
+      .login({ identifier: this.identifier.trim(), password: this.password })
       .subscribe({
         next: (res) => {
           this.loading.set(false);

@@ -62,7 +62,8 @@ public class AuthValidatorsTests
     [Fact]
     public void SendOtp_InvalidPhone_ShouldFail()
     {
-        var result = new SendOtpRequestValidator().Validate(new SendOtpRequest("123"));
+        var result = new SendOtpRequestValidator()
+            .Validate(new SendOtpRequest("123", "captcha-id", "ABCD"));
 
         Assert.False(result.IsValid);
     }
@@ -70,15 +71,41 @@ public class AuthValidatorsTests
     [Fact]
     public void SendOtp_ValidPhone_ShouldPass()
     {
-        Assert.True(new SendOtpRequestValidator().Validate(new SendOtpRequest("090.123.4567")).IsValid);
+        Assert.True(new SendOtpRequestValidator()
+            .Validate(new SendOtpRequest("090.123.4567", "captcha-id", "ABCD")).IsValid);
     }
 
-    [Fact]
-    public void Login_InvalidEmail_ShouldFail()
+    [Theory]
+    [InlineData(null, "ABCD")]
+    [InlineData("", "ABCD")]
+    [InlineData("captcha-id", null)]
+    [InlineData("captcha-id", "")]
+    public void SendOtp_MissingCaptcha_ShouldFail(string? captchaId, string? captchaCode)
     {
-        var result = new LoginRequestValidator().Validate(new LoginRequest("abc", "Matkhau@123"));
+        // Captcha là hàng rào chống bot đốt quota SMS => thiếu là reject.
+        var result = new SendOtpRequestValidator()
+            .Validate(new SendOtpRequest("0901234567", captchaId, captchaCode));
 
         Assert.False(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("owner@phothao.vn")]
+    [InlineData("0901234567")]
+    [InlineData("+84901234567")]
+    [InlineData("090.123.4567")]
+    public void Login_EmailOrPhone_ShouldPass(string identifier)
+    {
+        Assert.True(new LoginRequestValidator().Validate(new LoginRequest(identifier, "Matkhau@123")).IsValid);
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("0123456789")]
+    [InlineData("khong-phai-email")]
+    public void Login_InvalidIdentifier_ShouldFail(string identifier)
+    {
+        Assert.False(new LoginRequestValidator().Validate(new LoginRequest(identifier, "Matkhau@123")).IsValid);
     }
 
     [Fact]

@@ -57,9 +57,11 @@
       />
 
       <div class="reg__captcha">
-        <div class="reg__captcha-img" aria-label="Mã xác thực">
-          @for (c of captchaChars(); track $index) {
-            <span [ngStyle]="{ transform: 'rotate(' + c.rot + 'deg) translateY(' + c.dy + 'px)' }">{{ c.ch }}</span>
+        <div class="reg__captcha-img">
+          @if (captchaImage()) {
+            <img [src]="captchaImage()" alt="Mã xác thực" />
+          } @else {
+            <span class="reg__captcha-hint">Đang tải…</span>
           }
         </div>
         <button class="reg__captcha-refresh" type="button" (click)="refreshCaptcha()" aria-label="Lấy mã mới">
@@ -99,7 +101,7 @@
       <div class="reg__form reg__otp">
         <h1>Xác nhận số điện thoại</h1>
         <p class="reg__sub">
-          Mã OTP 6 số đã được gửi tới <strong>{{ sentPhone() }}</strong>. Mã có hiệu lực trong 5 phút.
+          Mã OTP 6 số đã được gửi tới <strong>{{ sentPhone() }}</strong>. Mã có hiệu lực trong {{ otpTtlMinutes() }} phút.
         </p>
 
         @if (demoOtp()) {

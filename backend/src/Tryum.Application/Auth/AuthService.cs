@@ -25,6 +25,25 @@ public sealed class AuthService(
         (RoleCode.Cashier, "Thu ngân", "Bán hàng và tra cứu khách hàng"),
     ];
 
+    /// <summary>
+    /// Kiểm tra SĐT đã gắn với tài khoản nào chưa – gọi TRƯỚC khi gửi OTP để
+    /// không tốn 1 tin SMS cho số đã đăng ký rồi (giống hành vi KiotViet).
+    /// </summary>
+    public async Task EnsurePhoneAvailableAsync(string phone, CancellationToken cancellationToken = default)
+    {
+        if (!PhoneNormalizer.TryNormalize(phone, out var e164))
+            throw new ValidationException("Số điện thoại không hợp lệ.", "phone_invalid");
+
+        var exists = await context.Set<User>()
+            .IgnoreQueryFilters()
+            .AnyAsync(u => u.Phone == e164, cancellationToken);
+
+        if (exists)
+            throw new ConflictException(
+                "Số điện thoại này đã được đăng ký. Vui lòng đăng nhập hoặc dùng số khác.",
+                "phone_already_registered");
+    }
+
     public async Task<AuthResponse> RegisterAsync(
         RegisterRequest request,
         string? ip = null,
@@ -32,10 +51,14 @@ public sealed class AuthService(
     {
         var email = NormalizeEmail(request.Email);
 
-        // Xác thực OTP trước khi tạo dữ liệu (mã dùng 1 lần, hết hạn tự động).
+        // 1) Chặn SĐT đã có tài khoản + email trùng TRƯỚC khi tiêu tốn mã OTP,
+        //    để người dùng không phải chờ nhập mã rồi mới biết đăng ký trùng.
+        await EnsurePhoneAvailableAsync(request.Phone, cancellationToken);
+        await EnsureEmailAvailableAsync(email, cancellationToken);
+
+        // 2) Xác thực OTP (mã dùng 1 lần, hết hạn tự động).
         await otpService.ConsumeAsync(request.Phone, request.OtpCode, cancellationToken);
 
-        await EnsureEmailAvailableAsync(email, cancellationToken);
         await EnsureRolesExistAsync(cancellationToken);
 
         // Chuẩn hoá SĐT về E.164 để lưu nhất quán (vd +84901234567).
@@ -76,14 +99,9 @@ public sealed class AuthService(
         string? ip = null,
         CancellationToken cancellationToken = default)
     {
-        var email = NormalizeEmail(request.Email);
-
         // Chưa có tenant trong context lúc đăng nhập => phải bỏ query filter để tìm user.
-        var user = await context.Set<User>()
-            .IgnoreQueryFilters()
-            .Include(u => u.Role)
-            .Include(u => u.Tenant)
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        // Identifier nhận email HOẶC số điện thoại (KiotViet đăng nhập bằng SĐT).
+        var user = await FindUserByIdentifierAsync(request.Identifier, cancellationToken);
 
         if (user is null || !passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedException();
@@ -132,6 +150,32 @@ public sealed class AuthService(
             throw new NotFoundException("Không tìm thấy người dùng.");
 
         return ToUserInfo(user);
+    }
+
+    /// <summary>
+    /// Tìm user theo email HOẶC số điện thoại. Nhận diện có dấu @ thì coi là email,
+    /// ngược lại thử chuẩn hoá E.164 (KiotViet cho đăng nhập bằng SĐT).
+    /// </summary>
+    private async Task<User?> FindUserByIdentifierAsync(string identifier, CancellationToken cancellationToken)
+    {
+        var value = identifier.Trim();
+
+        var query = context.Set<User>()
+            .IgnoreQueryFilters()
+            .Include(u => u.Role)
+            .Include(u => u.Tenant)
+            .AsQueryable();
+
+        if (value.Contains('@', StringComparison.Ordinal))
+        {
+            var email = value.ToLowerInvariant();
+            return await query.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        }
+
+        if (PhoneNormalizer.TryNormalize(value, out var e164))
+            return await query.FirstOrDefaultAsync(u => u.Phone == e164, cancellationToken);
+
+        return null;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
