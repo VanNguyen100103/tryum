@@ -53,6 +53,27 @@ public static class DependencyInjection
                 sp.GetRequiredService<IApplicationDbContext>(),
                 sp.GetRequiredService<IOptions<JwtOptions>>().Value));
 
+        // ── SMS sender: Provider = "Log" (dev/demo, 0đ) hoặc "SmsGate" (self-host, MIỄN PHÍ) ──
+        services.AddOptions<SmsOptions>()
+            .Bind(configuration.GetSection(SmsOptions.SectionName));
+
+        var smsProvider = configuration[$"{SmsOptions.SectionName}:Provider"] ?? "Log";
+
+        if (string.Equals(smsProvider, "SmsGate", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient(SmsGateSmsSender.ClientName, (sp, http) =>
+            {
+                var sms = sp.GetRequiredService<IOptions<SmsOptions>>().Value;
+                http.Timeout = TimeSpan.FromSeconds(Math.Max(1, sms.SmsGate.TimeoutSeconds));
+            });
+
+            services.AddSingleton<ISmsSender, SmsGateSmsSender>();
+        }
+        else
+        {
+            services.AddSingleton<ISmsSender, LogSmsSender>();
+        }
+
         // Health check cho PostgreSQL qua EF Core
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>(name: "postgres");

@@ -1,12 +1,19 @@
 using Tryum.Application.Common;
 using Tryum.Application.Common.Exceptions;
+using Tryum.Application.Common.Interfaces;
 using Tryum.Infrastructure.Services;
 
 namespace Tryum.UnitTests.Auth;
 
 public class OtpServiceTests
 {
-    private readonly OtpService _service = new();
+    private readonly FakeSmsSender _sms = new();
+    private readonly OtpService _service;
+
+    public OtpServiceTests()
+    {
+        _service = new OtpService(_sms);
+    }
 
     [Fact]
     public async Task IssueAsync_ReturnsSixDigitCode()
@@ -15,6 +22,16 @@ public class OtpServiceTests
 
         Assert.Matches(@"^\d{6}$", code);
         Assert.Equal(30, resendAfter);
+    }
+
+    [Fact]
+    public async Task IssueAsync_SendsCodeViaSmsSender()
+    {
+        var (code, _) = await _service.IssueAsync("0901234567");
+
+        var sent = Assert.Single(_sms.Sent);
+        Assert.Equal("+84901234567", sent.Phone);
+        Assert.Contains(code, sent.Message);
     }
 
     [Fact]
@@ -106,5 +123,17 @@ public class OtpServiceTests
     public void FormatForDisplay_FormatsVietnamStyle()
     {
         Assert.Equal("0901.234.567", PhoneNormalizer.FormatForDisplay("+84901234567"));
+    }
+
+    /// <summary>Ghi lại các SMS đã "gửi" để kiểm tra OtpService có phát tin hay không.</summary>
+    private sealed class FakeSmsSender : ISmsSender
+    {
+        public List<(string Phone, string Message)> Sent { get; } = [];
+
+        public Task SendAsync(string phoneE164, string message, CancellationToken cancellationToken = default)
+        {
+            Sent.Add((phoneE164, message));
+            return Task.CompletedTask;
+        }
     }
 }

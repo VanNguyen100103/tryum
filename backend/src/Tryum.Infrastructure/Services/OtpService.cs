@@ -9,11 +9,14 @@ using Tryum.Application.Common.Interfaces;
 namespace Tryum.Infrastructure.Services;
 
 /// <summary>
-/// OTP in-memory cho demo (mô phỏng SMS – 0đ).
-/// Chính sách: TTL 5 phút · cooldown 30s · tối đa 5 lần đoán sai · mã 6 số (crypto random).
-/// Production: thay store bằng Redis/DB + hook gọi SMS gateway (OVN/Hub4U...) trong IssueAsync.
+/// OTP in-memory (TTL 5 phút · cooldown 30s · tối đa 5 lần đoán sai · mã 6 số crypto random).
+/// Phát mã qua <see cref="ISmsSender"/>: dev/demo dùng LogSmsSender (ghi log, 0đ),
+/// production dùng SmsGateSmsSender (self-host trên điện thoại Android, miễn phí).
+/// Production quy mô lớn: thay store bằng Redis/DB để chia sẻ giữa nhiều instance.
 /// </summary>
-public sealed class OtpService(ILogger<OtpService>? logger = null) : IOtpService
+public sealed class OtpService(
+    ISmsSender? smsSender = null,
+    ILogger<OtpService>? logger = null) : IOtpService
 {
     private const int OtpLength = 6;
     private const int MaxAttempts = 5;
@@ -22,7 +25,7 @@ public sealed class OtpService(ILogger<OtpService>? logger = null) : IOtpService
 
     private readonly ConcurrentDictionary<string, OtpEntry> _store = new();
 
-    public Task<(string Code, int ResendAfterSeconds)> IssueAsync(
+    public async Task<(string Code, int ResendAfterSeconds)> IssueAsync(
         string phone,
         CancellationToken cancellationToken = default)
     {
@@ -38,12 +41,19 @@ public sealed class OtpService(ILogger<OtpService>? logger = null) : IOtpService
             Attempts = 0,
         };
 
-        // Demo: chưa có SMS gateway – log mã để kiểm tra (production: gọi gateway, bỏ log).
-        logger?.LogInformation(
-            "OTP demo (mô phỏng SMS) cho {Phone}: {Code} (hết hạn sau {Ttl}s)",
-            e164, code, (int)Ttl.TotalSeconds);
+        // Gửi mã qua SMS. Dev/demo: LogSmsSender chỉ ghi log (0đ).
+        // Production: SmsGateSmsSender gửi thật qua điện thoại Android (self-host, MIỄN PHÍ).
+        // Nội dung dùng ASCII (không dấu) để gói gọn 1 SMS, tránh tốn phí UCS-2.
+        var message = $"Tryum: Ma OTP dang ky cua ban la {code}. Hieu luc 5 phut. Khong chia se ma nay.";
 
-        return Task.FromResult((code, (int)Cooldown.TotalSeconds));
+        if (smsSender is not null)
+            await smsSender.SendAsync(e164, message, cancellationToken);
+        else
+            logger?.LogInformation(
+                "OTP demo (chưa cấu hình SMS sender) cho {Phone}: {Code} (hết hạn sau {Ttl}s)",
+                e164, code, (int)Ttl.TotalSeconds);
+
+        return (code, (int)Cooldown.TotalSeconds);
     }
 
     public Task ConsumeAsync(string phone, string code, CancellationToken cancellationToken = default)
