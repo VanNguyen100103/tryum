@@ -60,6 +60,12 @@ services:
       Sms__SmsGate__Username: ${SMS_GATE_USERNAME:-}
       Sms__SmsGate__Password: ${SMS_GATE_PASSWORD:-}
       Sms__SmsGate__SimNumber: ${SMS_GATE_SIM:-1}
+      # ── SMS: textbee.dev (https://textbee.dev) ──────────────────────────
+      # Chỉ dùng khi SMS_PROVIDER=Textbee. API key chỉ hiện 1 lần trong dashboard.
+      Sms__Textbee__ApiKey: ${TEXTBEE_API_KEY:-}
+      Sms__Textbee__SendUrl: ${TEXTBEE_URL:-https://api.textbee.dev/api/v1/gateway/send-sms}
+      Sms__Textbee__DeviceId: ${TEXTBEE_DEVICE_ID:-}
+      Sms__Textbee__SimSubscriptionId: ${TEXTBEE_SIM:-}
     networks: [internal]
     # Không expose port: chỉ Caddy gọi nội bộ qua network "internal".
 

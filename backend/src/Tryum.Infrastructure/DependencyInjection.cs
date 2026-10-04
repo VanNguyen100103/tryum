@@ -53,9 +53,10 @@ public static class DependencyInjection
                 sp.GetRequiredService<IApplicationDbContext>(),
                 sp.GetRequiredService<IOptions<JwtOptions>>().Value));
 
-        // ── SMS sender: Provider = "Log" (dev/demo, 0đ) hoặc "SmsGate" (self-host, MIỄN PHÍ) ──
-        // Fail-fast: nếu chọn SmsGate mà thiếu SendUrl/Username/Password thì API báo lỗi ngay
-        // lúc khởi động (không để production âm thầm chạy mà không gửi được SMS).
+        // ── SMS sender: Provider = "Log" (dev/demo, 0đ) | "SmsGate" | "Textbee" (self-host, MIỄN PHÍ) ──
+        // Fail-fast: nếu chọn SmsGate mà thiếu SendUrl/Username/Password, hoặc chọn Textbee mà thiếu
+        // ApiKey, thì API báo lỗi ngay lúc khởi động (không để production âm thầm chạy mà không
+        // gửi được SMS).
         services.AddOptions<SmsOptions>()
             .Bind(configuration.GetSection(SmsOptions.SectionName))
             .Validate(
@@ -64,6 +65,12 @@ public static class DependencyInjection
                          && !string.IsNullOrWhiteSpace(o.SmsGate.Username)
                          && !string.IsNullOrWhiteSpace(o.SmsGate.Password)),
                 "Sms:Provider=SmsGate yêu cầu Sms:SmsGate:SendUrl + Username + Password. " +
+                "Xem SMS_SETUP.md và deploy/.env.example.")
+            .Validate(
+                o => !string.Equals(o.Provider, "Textbee", StringComparison.OrdinalIgnoreCase)
+                     || (!string.IsNullOrWhiteSpace(o.Textbee.ApiKey)
+                         && !string.IsNullOrWhiteSpace(o.Textbee.SendUrl)),
+                "Sms:Provider=Textbee yêu cầu Sms:Textbee:ApiKey + SendUrl. " +
                 "Xem SMS_SETUP.md và deploy/.env.example.")
             .ValidateOnStart();
 
@@ -78,6 +85,16 @@ public static class DependencyInjection
             });
 
             services.AddSingleton<ISmsSender, SmsGateSmsSender>();
+        }
+        else if (string.Equals(smsProvider, "Textbee", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient(TextbeeSmsSender.ClientName, (sp, http) =>
+            {
+                var sms = sp.GetRequiredService<IOptions<SmsOptions>>().Value;
+                http.Timeout = TimeSpan.FromSeconds(Math.Max(1, sms.Textbee.TimeoutSeconds));
+            });
+
+            services.AddSingleton<ISmsSender, TextbeeSmsSender>();
         }
         else
         {
