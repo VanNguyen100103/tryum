@@ -1,80 +1,118 @@
-<div class="auth-page">
-  <p-card header="Đăng ký cửa hàng trên Tryum" styleClass="auth-card">
-    <form (ngSubmit)="register()" class="auth-form">
-      <div class="field">
-        <label for="shopName">Tên cửa hàng</label>
-        <input
-          id="shopName"
-          pInputText
-          name="shopName"
-          [(ngModel)]="shopName"
-          placeholder="Phở Thảo"
-        />
-      </div>
+<div class="reg" [class.reg--solo]="!showPromo()">
+  <div class="reg__form-wrap">
+    <form class="reg__form" (ngSubmit)="register()">
+      <h1>Tạo tài khoản dùng thử</h1>
+      <p class="reg__sub">Dùng thử miễn phí trọn bộ tính năng.</p>
 
-      <div class="field">
-        <label for="ownerName">Họ tên chủ cửa hàng</label>
-        <input
-          id="ownerName"
-          pInputText
-          name="ownerName"
-          [(ngModel)]="ownerName"
-          autocomplete="name"
-          placeholder="Nguyễn Văn A"
-        />
-      </div>
-
-      <div class="field">
-        <label for="email">Email</label>
-        <input
-          id="email"
-          pInputText
-          type="email"
-          name="email"
-          [(ngModel)]="email"
-          autocomplete="username"
-          placeholder="email@domain.com"
-        />
-      </div>
-
-      <div class="field">
-        <label for="phone">Số điện thoại (không bắt buộc)</label>
-        <input
-          id="phone"
-          pInputText
-          name="phone"
-          [(ngModel)]="phone"
-          autocomplete="tel"
-          placeholder="0901234567"
-        />
-      </div>
-
-      <div class="field">
-        <label for="password">Mật khẩu</label>
-        <input
-          id="password"
-          pPassword
-          type="password"
-          name="password"
-          [(ngModel)]="password"
-          autocomplete="new-password"
-          [feedback]="false"
-          placeholder="Tối thiểu 8 ký tự, có chữ và số"
-        />
-      </div>
-
-      <p-button
-        type="submit"
-        label="Tạo cửa hàng"
-        styleClass="auth-btn"
-        [loading]="loading()"
-        [disabled]="loading()"
+      <input
+        pInputText
+        id="ownerName"
+        [(ngModel)]="ownerName"
+        name="ownerName"
+        autocomplete="name"
+        placeholder="Họ tên"
       />
 
-      <small class="auth-hint">
-        Đã có tài khoản?
-        <a class="link" routerLink="/auth/login">Đăng nhập ngay</a>
-      </small>
+      <input
+        pInputText
+        id="shopName"
+        [(ngModel)]="shopName"
+        name="shopName"
+        placeholder="Tên cửa hàng (VD: Phở Thảo)"
+      />
+
+      <input
+        pInputText
+        id="email"
+        type="email"
+        [(ngModel)]="email"
+        name="email"
+        autocomplete="username"
+        placeholder="Email (tên đăng nhập)"
+      />
+
+      <div class="reg__phone">
+        <span class="reg__country"><span class="reg__flag">🇻🇳</span> +84</span>
+        <input
+          pInputText
+          id="phone"
+          [(ngModel)]="phone"
+          name="phone"
+          autocomplete="tel"
+          placeholder="Số điện thoại (không bắt buộc)"
+        />
+      </div>
+
+      <input
+        pPassword
+        class="reg__pwd"
+        inputId="reg-password"
+        [(ngModel)]="password"
+        name="password"
+        autocomplete="new-password"
+        [feedback]="false"
+        placeholder="Mật khẩu"
+      />
+
+      <div class="reg__captcha">
+        <div class="reg__captcha-img" aria-label="Mã xác thực">
+          @for (c of captchaChars(); track $index) {
+            <span [ngStyle]="{ transform: 'rotate(' + c.rot + 'deg) translateY(' + c.dy + 'px)' }">{{ c.ch }}</span>
+          }
+        </div>
+        <button class="reg__captcha-refresh" type="button" (click)="refreshCaptcha()" aria-label="Lấy mã mới">
+          <i class="pi pi-refresh"></i>
+        </button>
+        <input
+          pInputText
+          id="captcha"
+          [(ngModel)]="captchaInput"
+          name="captcha"
+          autocomplete="off"
+          maxlength="4"
+          placeholder="Mã xác thực"
+        />
+      </div>
+
+      <label class="reg__tos">
+        <input type="checkbox" class="reg__tos-box" [(ngModel)]="agreeTos" name="tos" />
+        <span>
+          Tôi đã đọc và đồng ý <a class="reg__link" href="#" (click)="$event.preventDefault()">Điều khoản sử dụng dịch vụ &amp; Chính sách bảo mật</a> của Tryum.
+        </span>
+      </label>
+
+      <button class="reg__submit" type="submit" [disabled]="loading()">
+        @if (loading()) { <i class="pi pi-spin pi-spinner"></i> Đang tạo tài khoản... } @else { Tạo tài khoản }
+      </button>
+
+      <p class="reg__support">
+        Hỗ trợ đăng ký <a class="reg__phone-link" href="tel:19006868"><i class="pi pi-phone"></i> 1900 6868</a>
+      </p>
+      <small class="reg__hint">Đã có tài khoản? <a class="reg__link" routerLink="/auth/login">Đăng nhập ngay</a></small>
     </form>
-  </p-card>
+  </div>
+
+  @if (showPromo()) {
+    <aside class="reg__promo">
+      <div class="promo-bg">
+        <div class="promo-phone">
+          <div class="promo-phone__screen">
+            <div class="promo-phone__top"><i class="pi pi-arrow-left"></i> Chuyển tiền qua QR</div>
+            <div class="promo-phone__amount">235.000đ</div>
+            <div class="promo-phone__row"><small>Người nhận</small><strong>TRẦN HOÀNG PHONG</strong></div>
+            <div class="promo-phone__row"><small>Số tài khoản</small><strong>007108...032741</strong></div>
+            <div class="promo-phone__qr"></div>
+            <div class="promo-phone__cta">Tiếp tục</div>
+          </div>
+        </div>
+        <div class="promo-copy">
+          <h2>Quản lý dễ dàng<br />Bán hàng hiệu quả</h2>
+          <p>Hơn 10.000 nhà kinh doanh tin dùng Tryum</p>
+        </div>
+      </div>
+      <button class="reg__promo-close" type="button" (click)="showPromo.set(false)" aria-label="Đóng">
+        <i class="pi pi-times"></i>
+      </button>
+    </aside>
+  }
 </div>
