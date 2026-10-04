@@ -22,6 +22,7 @@ npm-debug.log*
 # Env & secrets
 .env
 .env.*
+!.env.example
 *.pem
 appsettings.*.local.json
 

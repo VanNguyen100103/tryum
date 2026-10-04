@@ -51,6 +51,7 @@
 - Seeder 3 role dùng chung (`roles`) chạy idempotent lúc start API
 - Rate limiting 20 req/phút cho endpoint `/auth/*` (chống brute force)
 - CORS + `JwtOptions` validation lúc startup, ProblemDetails cho lỗi nghiệp vụ
+- Gửi OTP qua SMS: abstraction `ISmsSender` (Log ở dev / **SMSGate self-host miễn phí** ở prod), fail-fast khi thiếu cấu hình (xem `SMS_SETUP.md`)
 
 ## Phase 3 – Hàng hóa (tuần 3)
 - [ ] Nhóm hàng (category, nhiều cấp)

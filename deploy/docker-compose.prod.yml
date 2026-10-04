@@ -55,7 +55,7 @@ services:
       # OTP demo (trả mã trong response) – production nên false, gửi SMS thật qua SMSGate.
       Auth__DemoOtpInResponse: ${DEMO_OTP_IN_RESPONSE:-false}
       # ── SMS (self-host, MIỄN PHÍ – https://sms-gate.app) ────────────────
-      Sms__Provider: ${SMS_PROVIDER:-Log}
+      Sms__Provider: ${SMS_PROVIDER:-SmsGate}
       Sms__SmsGate__SendUrl: ${SMS_GATE_URL:-https://api.sms-gate.app/3rdparty/v1/messages}
       Sms__SmsGate__Username: ${SMS_GATE_USERNAME:-}
       Sms__SmsGate__Password: ${SMS_GATE_PASSWORD:-}

@@ -54,8 +54,18 @@ public static class DependencyInjection
                 sp.GetRequiredService<IOptions<JwtOptions>>().Value));
 
         // ── SMS sender: Provider = "Log" (dev/demo, 0đ) hoặc "SmsGate" (self-host, MIỄN PHÍ) ──
+        // Fail-fast: nếu chọn SmsGate mà thiếu SendUrl/Username/Password thì API báo lỗi ngay
+        // lúc khởi động (không để production âm thầm chạy mà không gửi được SMS).
         services.AddOptions<SmsOptions>()
-            .Bind(configuration.GetSection(SmsOptions.SectionName));
+            .Bind(configuration.GetSection(SmsOptions.SectionName))
+            .Validate(
+                o => !string.Equals(o.Provider, "SmsGate", StringComparison.OrdinalIgnoreCase)
+                     || (!string.IsNullOrWhiteSpace(o.SmsGate.SendUrl)
+                         && !string.IsNullOrWhiteSpace(o.SmsGate.Username)
+                         && !string.IsNullOrWhiteSpace(o.SmsGate.Password)),
+                "Sms:Provider=SmsGate yêu cầu Sms:SmsGate:SendUrl + Username + Password. " +
+                "Xem SMS_SETUP.md và deploy/.env.example.")
+            .ValidateOnStart();
 
         var smsProvider = configuration[$"{SmsOptions.SectionName}:Provider"] ?? "Log";
 
