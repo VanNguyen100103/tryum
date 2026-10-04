@@ -133,14 +133,18 @@ export class RegisterComponent {
       return;
     }
 
-    if (!/^(0\d{9}|84\d{9})$/.test(this.phone.replace(/\D/g, ''))) {
+    // Prefix +84 chỉ visual → user nhập 9 số; chuẩn hóa thành 0xxxxxxxxx trước khi validate.
+    const digits = this.phone.replace(/\D/g, '');
+    const phoneForApi = digits.length === 9 ? `0${digits}` : digits;
+    if (!/^(0\d{9}|84\d{9})$/.test(phoneForApi)) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Số điện thoại chưa đúng',
-        detail: 'Vui lòng nhập SĐT di động VN (vd: 0901234567).',
+        detail: 'Vui lòng nhập SĐT di động VN (vd: 0901234567 hoặc 901234567).',
       });
       return;
     }
+    this.phone = phoneForApi;
 
     if (!this.agreeTos) {
       this.messageService.add({
@@ -272,8 +276,11 @@ export class RegisterComponent {
   }
 
   private formatPhone(raw: string): string {
-    const digits = raw.replace(/\D/g, '');
-    const body = digits.startsWith('84') ? digits.slice(2) : digits;
-    return body.length === 9 ? `0${body.slice(0, 3)}.${body.slice(3, 6)}.${body.slice(6)}` : raw;
+    let digits = raw.replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('84')) digits = digits.slice(2);
+    if (digits.length === 10 && digits.startsWith('0')) digits = digits.slice(1);
+    return digits.length === 9
+      ? `0${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+      : raw;
   }
 }
