@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Tryum.Application.Auth;
+using Tryum.Application.Common;
 using Tryum.Application.Common.Exceptions;
 using Tryum.Application.Common.Interfaces;
 using Tryum.Domain.Tenants;
@@ -14,7 +15,8 @@ namespace Tryum.Application.Auth;
 public sealed class AuthService(
     IApplicationDbContext context,
     IPasswordHasher passwordHasher,
-    ITokenService tokenService) : IAuthService
+    ITokenService tokenService,
+    IOtpService otpService) : IAuthService
 {
     private static readonly (RoleCode Code, string Name, string Description)[] DefaultRoles =
     [
@@ -30,14 +32,20 @@ public sealed class AuthService(
     {
         var email = NormalizeEmail(request.Email);
 
+        // Xác thực OTP trước khi tạo dữ liệu (mã dùng 1 lần, hết hạn tự động).
+        await otpService.ConsumeAsync(request.Phone, request.OtpCode, cancellationToken);
+
         await EnsureEmailAvailableAsync(email, cancellationToken);
         await EnsureRolesExistAsync(cancellationToken);
+
+        // Chuẩn hoá SĐT về E.164 để lưu nhất quán (vd +84901234567).
+        var phone = PhoneNormalizer.TryNormalize(request.Phone, out var normalized) ? normalized : request.Phone.Trim();
 
         var tenant = new Tenant
         {
             Name = request.ShopName.Trim(),
             Slug = await GenerateSlugAsync(request.ShopName, cancellationToken),
-            Phone = request.Phone?.Trim() is { Length: > 0 } phone ? phone : null,
+            Phone = phone,
         };
 
         var ownerRole = await GetRoleAsync(RoleCode.Owner, cancellationToken);
@@ -46,7 +54,7 @@ public sealed class AuthService(
         {
             Email = email,
             FullName = request.OwnerName.Trim(),
-            Phone = request.Phone?.Trim() is { Length: > 0 } ownerPhone ? ownerPhone : null,
+            Phone = phone,
             PasswordHash = passwordHasher.Hash(request.Password),
             TenantId = tenant.Id,
             RoleId = ownerRole.Id,

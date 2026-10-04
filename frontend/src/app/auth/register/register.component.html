@@ -1,6 +1,8 @@
 <div class="reg" [class.reg--solo]="!showPromo()">
   <div class="reg__form-wrap">
-    <form class="reg__form" (ngSubmit)="register()">
+    <!-- ══════ BƯỚC 1: THÔNG TIN ══════ -->
+    @if (step() === 'form') {
+    <form class="reg__form" (ngSubmit)="sendOtpCode()">
       <h1>Tạo tài khoản dùng thử</h1>
       <p class="reg__sub">Dùng thử miễn phí trọn bộ tính năng.</p>
 
@@ -39,7 +41,7 @@
           [(ngModel)]="phone"
           name="phone"
           autocomplete="tel"
-          placeholder="Số điện thoại (không bắt buộc)"
+          placeholder="Số điện thoại (nhận mã OTP)"
         />
       </div>
 
@@ -81,8 +83,8 @@
         </span>
       </label>
 
-      <button class="reg__submit" type="submit" [disabled]="loading()">
-        @if (loading()) { <i class="pi pi-spin pi-spinner"></i> Đang tạo tài khoản... } @else { Tạo tài khoản }
+      <button class="reg__submit" type="submit" [disabled]="sendingOtp()">
+        @if (sendingOtp()) { <i class="pi pi-spin pi-spinner"></i> Đang gửi mã... } @else { Gửi mã OTP }
       </button>
 
       <p class="reg__support">
@@ -90,6 +92,65 @@
       </p>
       <small class="reg__hint">Đã có tài khoản? <a class="reg__link" routerLink="/auth/login">Đăng nhập ngay</a></small>
     </form>
+    }
+
+    <!-- ══════ BƯỚC 2: XÁC NHẬN OTP ══════ -->
+    @if (step() === 'otp') {
+      <div class="reg__form reg__otp">
+        <h1>Xác nhận số điện thoại</h1>
+        <p class="reg__sub">
+          Mã OTP 6 số đã được gửi tới <strong>{{ sentPhone() }}</strong>. Mã có hiệu lực trong 5 phút.
+        </p>
+
+        @if (demoOtp()) {
+          <div class="otp-demo">
+            <span class="otp-demo__label"><i class="pi pi-info-circle"></i> Chế độ demo (chưa nối SMS)</span>
+            <strong class="otp-demo__code">{{ demoOtp() }}</strong>
+          </div>
+        }
+
+        <div class="otp-boxes">
+          @for (d of otpDigits(); track $index; let i = $index) {
+            <input
+              #otpBox
+              class="otp-box"
+              [class.otp-box--filled]="d !== ''"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="1"
+              [value]="d"
+              aria-label="Mã OTP chữ số {{ i + 1 }}"
+              (input)="onDigitInput(i, $any($event.target).value)"
+              (keydown)="onDigitKeydown(i, $event)"
+              (select)="$any($event.target).select()"
+            />
+          }
+        </div>
+
+        <button class="otp-resend" type="button" [disabled]="resendIn() > 0 || sendingOtp()" (click)="resendOtp()">
+          @if (sendingOtp()) {
+            <i class="pi pi-spin pi-spinner"></i> Đang gửi lại...
+          } @else if (resendIn() > 0) {
+            Gửi lại mã sau {{ resendIn() }}s
+          } @else {
+            <i class="pi pi-redo"></i> Gửi lại mã
+          }
+        </button>
+
+        <div class="otp-actions">
+          <button class="reg__submit reg__submit--ghost" type="button" (click)="step.set('form')">Hủy</button>
+          <button
+            id="otp-submit"
+            class="reg__submit"
+            type="button"
+            [disabled]="loading() || !isOtpComplete()"
+            (click)="register()"
+          >
+            @if (loading()) { <i class="pi pi-spin pi-spinner"></i> Đang tạo tài khoản... } @else { Xác nhận &amp; tạo tài khoản }
+          </button>
+        </div>
+      </div>
+    }
   </div>
 
   @if (showPromo()) {

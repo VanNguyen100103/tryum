@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<IOtpService, OtpService>();
         services.AddScoped<ITokenService>(sp =>
             new TokenService(
                 sp.GetRequiredService<IApplicationDbContext>(),

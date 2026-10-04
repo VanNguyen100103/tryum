@@ -17,6 +17,35 @@ public static class AuthEndpoints
         var group = app.MapGroup("/api/v1/auth")
             .WithTags("Auth");
 
+        group.MapPost("/otp/send", async (
+                SendOtpRequest request,
+                IOtpService otpService,
+                IValidator<SendOtpRequest> validator,
+                IConfiguration configuration,
+                CancellationToken ct) =>
+            {
+                await ValidateAsync(validator, request, ct);
+
+                var (code, resendAfterSeconds) = await otpService.IssueAsync(request.Phone, ct);
+
+                // Demo mode (mô phỏng SMS, 0đ): trả về mã để UI hiển thị.
+                // Production (cắm SMS gateway thật): xoá dòng này / tắt flag.
+                var demoOtp = string.Equals(
+                        configuration["Auth:DemoOtpInResponse"],
+                        "true",
+                        StringComparison.OrdinalIgnoreCase)
+                    ? code
+                    : null;
+
+                return Results.Ok(new SendOtpResponse(Sent: true, resendAfterSeconds, demoOtp));
+            })
+            .AllowAnonymous()
+            .RequireRateLimiting("auth")
+            .WithSummary("Gửi mã OTP tới SĐT (demo: trả về mã thay vì gọi SMS gateway)")
+            .Produces<SendOtpResponse>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         group.MapPost("/register", async (
                 RegisterRequest request,
                 IAuthService authService,

@@ -8,6 +8,7 @@ import type {
   AuthResponse,
   LoginRequest,
   RegisterRequest,
+  SendOtpResponse,
   UserInfo,
 } from '../models/auth.models';
 import { TokenStorageService } from './token-storage.service';
@@ -53,6 +54,11 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, request).pipe(
       tap((res) => this.applySession(res)),
     );
+  }
+
+  /** Gửi mã OTP tới SĐT (demo mode: server trả về mã để hiển thị thay vì SMS). */
+  sendOtp(phone: string): Observable<SendOtpResponse> {
+    return this.http.post<SendOtpResponse>(`${this.baseUrl}/otp/send`, { phone });
   }
 
   register(request: RegisterRequest): Observable<AuthResponse> {

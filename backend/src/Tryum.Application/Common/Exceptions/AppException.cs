@@ -40,6 +40,10 @@ public sealed class ForbiddenException(string message = "Bạn không có quyề
 public sealed class ConflictException(string message, string errorCode = "conflict")
     : AppException(message, HttpStatusCode.Conflict, errorCode);
 
+/// <summary>Quá tần suất, ví dụ gửi lại OTP trong thời gian cooldown (429).</summary>
+public sealed class RateLimitedException(string message = "Bạn thao tác quá nhanh, vui lòng thử lại sau.", string errorCode = "rate_limited")
+    : AppException(message, HttpStatusCode.TooManyRequests, errorCode);
+
 /// <summary>
 /// Dữ liệu request không hợp lệ theo validator (400) – kèm lỗi chi tiết theo từng field.
 /// </summary>

@@ -28,7 +28,19 @@ export interface RegisterRequest {
   ownerName: string;
   email: string;
   password: string;
-  phone?: string | null;
+  phone: string;
+  otpCode: string;
+}
+
+export interface SendOtpRequest {
+  phone: string;
+}
+
+export interface SendOtpResponse {
+  sent: boolean;
+  resendAfterSeconds: number;
+  /** Chỉ có khi server chạy demo mode (mô phỏng SMS). */
+  demoOtp?: string;
 }
 
 /** ProblemDetails trả về khi lỗi (RFC 9457). */

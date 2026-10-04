@@ -1,4 +1,5 @@
 using FluentValidation;
+using Tryum.Application.Common;
 
 namespace Tryum.Application.Auth;
 
@@ -27,8 +28,27 @@ public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest
             .Matches("[0-9]").WithMessage("Mật khẩu phải có ít nhất 1 chữ số.");
 
         RuleFor(x => x.Phone)
+            .NotEmpty().WithMessage("Số điện thoại là bắt buộc.")
             .MaximumLength(20).WithMessage("Số điện thoại tối đa 20 ký tự.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Phone));
+            .Must(phone => PhoneNormalizer.TryNormalize(phone, out _))
+            .WithMessage("Số điện thoại di động Việt Nam không hợp lệ.");
+
+        RuleFor(x => x.OtpCode)
+            .NotEmpty().WithMessage("Mã OTP là bắt buộc.")
+            .Matches(@"^\d{6}$").WithMessage("Mã OTP phải gồm 6 chữ số.");
+    }
+}
+
+/// <summary>Ràng buộc input khi gửi mã OTP.</summary>
+public sealed class SendOtpRequestValidator : AbstractValidator<SendOtpRequest>
+{
+    public SendOtpRequestValidator()
+    {
+        RuleFor(x => x.Phone)
+            .NotEmpty().WithMessage("Số điện thoại là bắt buộc.")
+            .MaximumLength(20).WithMessage("Số điện thoại tối đa 20 ký tự.")
+            .Must(phone => PhoneNormalizer.TryNormalize(phone, out _))
+            .WithMessage("Số điện thoại di động Việt Nam không hợp lệ.");
     }
 }
 

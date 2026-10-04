@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal, ViewChildren, QueryList } from '@angular/core';
 import { NgStyle } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,8 @@ interface CaptchaChar {
   dy: number;
 }
 
+type Step = 'form' | 'otp';
+
 @Component({
   selector: 'app-register',
   imports: [InputTextModule, PasswordModule, FormsModule, RouterLink, NgStyle],
@@ -23,6 +25,7 @@ export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   ownerName = '';
   shopName = '';
@@ -32,12 +35,64 @@ export class RegisterComponent {
   captchaInput = '';
   agreeTos = false;
 
+  protected readonly step = signal<Step>('form');
   protected readonly loading = signal(false);
+  protected readonly sendingOtp = signal(false);
   protected readonly showPromo = signal(true);
   protected readonly captchaChars = signal<CaptchaChar[]>([]);
+  protected readonly otpDigits = signal<string[]>(Array(6).fill(''));
+  protected readonly resendIn = signal(0);
+  protected readonly sentPhone = signal('');
+  protected readonly demoOtp = signal('');
+
+  @ViewChildren('otpBox') private otpBoxes!: QueryList<ElementRef<HTMLInputElement>>;
+
+  private resendTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.refreshCaptcha();
+    this.destroyRef.onDestroy(() => this.clearResendTimer());
+  }
+
+  protected isOtpComplete(): boolean {
+    return this.otpDigits().every((d) => d !== '');
+  }
+
+  protected otpCode(): string {
+    return this.otpDigits().join('');
+  }
+
+  private focusBox(i: number): void {
+    this.otpBoxes.get(i)?.nativeElement.focus();
+  }
+
+  protected onDigitInput(i: number, raw: string | null): void {
+    const d = (raw ?? '').replace(/\D/g, '').slice(-1);
+    const arr = [...this.otpDigits()];
+    arr[i] = d;
+    this.otpDigits.set(arr);
+
+    if (d && i < 5) {
+      this.focusBox(i + 1);
+    } else if (d && i === 5) {
+      document.getElementById('otp-submit')?.focus();
+    }
+  }
+
+  protected onDigitKeydown(i: number, e: KeyboardEvent): void {
+    if (e.key === 'Backspace' && this.otpDigits()[i] === '' && i > 0) {
+      e.preventDefault();
+      const arr = [...this.otpDigits()];
+      arr[i - 1] = '';
+      this.otpDigits.set(arr);
+      this.focusBox(i - 1);
+    } else if (e.key === 'ArrowLeft' && i > 0) {
+      e.preventDefault();
+      this.focusBox(i - 1);
+    } else if (e.key === 'ArrowRight' && i < 5) {
+      e.preventDefault();
+      this.focusBox(i + 1);
+    }
   }
 
   refreshCaptcha(): void {
@@ -52,8 +107,9 @@ export class RegisterComponent {
     this.captchaInput = '';
   }
 
-  register(): void {
-    if (this.loading()) {
+  /** Bước 1: validate form + captcha rồi gọi /auth/otp/send. */
+  sendOtpCode(): void {
+    if (this.sendingOtp() || this.loading()) {
       return;
     }
 
@@ -77,12 +133,83 @@ export class RegisterComponent {
       return;
     }
 
+    if (!/^(0\d{9}|84\d{9})$/.test(this.phone.replace(/\D/g, ''))) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Số điện thoại chưa đúng',
+        detail: 'Vui lòng nhập SĐT di động VN (vd: 0901234567).',
+      });
+      return;
+    }
+
     if (!this.agreeTos) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Chưa đồng ý điều khoản',
         detail: 'Vui lòng đồng ý điều khoản sử dụng dịch vụ & chính sách bảo mật.',
       });
+      return;
+    }
+
+    this.sendingOtp.set(true);
+
+    this.auth.sendOtp(this.phone).subscribe({
+      next: (res) => {
+        this.sendingOtp.set(false);
+        this.sentPhone.set(this.formatPhone(this.phone));
+        this.demoOtp.set(res.demoOtp ?? '');
+        this.otpDigits.set(Array(6).fill(''));
+        this.step.set('otp');
+        this.startResendTimer(res.resendAfterSeconds);
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Đã gửi mã OTP',
+          detail: res.demoOtp
+            ? `Chế độ demo: mã OTP của bạn là ${res.demoOtp} (production sẽ nhận qua SMS).`
+            : 'Vui lòng kiểm tra tin nhắn SMS.',
+        });
+        setTimeout(() => this.focusBox(0), 60);
+      },
+      error: (error: unknown) => {
+        this.sendingOtp.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Không gửi được mã OTP',
+          detail: AuthService.problemMessage(error),
+        });
+      },
+    });
+  }
+
+  /** Gửi lại mã OTP (đang ở bước 2). */
+  resendOtp(): void {
+    if (this.sendingOtp() || this.resendIn() > 0) {
+      return;
+    }
+
+    this.sendingOtp.set(true);
+    this.auth.sendOtp(this.phone).subscribe({
+      next: (res) => {
+        this.sendingOtp.set(false);
+        this.demoOtp.set(res.demoOtp ?? '');
+        this.otpDigits.set(Array(6).fill(''));
+        this.startResendTimer(res.resendAfterSeconds);
+        setTimeout(() => this.focusBox(0), 60);
+      },
+      error: (error: unknown) => {
+        this.sendingOtp.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Không gửi lại được',
+          detail: AuthService.problemMessage(error),
+        });
+      },
+    });
+  }
+
+  /** Bước 2: xác nhận OTP + tạo tài khoản. */
+  register(): void {
+    if (this.loading() || !this.isOtpComplete()) {
       return;
     }
 
@@ -94,7 +221,8 @@ export class RegisterComponent {
         ownerName: this.ownerName.trim(),
         email: this.email.trim(),
         password: this.password,
-        phone: this.phone.trim() || null,
+        phone: this.phone,
+        otpCode: this.otpCode(),
       })
       .subscribe({
         next: (res) => {
@@ -108,13 +236,44 @@ export class RegisterComponent {
         },
         error: (error: unknown) => {
           this.loading.set(false);
+          this.otpDigits.set(Array(6).fill(''));
+          this.startResendTimer(0);
           this.messageService.add({
             severity: 'error',
             summary: 'Đăng ký thất bại',
             detail: AuthService.problemMessage(error),
           });
-          this.refreshCaptcha();
+          this.focusBox(0);
         },
       });
+  }
+
+  private startResendTimer(seconds: number): void {
+    this.clearResendTimer();
+    this.resendIn.set(Math.max(0, seconds));
+
+    if (seconds <= 0) {
+      return;
+    }
+
+    this.resendTimer = setInterval(() => {
+      this.resendIn.update((s) => (s > 0 ? s - 1 : 0));
+      if (this.resendIn() === 0) {
+        this.clearResendTimer();
+      }
+    }, 1000);
+  }
+
+  private clearResendTimer(): void {
+    if (this.resendTimer !== null) {
+      clearInterval(this.resendTimer);
+      this.resendTimer = null;
+    }
+  }
+
+  private formatPhone(raw: string): string {
+    const digits = raw.replace(/\D/g, '');
+    const body = digits.startsWith('84') ? digits.slice(2) : digits;
+    return body.length === 9 ? `0${body.slice(0, 3)}.${body.slice(3, 6)}.${body.slice(6)}` : raw;
   }
 }

@@ -11,13 +11,14 @@ using Tryum.Infrastructure.Services;
 namespace Tryum.UnitTests.Auth;
 
 /// <summary>
-/// Test nghiệp vụ auth: đăng ký cửa hàng, đăng nhập, refresh token (rotation), đăng xuất.
+/// Test nghiệp vụ auth: đăng ký cửa hàng (kèm OTP), đăng nhập, refresh token (rotation), đăng xuất.
 /// Dùng EF Core InMemory (không cần Postgres) – logic nghiệp vụ không phụ thuộc RDBMS.
 /// </summary>
 public class AuthServiceTests : IDisposable
 {
     private readonly ApplicationDbContext _context;
     private readonly AuthService _authService;
+    private readonly OtpService _otpService = new();
     private readonly JwtOptions _jwt = new()
     {
         SecretKey = Convert.ToBase64String(
@@ -38,7 +39,7 @@ public class AuthServiceTests : IDisposable
 
         var tokenService = new TokenService(_context, _jwt);
 
-        _authService = new AuthService(_context, new PasswordHasher(), tokenService);
+        _authService = new AuthService(_context, new PasswordHasher(), tokenService, _otpService);
     }
 
     public void Dispose()
@@ -48,13 +49,17 @@ public class AuthServiceTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static RegisterRequest Shop(string name = "Phở Thảo", string email = "owner@phothao.vn") =>
-        new(ShopName: name, OwnerName: "Nguyễn Văn A", Email: email, Password: "Matkhau@123", Phone: "0901234567");
+    /// <summary>Sản xuất RegisterRequest kèm mã OTP hợp lệ (đã issue cho SĐT 0901234567).</summary>
+    private async Task<RegisterRequest> ShopAsync(string name = "Phở Thảo", string email = "owner@phothao.vn")
+    {
+        var (code, _) = await _otpService.IssueAsync("0901234567");
+        return new RegisterRequest(name, "Nguyễn Văn A", email, "Matkhau@123", "0901234567", code);
+    }
 
     [Fact]
     public async Task RegisterAsync_ShouldCreateTenantOwnerAndReturnTokens()
     {
-        var result = await _authService.RegisterAsync(Shop(), ip: "127.0.0.1");
+        var result = await _authService.RegisterAsync(await ShopAsync(), ip: "127.0.0.1");
 
         Assert.NotEmpty(result.AccessToken);
         Assert.NotEmpty(result.RefreshToken);
@@ -63,6 +68,7 @@ public class AuthServiceTests : IDisposable
 
         var tenant = await _context.Tenants.IgnoreQueryFilters().SingleAsync();
         Assert.Equal("pho-thao", tenant.Slug);
+        Assert.Equal("+84901234567", tenant.Phone);
 
         var user = await _context.Users.IgnoreQueryFilters().SingleAsync();
         Assert.Equal(tenant.Id, user.TenantId);
@@ -71,12 +77,34 @@ public class AuthServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RegisterAsync_ShouldRejectWrongOtp()
+    {
+        await _otpService.IssueAsync("0901234567");
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            async () => await _authService.RegisterAsync(new RegisterRequest(
+                "Phở Thảo", "Nguyễn Văn A", "owner@phothao.vn", "Matkhau@123", "0901234567", "000000")));
+
+        Assert.Equal("otp_invalid", ex.ErrorCode);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_ShouldRejectWithoutOtp()
+    {
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            async () => await _authService.RegisterAsync(new RegisterRequest(
+                "Phở Thảo", "Nguyễn Văn A", "owner@phothao.vn", "Matkhau@123", "0901234567", "123456")));
+
+        Assert.Equal("otp_expired", ex.ErrorCode);
+    }
+
+    [Fact]
     public async Task RegisterAsync_ShouldRejectDuplicateEmail()
     {
-        await _authService.RegisterAsync(Shop());
+        await _authService.RegisterAsync(await ShopAsync());
 
         var ex = await Assert.ThrowsAsync<ConflictException>(
-            () => _authService.RegisterAsync(Shop(name: "Quán Khác", email: "OWNER@phothao.vn")));
+            async () => await _authService.RegisterAsync(await ShopAsync(name: "Quán Khác", email: "OWNER@phothao.vn")));
 
         Assert.Equal("email_already_exists", ex.ErrorCode);
     }
@@ -84,8 +112,8 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task RegisterAsync_ShouldGenerateUniqueSlug()
     {
-        await _authService.RegisterAsync(Shop(name: "Phở Thảo", email: "a@phothao.vn"));
-        await _authService.RegisterAsync(Shop(name: "Phở Thảo", email: "b@phothao.vn"));
+        await _authService.RegisterAsync(await ShopAsync(name: "Phở Thảo", email: "a@phothao.vn"));
+        await _authService.RegisterAsync(await ShopAsync(name: "Phở Thảo", email: "b@phothao.vn"));
 
         var slugs = await _context.Tenants.IgnoreQueryFilters().Select(t => t.Slug).ToListAsync();
         Assert.Equal(["pho-thao", "pho-thao-2"], slugs.OrderBy(s => s));
@@ -95,7 +123,7 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task LoginAsync_ShouldReturnTokens_WhenCredentialsValid()
     {
-        await _authService.RegisterAsync(Shop());
+        await _authService.RegisterAsync(await ShopAsync());
 
         var result = await _authService.LoginAsync(
             new LoginRequest("OWNER@phothao.vn", "Matkhau@123"), ip: "127.0.0.1");
@@ -107,7 +135,7 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task LoginAsync_ShouldThrowUnauthorized_WhenPasswordWrong()
     {
-        await _authService.RegisterAsync(Shop());
+        await _authService.RegisterAsync(await ShopAsync());
 
         await Assert.ThrowsAsync<UnauthorizedException>(
             () => _authService.LoginAsync(new LoginRequest("owner@phothao.vn", "sai-mat-khau")));
@@ -116,7 +144,7 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task LoginAsync_ShouldThrowForbidden_WhenUserLocked()
     {
-        await _authService.RegisterAsync(Shop());
+        await _authService.RegisterAsync(await ShopAsync());
 
         var user = await _context.Users.IgnoreQueryFilters().SingleAsync();
         user.IsActive = false;
@@ -129,7 +157,7 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task RefreshAsync_ShouldRotateToken_AndRevokeOldOne()
     {
-        var registered = await _authService.RegisterAsync(Shop());
+        var registered = await _authService.RegisterAsync(await ShopAsync());
 
         var refreshed = await _authService.RefreshAsync(
             new RefreshRequest(registered.RefreshToken), ip: "127.0.0.1");
@@ -145,7 +173,7 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task LogoutAsync_ShouldRevokeAllRefreshTokens()
     {
-        var registered = await _authService.RegisterAsync(Shop());
+        var registered = await _authService.RegisterAsync(await ShopAsync());
 
         await _authService.LogoutAsync(registered.User.Id);
 
@@ -163,7 +191,7 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task GetCurrentUserAsync_ShouldReturnTenantAndRole()
     {
-        var registered = await _authService.RegisterAsync(Shop());
+        var registered = await _authService.RegisterAsync(await ShopAsync());
 
         using var scope = TenantContext.Use(registered.User.TenantId);
         var info = await _authService.GetCurrentUserAsync(registered.User.Id);
