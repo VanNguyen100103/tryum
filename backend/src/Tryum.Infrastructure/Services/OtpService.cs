@@ -75,6 +75,16 @@ public sealed class OtpService(
         return new OtpIssueResult(code, _options.CooldownSeconds, _options.TtlSeconds);
     }
 
+    /// <summary>SĐT đang có mã OTP chờ xác nhận hay không (chưa hết hạn).</summary>
+    public bool HasPendingCode(string phone)
+    {
+        if (!PhoneNormalizer.TryNormalize(phone, out var e164))
+            return false;
+
+        return _store.TryGetValue(e164, out var entry)
+               && !entry.IsExpired(DateTimeOffset.UtcNow);
+    }
+
     public Task ConsumeAsync(string phone, string code, CancellationToken cancellationToken = default)
     {
         var e164 = RequireValidPhone(phone);

@@ -15,6 +15,13 @@ public interface IOtpService
     Task<OtpIssueResult> IssueAsync(string phone, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Kiểm tra SĐT đang có mã OTP chờ (chưa hết hạn, chưa dùng) hay không.
+    /// Dùng để cho phép "gửi lại" mà không cần captcha mới – CHỉ đúng khi mã đó do
+    /// chính người dùng vừa yêu cầu (đã vượt captcha ở lần gửi đầu).
+    /// </summary>
+    bool HasPendingCode(string phone);
+
+    /// <summary>
     /// Xác thực mã: đúng → consume (xoá mã, không dùng lại được).
     /// Sai / hết hạn / quá số lần thử → ValidationException (hoặc RateLimitedException khi bị khoá).
     /// </summary>

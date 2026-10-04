@@ -194,6 +194,39 @@ public class OtpServiceTests
         Assert.Single(_sms.Sent);
     }
 
+    [Fact]
+    public async Task HasPendingCode_ReflectsIssuedState()
+    {
+        Assert.False(_service.HasPendingCode("0901234567"));
+
+        await _service.IssueAsync("0901234567");
+
+        // Đã gửi mã => isResend được miễn captcha (người dùng đã vượt captcha lần đầu).
+        Assert.True(_service.HasPendingCode("0901234567"));
+
+        // Đoán sai không làm mất mã => vẫn còn mã chờ.
+        await Assert.ThrowsAsync<ValidationException>(
+            async () => await _service.ConsumeAsync("0901234567", "000000"));
+        Assert.True(_service.HasPendingCode("0901234567"));
+    }
+
+    [Fact]
+    public async Task HasPendingCode_False_AfterSuccessfulConsume()
+    {
+        var result = await _service.IssueAsync("0901234567");
+        await _service.ConsumeAsync("0901234567", result.Code);
+
+        Assert.False(_service.HasPendingCode("0901234567"));
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("")]
+    public void HasPendingCode_False_ForInvalidPhone(string phone)
+    {
+        Assert.False(_service.HasPendingCode(phone));
+    }
+
     /// <summary>Ghi lại các SMS đã "gửi" để kiểm tra OtpService có phát tin hay không.</summary>
     private sealed class FakeSmsSender : ISmsSender
     {

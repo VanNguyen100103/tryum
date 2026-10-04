@@ -40,12 +40,17 @@ public static class AuthEndpoints
             {
                 await ValidateAsync(validator, request, ct);
 
-                // 1) Kiểm captcha SERVER-SIDE trước: nếu không, bot gọi thẳng API sẽ đốt quota SMS.
-                // Lần gửi đầu bắt buộc captcha; lần "gửi lại" ở bước OTP thì không (đã bị cooldown chặn).
-                var captchaRequired = !request.IsResend && !string.Equals(
+                // 1) Captcha server-side: BẮT BUỘC với mọi lần gửi đầu.
+                //    `isResend` chỉ được miễn khi SĐT này ĐÃ có mã đang chờ (người dùng thật
+                //    đã vượt captcha trước đó) – nếu không thì bot chỉ cần gửi isResend=true
+                //    là bypass hoàn toàn captcha và đốt quota SMS.
+                var captchaDisabled = string.Equals(
                     configuration["Captcha:Required"],
                     "false",
                     StringComparison.OrdinalIgnoreCase);
+
+                var hasPendingOtp = request.IsResend && otpService.HasPendingCode(request.Phone);
+                var captchaRequired = !captchaDisabled && !hasPendingOtp;
 
                 if (captchaRequired && !captchaService.Validate(request.CaptchaId, request.CaptchaCode))
                     throw new Tryum.Application.Common.Exceptions.ValidationException(
