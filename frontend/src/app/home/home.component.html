@@ -1,5 +1,5 @@
 <!-- ======================================================
-     HEADER
+     HEADER (sticky, mega-menu)
      ====================================================== -->
 <header class="hdr">
   <div class="hdr__inner">
@@ -8,11 +8,36 @@
       <span class="brand__name">Tryum</span>
     </a>
     <nav class="hdr__nav">
-      <a href="#features">Tính năng</a>
-      <a href="#solutions">Giải pháp</a>
-      <a href="#pricing">Bảng giá</a>
-      <a href="#testimonials">Khách hàng</a>
-      <a href="#faq">FAQ</a>
+      <div class="dd">
+        <span class="dd__trigger">Giải pháp <i class="pi pi-chevron-down"></i></span>
+        <div class="dd__panel dd__panel--wide">
+          @for (g of solutionGroups; track g.title) {
+            <div class="dd__col">
+              <h4>{{ g.title }}</h4>
+              @for (it of g.items; track it.label) {
+                <a [href]="it.href">{{ it.label }}</a>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      <div class="dd">
+        <span class="dd__trigger">Ngành hàng <i class="pi pi-chevron-down"></i></span>
+        <div class="dd__panel dd__panel--wide">
+          @for (g of industryMenu; track g.title) {
+            <div class="dd__col">
+              <h4>{{ g.title }}</h4>
+              @for (it of g.items; track it) {
+                <a href="#industries">{{ it }}</a>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      <a class="dd__plain" href="#features">Tính năng</a>
+      <a class="dd__plain" href="#pricing">Phí dịch vụ</a>
+      <a class="dd__plain" href="#reviews">Khách hàng</a>
+      <a class="dd__plain" href="#faq">Hỗ trợ</a>
     </nav>
     <div class="hdr__actions">
       @if (isAuthenticated()) {
@@ -22,7 +47,40 @@
         <a class="btn btn--primary" routerLink="/auth/register">Dùng thử miễn phí</a>
       }
     </div>
+    <button class="hdr__burger" type="button" (click)="mobileNav.set(!mobileNav())" aria-label="Mở menu">
+      <i class="pi" [class.pi-bars]="!mobileNav()" [class.pi-x]="mobileNav()"></i>
+    </button>
   </div>
+  @if (mobileNav()) {
+    <div class="hdr__mobile">
+      <div class="hdr__mobile-group">
+        <strong>Giải pháp</strong>
+        @for (g of solutionGroups; track g.title) {
+          @for (it of g.items; track it.label) {
+            <a [href]="it.href" (click)="mobileNav.set(false)">{{ it.label }}</a>
+          }
+        }
+      </div>
+      <div class="hdr__mobile-group">
+        <strong>Ngành hàng</strong>
+        @for (g of industryMenu; track g.title) {
+          <a href="#industries" (click)="mobileNav.set(false)">{{ g.title }}</a>
+        }
+      </div>
+      <div class="hdr__mobile-group">
+        <a href="#features" (click)="mobileNav.set(false)">Tính năng</a>
+        <a href="#pricing" (click)="mobileNav.set(false)">Phí dịch vụ</a>
+        <a href="#reviews" (click)="mobileNav.set(false)">Khách hàng</a>
+        <a href="#faq" (click)="mobileNav.set(false)">Hỗ trợ</a>
+        @if (isAuthenticated()) {
+          <a class="btn btn--primary" routerLink="/app">Vào ứng dụng</a>
+        } @else {
+          <a class="btn btn--ghost" routerLink="/auth/login">Đăng nhập</a>
+          <a class="btn btn--primary" routerLink="/auth/register">Dùng thử miễn phí</a>
+        }
+      </div>
+    </div>
+  }
 </header>
 
 <!-- ======================================================
@@ -31,26 +89,23 @@
 <section class="hero">
   <div class="hero__inner">
     <div class="hero__copy">
-      <span class="badge"><i class="pi pi-verified"></i> Tin dùng bởi 10.000+ cửa hàng</span>
-      <h1>Phần mềm quản lý bán hàng <span class="txt-primary">thế hệ mới</span></h1>
-      <p class="hero__lead">Bán hàng nhanh, quản kho chuẩn, báo cáo rõ ràng — tất cả trong một ứng dụng. Không cần cài đặt, chạy ngay trên trình duyệt.</p>
+      <h1>Phần mềm quản lý bán hàng <span class="hero__grad">hiện đại &amp; toàn diện</span></h1>
+      <p class="hero__lead">
+        Được tin dùng bởi <strong>10.000+</strong> nhà kinh doanh và hàng trăm cửa hàng mới mỗi tháng. Bán hàng, quản kho,
+        kế toán, nhân viên — tất cả trong một.
+      </p>
       <div class="hero__cta">
-        <a class="btn btn--primary btn--lg" routerLink="/auth/register">Dùng thử miễn phí <i class="pi pi-arrow-right"></i></a>
-        <a class="btn btn--ghost btn--lg" href="#features">Khám phá tính năng</a>
+        <a class="btn btn--primary btn--lg" routerLink="/auth/register">Dùng thử miễn phí</a>
+        <a class="btn btn--outline btn--lg" href="#solutions">Khám phá</a>
       </div>
-      <ul class="hero__trust">
-        <li><i class="pi pi-check-circle"></i> Miễn phí cài đặt</li>
-        <li><i class="pi pi-check-circle"></i> Hỗ trợ tiếng Việt</li>
-        <li><i class="pi pi-check-circle"></i> Dữ liệu an toàn</li>
-      </ul>
+      <p class="hero__note">
+        <i class="pi pi-check-circle"></i> Hỗ trợ 100% tiếng Việt · Chạy ngay trên trình duyệt · Không cần thẻ khi đăng ký
+      </p>
     </div>
     <div class="hero__visual">
-      <!-- Mock POS UI -->
       <div class="mock-app">
         <div class="mock-app__bar">
-          <span class="mock-app__dot"></span>
-          <span class="mock-app__dot"></span>
-          <span class="mock-app__dot"></span>
+          <span class="mock-app__dot"></span><span class="mock-app__dot"></span><span class="mock-app__dot"></span>
           <span class="mock-app__title">Tryum POS — Tiệm Cafe Nhà</span>
         </div>
         <div class="mock-app__body">
@@ -58,7 +113,7 @@
             <div class="mock-pos__left">
               <div class="mock-search"><i class="pi pi-search"></i> Tìm sản phẩm...</div>
               <div class="mock-grid">
-                <div class="mock-item" style="--c:#e5f0ff"><i class="pi pi-coffee"></i><span>Cafe sữa đá</span><strong>23.000đ</strong></div>
+                <div class="mock-item" style="--c:#fff1ec"><i class="pi pi-coffee"></i><span>Cafe sữa đá</span><strong>23.000đ</strong></div>
                 <div class="mock-item" style="--c:#f0fdf4"><i class="pi pi-star"></i><span>Trà đào</span><strong>35.000đ</strong></div>
                 <div class="mock-item" style="--c:#fef9e7"><i class="pi pi-sun"></i><span>Nước cam</span><strong>28.000đ</strong></div>
                 <div class="mock-item" style="--c:#fdf2f8"><i class="pi pi-heart"></i><span>Sinh tố</span><strong>40.000đ</strong></div>
@@ -77,14 +132,13 @@
           </div>
         </div>
       </div>
-      <!-- Floating badges -->
       <div class="hero-badge hero-badge--revenue">
-        <span class="hero-badge__icon" style="--bg:#dcfce7;--c:#16a34a"><i class="pi pi-chart-line"></i></span>
+        <span class="hero-badge__icon" style="--bg:#ffe9e3;--c:#f03a1e"><i class="pi pi-chart-line"></i></span>
         <div><small>Doanh thu hôm nay</small><strong>2.450.000đ</strong></div>
         <span class="hero-badge__delta up">+18%</span>
       </div>
       <div class="hero-badge hero-badge--stock">
-        <span class="hero-badge__icon" style="--bg:#e5f0ff;--c:#006fff"><i class="pi pi-box"></i></span>
+        <span class="hero-badge__icon" style="--bg:#e9f4ff;--c:#1d6fd6"><i class="pi pi-box"></i></span>
         <div><small>Sản phẩm tồn kho</small><strong>128 SKU</strong></div>
         <span class="hero-badge__delta warn">3 sắp hết</span>
       </div>
@@ -93,21 +147,24 @@
 </section>
 
 <!-- ======================================================
-     SECTION 2: TRUST BAR
+     SECTION 2: BENEFITS ROW
      ====================================================== -->
-<section class="trust-bar">
-  <div class="trust-bar__inner">
-    @for (stat of stats; track stat.value) {
-      <div class="trust-bar__item">
-        <strong>{{ stat.value }}</strong>
-        <span>{{ stat.label }}</span>
+<section class="benefits">
+  <div class="container benefits__grid">
+    @for (b of benefits; track b.title) {
+      <div class="benefit">
+        <span class="benefit__icon"><i [class]="b.icon"></i></span>
+        <div>
+          <h3>{{ b.title }}</h3>
+          <p>{{ b.desc }}</p>
+        </div>
       </div>
     }
   </div>
 </section>
 
 <!-- ======================================================
-     SECTION 3: FEATURES (tab-based)
+     SECTION 3: FEATURES (tabs)
      ====================================================== -->
 <section id="features" class="section">
   <div class="container">
@@ -116,10 +173,9 @@
       <h2>Mọi thứ bạn cần để bán hàng hiệu quả</h2>
       <p>Giao diện thân thiện, quy trình thông minh. Từ thu ngân đến chủ cửa hàng đều dùng được ngay.</p>
     </div>
-    <!-- Feature tabs -->
-    <div class="feat-tabs">
+    <div class="tabstrip">
       @for (tab of featureTabs; track tab.label; let i = $index) {
-        <button class="feat-tab" [class.is-active]="activeFeatureTab() === i" (click)="activeFeatureTab.set(i)">
+        <button class="tabstrip__btn" type="button" [class.is-active]="activeFeatureTab() === i" (click)="activeFeatureTab.set(i)">
           <i [class]="tab.icon"></i> {{ tab.label }}
         </button>
       }
@@ -132,15 +188,18 @@
             <p>{{ tab.desc }}</p>
             <ul class="feat-bullets">
               @for (b of tab.bullets; track b) {
-                <li><i class="pi pi-check"></i> {{ b }}</li>
+                <li><i class="pi pi-check-circle"></i> {{ b }}</li>
               }
             </ul>
-            <a class="btn btn--primary" routerLink="/auth/register">Dùng thử ngay <i class="pi pi-arrow-right"></i></a>
+            <a class="btn btn--primary" routerLink="/auth/register">Dùng thử ngay</a>
           </div>
           <div class="feat-panel__visual">
-            <div class="feat-visual-placeholder">
-              <i [class]="tab.icon"></i>
-              <span>{{ tab.title }}</span>
+            <div class="feat-screen">
+              <div class="feat-screen__bar"></div>
+              <div class="feat-screen__row"><span style="width:34%"></span><span style="width:22%"></span></div>
+              <div class="feat-screen__row"><span style="width:48%"></span><span style="width:16%"></span></div>
+              <div class="feat-screen__row"><span style="width:30%"></span><span style="width:38%"></span></div>
+              <div class="feat-screen__icon"><i [class]="tab.icon"></i></div>
             </div>
           </div>
         </div>
@@ -150,14 +209,14 @@
 </section>
 
 <!-- ======================================================
-     SECTION 4: SOLUTIONS (card grid)
+     SECTION 4: SALES SOLUTIONS (4 cards)
      ====================================================== -->
-<section id="solutions" class="section section--dark">
+<section id="solutions" class="section section--soft">
   <div class="container">
-    <div class="section-head section-head--center section-head--light">
-      <span class="eyebrow eyebrow--light">Giải pháp</span>
-      <h2>Thiết kế riêng cho từng ngành hàng</h2>
-      <p>Cùng một nền tảng, nhưng quy trình được tinh chỉnh riêng cho ngành hàng của bạn.</p>
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Giải pháp bán hàng</span>
+      <h2>Giải pháp bán hàng</h2>
+      <p>Giải pháp giúp vận hành các mô hình kinh doanh một cách dễ dàng và hiệu quả.</p>
     </div>
     <div class="solutions-grid">
       @for (s of solutions; track s.title) {
@@ -173,29 +232,311 @@
 </section>
 
 <!-- ======================================================
-     SECTION 5: INDUSTRIES (chip cloud)
+     SECTION 5: ACCOUNTING & TAX (3 tabs)
      ====================================================== -->
-<section class="section">
+<section id="accounting" class="section">
   <div class="container">
     <div class="section-head section-head--center">
-      <span class="eyebrow">Ngành hàng</span>
-      <h2>Phù hợp với mọi ngành nghề kinh doanh</h2>
+      <span class="eyebrow">Kế toán &amp; Thuế</span>
+      <h2>Giải pháp kế toán và thuế</h2>
+      <p>Bộ giải pháp hỗ trợ hộ kinh doanh tuân thủ quy định về kế toán và thuế dễ dàng, miễn phí.</p>
     </div>
-    <div class="industry-cloud">
-      @for (ind of industries; track ind) {
-        <span class="industry-chip"><i class="pi pi-check"></i> {{ ind }}</span>
+    <div class="tabstrip">
+      @for (t of accountingTabs; track t.label; let i = $index) {
+        <button class="tabstrip__btn" type="button" [class.is-active]="activeAccountingTab() === i" (click)="activeAccountingTab.set(i)">
+          <i [class]="t.icon"></i> {{ t.label }}
+        </button>
+      }
+    </div>
+    @for (t of accountingTabs; track t.label; let i = $index) {
+      @if (activeAccountingTab() === i) {
+        <div class="feat-panel">
+          <div class="feat-panel__copy">
+            <h3>{{ t.title }}</h3>
+            <p>{{ t.desc }}</p>
+            <ul class="feat-bullets">
+              @for (b of t.bullets; track b) {
+                <li><i class="pi pi-check-circle"></i> {{ b }}</li>
+              }
+            </ul>
+            <a class="btn btn--primary" routerLink="/auth/register">Tìm hiểu thêm</a>
+          </div>
+          <div class="feat-panel__visual">
+            <div class="mock-invoice">
+              <div class="mock-invoice__head"><span class="mock-invoice__logo"></span><span class="mock-invoice__no">HOÁ ĐƠN ĐT 004217</span></div>
+              <div class="mock-invoice__line" style="width:82%"></div>
+              <div class="mock-invoice__line" style="width:64%"></div>
+              <div class="mock-invoice__line" style="width:72%"></div>
+              <div class="mock-invoice__line" style="width:40%"></div>
+              <div class="mock-invoice__foot">
+                <span>Tổng cộng</span><strong>1.250.000đ</strong>
+              </div>
+              <span class="mock-invoice__stamp"><i class="pi pi-check"></i> Đã ký số &amp; gửi CQT</span>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 6: ONLINE SALES (5 cards)
+     ====================================================== -->
+<section id="online" class="section section--soft">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Bán hàng Online</span>
+      <h2>Giải pháp bán hàng Online</h2>
+      <p>Giai pháp tích hợp đa kênh bán hàng online từ sàn TMĐT, mạng xã hội đến giao hàng, giúp quản lý và vận hành dễ dàng.</p>
+    </div>
+    <div class="online-grid">
+      @for (o of onlineItems; track o.title) {
+        <div class="online-card">
+          <span class="online-card__icon"><i [class]="o.icon"></i></span>
+          <h3>{{ o.title }}</h3>
+          <p>{{ o.desc }}</p>
+        </div>
       }
     </div>
   </div>
 </section>
 
 <!-- ======================================================
-     SECTION 6: PRICING
+     SECTION 7: FINANCE (2 cards + mockups)
      ====================================================== -->
-<section id="pricing" class="section section--subtle">
+<section id="finance" class="section">
   <div class="container">
     <div class="section-head section-head--center">
-      <span class="eyebrow">Bảng giá</span>
+      <span class="eyebrow">Tài chính</span>
+      <h2>Giải pháp tài chính</h2>
+      <p>Giải pháp thanh toán – vay vốn uy tín dành cho chủ hộ kinh doanh.</p>
+    </div>
+    <div class="finance-grid">
+      @for (f of financeItems; track f.title) {
+        <div class="fin-card">
+          <div class="fin-card__visual">
+            @if (f.mock === 'qr') {
+              <div class="mock-qr">
+                <div class="mock-qr__grid"></div>
+                <span class="mock-qr__tag"><i class="pi pi-volume"></i> 23.000đ</span>
+              </div>
+            } @else {
+              <div class="mock-card3d">
+                <span class="mock-card3d__chip"></span>
+                <span class="mock-card3d__num">•••• 6868</span>
+                <span class="mock-card3d__brand">VAY VỐN</span>
+              </div>
+            }
+          </div>
+          <div class="fin-card__body">
+            <span class="fin-card__icon"><i [class]="f.icon"></i></span>
+            <h3>{{ f.title }}</h3>
+            <p>{{ f.desc }}</p>
+            <a class="sol-card__link" routerLink="/auth/register">Tìm hiểu thêm <i class="pi pi-arrow-right"></i></a>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 8: STAFF MANAGEMENT (4 tabs)
+     ====================================================== -->
+<section id="staff" class="section section--soft">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Quản lý nhân viên</span>
+      <h2>Giải pháp quản lý nhân viên</h2>
+      <p>Bộ công cụ quản lý nhân sự toàn diện giúp chấm công, tính lương, sắp xếp ca và theo dõi hoa hồng chính xác.</p>
+    </div>
+    <div class="tabstrip">
+      @for (t of staffTabs; track t.label; let i = $index) {
+        <button class="tabstrip__btn" type="button" [class.is-active]="activeStaffTab() === i" (click)="activeStaffTab.set(i)">
+          <i [class]="t.icon"></i> {{ t.label }}
+        </button>
+      }
+    </div>
+    @for (t of staffTabs; track t.label; let i = $index) {
+      @if (activeStaffTab() === i) {
+        <div class="feat-panel">
+          <div class="feat-panel__copy">
+            <h3>{{ t.title }}</h3>
+            <p>{{ t.desc }}</p>
+            <ul class="feat-bullets">
+              @for (b of t.bullets; track b) {
+                <li><i class="pi pi-check-circle"></i> {{ b }}</li>
+              }
+            </ul>
+            <a class="btn btn--primary" routerLink="/auth/register">Dùng thử ngay</a>
+          </div>
+          <div class="feat-panel__visual">
+            <div class="mock-sheet">
+              @for (r of [0, 1, 2, 3]; track r) {
+                <div class="mock-sheet__row">
+                  <span class="mock-sheet__avatar"></span>
+                  <span class="mock-sheet__name" [style.width.%]="64 - r * 8"></span>
+                  <span class="mock-sheet__time">07:30–15:00</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 9: SECURITY BAND
+     ====================================================== -->
+<section class="security">
+  <div class="container">
+    <div class="security__inner">
+      <i class="pi pi-shield security__icon"></i>
+      <h2>Quy trình phát triển phần mềm nghiêm ngặt đảm bảo an toàn dữ liệu khách hàng</h2>
+      <p>
+        Dữ liệu được mã hóa bảo mật nhiều lớp, cô lập theo từng cửa hàng và sao lưu tự động mỗi ngày, hạn chế tối đa rủi ro
+        lộ thông tin.
+      </p>
+      <div class="security__badges">
+        @for (b of securityBadges; track b.label) {
+          <span class="sec-badge"><i [class]="b.icon"></i><div><strong>{{ b.label }}</strong><small>{{ b.sub }}</small></div></span>
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 10: INDUSTRIES (4-col list + glow)
+     ====================================================== -->
+<section id="industries" class="section section--glow">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Ngành hàng</span>
+      <h2>Chúng tôi thiết kế phần mềm quản lý bán hàng chuyên biệt cho từng ngành hàng</h2>
+    </div>
+    <div class="industries-grid">
+      @for (g of industryGroups; track g.title) {
+        <div class="industry-col">
+          <h3>{{ g.title }}</h3>
+          <ul>
+            @for (it of g.items; track it) {
+              <li><i class="pi pi-check"></i> {{ it }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+    <div class="industries__cta">
+      <a class="btn btn--primary btn--lg" routerLink="/auth/register">Dùng thử miễn phí</a>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 11: TRUST / MARQUEE
+     ====================================================== -->
+<section class="trust">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Được tin dùng</span>
+      <h2>10.000+ nhà kinh doanh tin dùng</h2>
+      <p>Tryum POS giúp giảm thiểu 30–50% chi phí nhân viên, tiết kiệm tối đa thời gian, tăng doanh thu vượt trội mỗi ngày.</p>
+    </div>
+  </div>
+  <div class="marquee">
+    <div class="marquee__track">
+      @for (s of marqueeShops; track s) {
+        <span class="marquee__logo"><i class="pi pi-store"></i> {{ s }}</span>
+      }
+      @for (s of marqueeShops; track s + '-dup') {
+        <span class="marquee__logo" aria-hidden="true"><i class="pi pi-store"></i> {{ s }}</span>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 12: REVIEWS
+     ====================================================== -->
+<section id="reviews" class="section">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Khách hàng</span>
+      <h2>Chủ cửa hàng nói gì về Tryum?</h2>
+    </div>
+    <div class="reviews-grid">
+      @for (t of reviews; track t.name) {
+        <figure class="review-card">
+          <div class="review-card__stars">
+            @for (star of [1, 2, 3, 4, 5]; track star) { <i class="pi pi-star-fill"></i> }
+          </div>
+          <blockquote>{{ t.quote }}</blockquote>
+          <figcaption>
+            <span class="review-card__avatar">{{ t.name.charAt(0) }}</span>
+            <span><strong>{{ t.name }}</strong><small>{{ t.role }}</small></span>
+          </figcaption>
+        </figure>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 13: DEVICES
+     ====================================================== -->
+<section class="section section--soft">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Đa thiết bị</span>
+      <h2>Trải nghiệm Tryum trên mọi thiết bị</h2>
+      <p>Không cần cài đặt — mở trình duyệt là dùng được trên mọi máy.</p>
+    </div>
+    <div class="devices-grid">
+      @for (d of devices; track d.name) {
+        <div class="device-card">
+          <span class="device-card__icon"><i [class]="d.icon"></i></span>
+          <h3>{{ d.name }}</h3>
+          <p>{{ d.desc }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 14: NEWS
+     ====================================================== -->
+<section class="section">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Tin tức</span>
+      <h2>Tin tức nổi bật</h2>
+    </div>
+    <div class="news-grid">
+      @for (n of news; track n.title) {
+        <article class="news-card">
+          <div class="news-card__thumb"><i [class]="n.icon"></i></div>
+          <div class="news-card__body">
+            <span class="news-card__meta"><em>{{ n.tag }}</em> · {{ n.date }}</span>
+            <h3>{{ n.title }}</h3>
+          </div>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 15: PRICING
+     ====================================================== -->
+<section id="pricing" class="section section--soft">
+  <div class="container">
+    <div class="section-head section-head--center">
+      <span class="eyebrow">Phí dịch vụ</span>
       <h2>Đơn giản, minh bạch, không ẩn phí</h2>
       <p>Bắt đầu miễn phí. Nâng cấp khi bạn sẵn sàng phát triển.</p>
     </div>
@@ -215,7 +556,7 @@
           </div>
           <ul class="price-card__features">
             @for (f of plan.features; track f) {
-              <li><i class="pi pi-check"></i> {{ f }}</li>
+              <li><i class="pi pi-check-circle"></i> {{ f }}</li>
             }
           </ul>
           <a class="btn" [class.btn--primary]="plan.highlight" [class.btn--outline]="!plan.highlight" routerLink="/auth/register">{{ plan.cta }}</a>
@@ -226,44 +567,18 @@
 </section>
 
 <!-- ======================================================
-     SECTION 7: TESTIMONIALS
+     SECTION 16: FAQ
      ====================================================== -->
-<section id="testimonials" class="section">
-  <div class="container">
+<section id="faq" class="section">
+  <div class="container container--narrow">
     <div class="section-head section-head--center">
-      <span class="eyebrow">Khách hàng</span>
-      <h2>Chủ cửa hàng nói gì về Tryum?</h2>
-    </div>
-    <div class="testimonials-grid">
-      @for (t of testimonials; track t.name) {
-        <figure class="testi-card">
-          <div class="testi-card__stars">
-            @for (star of [1,2,3,4,5]; track star) { <i class="pi pi-star-fill"></i> }
-          </div>
-          <blockquote>{{ t.quote }}</blockquote>
-          <figcaption>
-            <span class="testi-card__avatar">{{ t.name.charAt(0) }}</span>
-            <span><strong>{{ t.name }}</strong><small>{{ t.role }}</small></span>
-          </figcaption>
-        </figure>
-      }
-    </div>
-  </div>
-</section>
-
-<!-- ======================================================
-     SECTION 8: FAQ ACCORDION
-     ====================================================== -->
-<section id="faq" class="section section--subtle">
-  <div class="container">
-    <div class="section-head section-head--center">
-      <span class="eyebrow">FAQ</span>
+      <span class="eyebrow">Hỗ trợ</span>
       <h2>Câu hỏi thường gặp</h2>
     </div>
     <div class="faq-list">
       @for (item of faqItems; track item.q; let i = $index) {
         <div class="faq-item" [class.is-open]="openFaqIndex() === i">
-          <button class="faq-item__q" (click)="toggleFaq(i)">
+          <button class="faq-item__q" type="button" (click)="toggleFaq(i)">
             <span>{{ item.q }}</span>
             <i class="pi" [class.pi-plus]="openFaqIndex() !== i" [class.pi-minus]="openFaqIndex() === i"></i>
           </button>
@@ -277,15 +592,34 @@
 </section>
 
 <!-- ======================================================
-     SECTION 9: CTA BAND
+     SECTION 17: FINAL CTA
      ====================================================== -->
 <section class="cta-band">
   <div class="container">
     <div class="cta-band__inner">
-      <span class="badge badge--light"><i class="pi pi-bolt"></i> Bắt đầu trong 2 phút</span>
-      <h2>Sẵn sàng nâng cấp cửa hàng của bạn?</h2>
+      <h2>Hãy để Tryum đồng hành kinh doanh cùng bạn</h2>
       <p>Không cần thẻ tín dụng. Không cần cài đặt. Bắt đầu miễn phí ngay hôm nay.</p>
-      <a class="btn btn--light btn--lg" routerLink="/auth/register">Dùng thử miễn phí <i class="pi pi-arrow-right"></i></a>
+      <a class="btn btn--light btn--lg" routerLink="/auth/register">Dùng thử miễn phí</a>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================
+     SECTION 18: CONTACT CHANNELS
+     ====================================================== -->
+<section class="section">
+  <div class="container">
+    <div class="contact-grid">
+      @for (c of contactChannels; track c.title) {
+        <div class="contact-card">
+          <span class="contact-card__icon"><i [class]="c.icon"></i></span>
+          <div>
+            <h3>{{ c.title }}</h3>
+            <p class="contact-card__main">{{ c.main }}</p>
+            <p class="contact-card__sub">{{ c.sub }}</p>
+          </div>
+        </div>
+      }
     </div>
   </div>
 </section>
@@ -300,37 +634,34 @@
         <span class="brand__mark"><i class="pi pi-shop"></i></span>
         <span class="brand__name">Tryum</span>
       </a>
-      <p>Phần mềm quản lý bán hàng cho mọi quy mô cửa hàng.</p>
+      <p>Phần mềm quản lý bán hàng hiện đại, toàn diện cho mọi quy mô cửa hàng.</p>
       <div class="footer__social">
         <a href="https://facebook.com" target="_blank" rel="noopener" aria-label="Facebook"><i class="pi pi-facebook"></i></a>
         <a href="https://youtube.com" target="_blank" rel="noopener" aria-label="YouTube"><i class="pi pi-youtube"></i></a>
-        <a href="https://linkedin.com" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="pi pi-linkedin"></i></a>
       </div>
     </div>
+    @for (col of footerCols; track col.title) {
+      <div class="footer__col">
+        <h4>{{ col.title }}</h4>
+        @for (l of col.links; track l.label) {
+          @if (l.href.startsWith('#')) {
+            <a [href]="l.href">{{ l.label }}</a>
+          } @else {
+            <a [routerLink]="l.href">{{ l.label }}</a>
+          }
+        }
+      </div>
+    }
     <div class="footer__col">
-      <h4>Sản phẩm</h4>
-      <a routerLink="/app/pos">Bán hàng POS</a>
-      <a routerLink="/app/inventory">Quản kho</a>
-      <a routerLink="/app/customers">Khách hàng</a>
-      <a routerLink="/app/reports">Báo cáo</a>
-    </div>
-    <div class="footer__col">
-      <h4>Giải pháp</h4>
-      <a href="#solutions">Bán lẻ & tạp hóa</a>
-      <a href="#solutions">Cafe & F&B</a>
-      <a href="#solutions">Nhà thuốc</a>
-      <a href="#solutions">Salon & Spa</a>
-    </div>
-    <div class="footer__col">
-      <h4>Hỗ trợ</h4>
-      <a routerLink="/auth/login">Đăng nhập</a>
-      <a routerLink="/auth/register">Đăng ký miễn phí</a>
-      <a href="#faq">FAQ</a>
-      <a href="#features">Tính năng</a>
+      <h4>Hotline</h4>
+      <p class="footer__hotline"><i class="pi pi-phone"></i> Tư vấn: 1900 6868</p>
+      <p class="footer__hotline"><i class="pi pi-headset"></i> CSKH: 1900 6869</p>
+      <p class="footer__hotline"><i class="pi pi-envelope"></i> hotro&#64;tryum.vn</p>
+      <p class="footer__hours">Giờ hành chính thứ 2 – sáng thứ 7</p>
     </div>
   </div>
   <div class="footer__bottom">
-    <span>© 2026 Tryum. Bản demo phục vụ học tập & xin việc.</span>
+    <span>© 2026 Tryum™ — Bản demo phục vụ học tập &amp; xin việc.</span>
     <span>Việt Nam 🇻🇳</span>
   </div>
 </footer>
