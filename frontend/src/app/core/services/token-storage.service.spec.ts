@@ -12,6 +12,7 @@ describe('TokenStorageService', () => {
     phone: null,
     tenantId: 't1',
     tenantName: 'Phở Thảo',
+    tenantSlug: 'pho-thao',
     roleCode: 'Owner',
     roleName: 'Chủ cửa hàng',
   };
