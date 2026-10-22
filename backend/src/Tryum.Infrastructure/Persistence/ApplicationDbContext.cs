@@ -4,6 +4,8 @@ using Tryum.Application.Common.Interfaces;
 using Tryum.Domain.Common;
 using Tryum.Domain.Tenants;
 using Tryum.Domain.Users;
+using Tryum.Domain.Products;
+using Tryum.Domain.Customers;
 
 namespace Tryum.Infrastructure.Persistence;
 
@@ -27,6 +29,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    public DbSet<Customer> Customers => Set<Customer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

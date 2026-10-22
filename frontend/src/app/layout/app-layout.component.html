@@ -1,83 +1,82 @@
-<div class="app-shell" [class.sidebar-collapsed]="!sidebarOpen()">
-  <!-- ── Sidebar ────────────────────────────────────────────── -->
-  <aside class="app-sidebar">
-    <div class="app-sidebar__brand">
-      <div class="app-sidebar__logo">
-        <i class="pi pi-shopping-bag"></i>
-      </div>
-      @if (sidebarOpen()) {
-        <span class="app-sidebar__name">Tryum</span>
-      }
-    </div>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="utility-bar">
+      <a class="brand" routerLink="/app/dashboard" aria-label="Tryum – Tổng quan">
+        <span class="brand-mark"><i class="pi pi-shop"></i></span>
+        <span>Tryum</span>
+      </a>
 
-    <nav class="app-sidebar__nav">
-      <ul>
-        @for (item of navItems; track item.route) {
-          <li>
-            <a
-              [routerLink]="item.route"
-              routerLinkActive
-              [routerLinkActiveOptions]="{ exact: false }"
-              class="app-sidebar__item"
-              [class.app-sidebar__item--active]="isActive(item.route)"
-            >
-              <i [class]="item.icon"></i>
-              @if (sidebarOpen()) {
-                <span class="app-sidebar__label">{{ item.label }}</span>
-                @if (item.badge) {
-                  <span class="app-sidebar__badge">{{ item.badge }}</span>
-                }
-              }
-            </a>
-          </li>
-        }
-      </ul>
-    </nav>
-
-    @if (sidebarOpen()) {
-      <div class="app-sidebar__footer">
-        <small>{{ shopName() || 'Tryum' }} · Phase 2</small>
-      </div>
-    }
-  </aside>
-
-  <!-- ── Main ───────────────────────────────────────────────── -->
-  <div class="app-main">
-    <header class="app-topbar">
-      <p-button
-        icon="pi pi-bars"
-        [text]="true"
-        [rounded]="true"
-        severity="secondary"
-        (onClick)="toggleSidebar()"
-        ariaLabel="Ẩn/hiện thanh điều hướng"
-      />
-
-      <div class="app-topbar__search">
-        <p-iconfield>
-          <i class="pi pi-search"></i>
-          <input pInputText type="text" placeholder="Tìm kiếm..." disabled />
-        </p-iconfield>
-      </div>
-
-      <div class="app-topbar__actions">
-        <p-button icon="pi pi-bell" [text]="true" [rounded]="true" severity="secondary" ariaLabel="Thông báo" />
-        <p-button icon="pi pi-cog" [text]="true" [rounded]="true" severity="secondary" ariaLabel="Cài đặt" />
-
-        <div class="app-topbar__user" (click)="logout()" [title]="'Đăng xuất (' + shopName() + ')'">
-          <div class="app-topbar__avatar">{{ initials() }}</div>
-          @if (user(); as current) {
-            <div class="app-topbar__info">
-              <span class="app-topbar__name">{{ current.fullName }}</span>
-              <small class="app-topbar__role">{{ current.roleName }} · {{ current.tenantName }}</small>
+      <div class="utility-bar__right">
+        <span class="shop-context"><i class="pi pi-map-marker"></i>{{ shopName() || 'Cửa hàng' }}</span>
+        <span class="utility-divider"></span>
+        <button class="utility-button" type="button" aria-label="Thông báo"><i class="pi pi-bell"></i></button>
+        <button class="utility-button" type="button" routerLink="/app/settings" aria-label="Cài đặt"><i class="pi pi-cog"></i></button>
+        <div class="user-control" [class.is-open]="openMenu() === 'user'">
+          <button class="user-menu" type="button" (click)="toggleMenu('user')" [attr.aria-expanded]="openMenu() === 'user'" aria-label="Tài khoản người dùng">
+            <span class="user-avatar">{{ initials() }}</span>
+            @if (user(); as current) {
+              <span class="user-menu__copy"><strong>{{ current.fullName }}</strong><small>{{ current.roleName }}</small></span>
+            }
+            <i class="pi pi-angle-down"></i>
+          </button>
+          @if (openMenu() === 'user') {
+            <div class="user-dropdown">
+              <strong>{{ user()?.fullName }}</strong>
+              <span>{{ user()?.email }}</span>
+              <button type="button" (click)="logout()"><i class="pi pi-sign-out"></i> Đăng xuất</button>
             </div>
           }
         </div>
       </div>
-    </header>
+    </div>
 
-    <main class="app-content">
-      <router-outlet />
-    </main>
-  </div>
+    <nav class="primary-nav" aria-label="Điều hướng chính">
+      <div class="primary-nav__items">
+        <a routerLink="/app/dashboard" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+          <i class="pi pi-home"></i><span>Tổng quan</span>
+        </a>
+
+        <div class="nav-group" [class.is-open]="openMenu() === 'goods'">
+          <button class="nav-link nav-link--button" [class.is-active]="isActive('/app/products') || isActive('/app/inventory')" type="button" (click)="toggleMenu('goods')" [attr.aria-expanded]="openMenu() === 'goods'">
+            <i class="pi pi-box"></i><span>Hàng hóa</span><i class="pi pi-angle-down nav-chevron"></i>
+          </button>
+          @if (openMenu() === 'goods') {
+            <div class="nav-dropdown" aria-label="Danh mục hàng hóa">
+              <section class="nav-column">
+                <h3>Hàng hóa</h3>
+                <a routerLink="/app/products" (click)="closeMenu()">Danh sách hàng hóa</a>
+                <span class="nav-option nav-option--disabled">Thiết lập giá <small>Chưa khả dụng</small></span>
+              </section>
+              <section class="nav-column">
+                <h3>Kho hàng</h3>
+                <a routerLink="/app/inventory" (click)="closeMenu()">Tồn kho</a>
+                <span class="nav-option nav-option--disabled">Kiểm kho <small>Chưa khả dụng</small></span>
+                <span class="nav-option nav-option--disabled">Xuất dùng nội bộ <small>Chưa khả dụng</small></span>
+                <span class="nav-option nav-option--disabled">Xuất hủy <small>Chưa khả dụng</small></span>
+              </section>
+            </div>
+          }
+        </div>
+
+        <a routerLink="/app/purchases" routerLinkActive="is-active" class="nav-link"><i class="pi pi-shopping-bag"></i><span>Mua hàng</span></a>
+        <a routerLink="/app/pos" routerLinkActive="is-active" class="nav-link"><i class="pi pi-receipt"></i><span>Đơn hàng</span></a>
+        <a routerLink="/app/customers" routerLinkActive="is-active" class="nav-link"><i class="pi pi-users"></i><span>Khách hàng</span></a>
+        <a routerLink="/app/employees" routerLinkActive="is-active" class="nav-link"><i class="pi pi-user-edit"></i><span>Nhân viên</span></a>
+        <a routerLink="/app/cashbook" routerLinkActive="is-active" class="nav-link"><i class="pi pi-wallet"></i><span>Sổ quỹ</span></a>
+        <a routerLink="/app/reports" routerLinkActive="is-active" class="nav-link"><i class="pi pi-chart-bar"></i><span>Báo cáo</span></a>
+        <a routerLink="/app/online" routerLinkActive="is-active" class="nav-link"><i class="pi pi-globe"></i><span>Bán online</span></a>
+        <a routerLink="/app/accounting" routerLinkActive="is-active" class="nav-link"><i class="pi pi-calculator"></i><span>Thuế &amp; Kế toán</span></a>
+      </div>
+
+      <a class="sales-action" routerLink="/app/pos"><i class="pi pi-shopping-cart"></i><span>Bán hàng</span></a>
+    </nav>
+  </header>
+
+  @if (openMenu()) {
+    <button class="menu-dismiss" type="button" aria-label="Đóng menu" (click)="closeMenu()"></button>
+  }
+
+  <main class="app-content">
+    <router-outlet />
+  </main>
 </div>

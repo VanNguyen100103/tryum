@@ -13,7 +13,7 @@ export interface AppEnvironment {
   apiUrl: string;
 }
 
-const DEFAULT_API_URL = 'http://localhost:8080';
+const DEFAULT_API_URL = 'https://tryum-api.duckdns.org';
 
 export const environment: AppEnvironment = {
   production: true,

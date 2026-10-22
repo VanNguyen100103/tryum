@@ -1,49 +1,55 @@
-<div class="auth-page">
-  <p-card header="Đăng nhập Tryum" styleClass="auth-card">
-    <form (ngSubmit)="login()" class="auth-form">
-      <div class="field">
-        <label for="identifier">Số điện thoại hoặc email</label>
-        <input
-          id="identifier"
-          pInputText
-          name="identifier"
-          [(ngModel)]="identifier"
-          autocomplete="username"
-          inputmode="tel"
-          placeholder="0355951359 hoặc email@domain.com"
-        />
-      </div>
+<main class="login-scene">
+  <div class="store-backdrop" aria-hidden="true">
+    <div class="store-lights"></div>
+    <div class="store-shelves shelf-left"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="store-shelves shelf-right"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="store-counter"><span></span><i></i><i></i><b></b></div>
+    <div class="store-plant"><i></i><i></i><i></i><b></b></div>
+  </div>
+  <div class="scene-overlay"></div>
 
-      <div class="field">
-        <label for="password">Mật khẩu</label>
-        <input
-          id="password"
-          pPassword
-          type="password"
-          name="password"
-          [(ngModel)]="password"
-          autocomplete="current-password"
-          [feedback]="false"
-          placeholder="Nhập mật khẩu"
-        />
-      </div>
+  <section class="login-card" aria-labelledby="login-title">
+    <a class="brand" routerLink="/" aria-label="Tryum, về trang chủ">
+      <span class="brand-mark"><i class="pi pi-shop"></i></span>
+      <span>Tryum</span>
+    </a>
 
-      <div class="field field-row">
-        <p-checkbox [(ngModel)]="remember" name="remember" inputId="remember" label="Ghi nhớ" />
-        <a class="link" routerLink="/auth/register">Chưa có tài khoản? Đăng ký</a>
-      </div>
+    @if (!credentialsStep()) {
+      <p class="welcome-label">BẮT ĐẦU TỪ CỬA HÀNG CỦA BẠN</p>
+      <h1 id="login-title">Nhập miền cửa hàng</h1>
+      <p class="card-subtitle">Đi tới không gian quản lý riêng của cửa hàng.</p>
 
-      <p-button
-        type="submit"
-        label="Đăng nhập"
-        styleClass="auth-btn"
-        [loading]="loading()"
-        [disabled]="loading()"
-      />
+      <form (ngSubmit)="resolveStore()" class="auth-form">
+        <div class="field">
+          <label for="store-slug">Địa chỉ cửa hàng</label>
+          <span class="domain-input"><input id="store-slug" name="storeSlug" [(ngModel)]="storeSlug" autocomplete="url" placeholder="ten-cua-hang" /><span>.tryum.app</span></span>
+          <small class="field-hint">Nhập tên miền cửa hàng bạn đã đăng ký.</small>
+        </div>
+        <button class="auth-btn" type="submit" [disabled]="resolvingStore()">{{ resolvingStore() ? 'Đang kiểm tra...' : 'Tiếp tục' }} <i class="pi pi-arrow-right"></i></button>
+      </form>
 
-      <small class="auth-hint">
-        Tài khoản demo sẽ có ở Phase 8 — hiện tại hãy đăng ký cửa hàng mới.
-      </small>
-    </form>
-  </p-card>
-</div>
+      <div class="register-prompt"><span>Bạn chưa có gian hàng Tryum?</span><a routerLink="/auth/register">Đăng ký miễn phí</a></div>
+    } @else {
+      <button class="back-link" type="button" (click)="backToStore()"><i class="pi pi-arrow-left"></i> Đổi cửa hàng</button>
+      <p class="welcome-label welcome-label--store">CỬA HÀNG CỦA BẠN</p>
+      <h1 id="login-title">Đăng nhập</h1>
+      <div class="selected-store"><span class="selected-store__icon"><i class="pi pi-shop"></i></span><span><strong>{{ selectedStore()?.tenantName }}</strong><small>{{ selectedStore()?.slug }}.tryum.app</small></span><i class="pi pi-check-circle selected-store__check"></i></div>
+
+      <form (ngSubmit)="login()" class="auth-form credentials-form">
+        <div class="field">
+          <label for="identifier">Email hoặc số điện thoại</label>
+          <span class="input-wrap"><i class="pi pi-user"></i><input id="identifier" name="identifier" [(ngModel)]="identifier" autocomplete="username" placeholder="Nhập email hoặc số điện thoại" /></span>
+        </div>
+        <div class="field">
+          <label for="password">Mật khẩu</label>
+          <span class="input-wrap"><i class="pi pi-lock"></i><input id="password" type="password" name="password" [(ngModel)]="password" autocomplete="current-password" placeholder="Nhập mật khẩu" /></span>
+        </div>
+        <button class="auth-btn" type="submit" [disabled]="loading()">{{ loading() ? 'Đang đăng nhập...' : 'Đăng nhập vào cửa hàng' }} <i class="pi pi-arrow-right"></i></button>
+      </form>
+    }
+
+    <div class="card-security"><i class="pi pi-shield"></i><span>Kết nối an toàn, thông tin được bảo mật</span></div>
+  </section>
+
+  <footer class="scene-footer"><span><i class="pi pi-phone"></i> Hỗ trợ cửa hàng</span><span class="footer-divider"></span><span>Tiếng Việt <i class="pi pi-angle-down"></i></span></footer>
+</main>

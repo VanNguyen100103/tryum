@@ -1,10 +1,8 @@
 import { Component } from '@angular/core';
-import { CardModule } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-reports',
-  imports: [CardModule, ButtonModule],
+  imports: [],
   templateUrl: './reports.component.html',
   styleUrl: './reports.component.scss',
 })

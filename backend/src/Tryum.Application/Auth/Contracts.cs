@@ -28,7 +28,10 @@ public sealed record CaptchaResponse(string CaptchaId, string ImageDataUrl);
 /// Input đăng nhập. <paramref name="Identifier"/> nhận email HOẶC số điện thoại
 /// (KiotViet cho đăng nhập bằng SĐT; Tryum hỗ trợ cả hai).
 /// </summary>
-public sealed record LoginRequest(string Identifier, string Password);
+public sealed record LoginRequest(string Identifier, string Password, string? TenantSlug = null);
+
+/// <summary>Thông tin cửa hàng tối thiểu để xác nhận miền đăng nhập.</summary>
+public sealed record StoreLookupResponse(string Slug, string TenantName);
 
 /// <summary>Kết quả gửi OTP.</summary>
 /// <param name="DemoOtp">Chỉ có khi chạy chế độ demo (mô phỏng SMS) – production gộp SMS gateway thì null.</param>
@@ -50,4 +53,4 @@ public sealed record AuthResponse(
     UserInfo User);
 
 /// <summary>Thông tin user hiện tại.</summary>
-public sealed record UserInfo(Guid Id, string FullName, string Email, string? Phone, Guid TenantId, string TenantName, string RoleCode, string RoleName);
+public sealed record UserInfo(Guid Id, string FullName, string Email, string? Phone, Guid TenantId, string TenantName, string TenantSlug, string RoleCode, string RoleName);

@@ -7,7 +7,6 @@
       <p class="reg__sub">Dùng thử miễn phí trọn bộ tính năng.</p>
 
       <input
-        pInputText
         id="ownerName"
         [(ngModel)]="ownerName"
         name="ownerName"
@@ -16,7 +15,6 @@
       />
 
       <input
-        pInputText
         id="shopName"
         [(ngModel)]="shopName"
         name="shopName"
@@ -24,7 +22,6 @@
       />
 
       <input
-        pInputText
         id="email"
         type="email"
         [(ngModel)]="email"
@@ -36,7 +33,6 @@
       <div class="reg__phone">
         <span class="reg__country"><span class="reg__flag">🇻🇳</span> +84</span>
         <input
-          pInputText
           id="phone"
           [(ngModel)]="phone"
           name="phone"
@@ -46,13 +42,12 @@
       </div>
 
       <input
-        pPassword
         class="reg__pwd"
         inputId="reg-password"
         [(ngModel)]="password"
         name="password"
         autocomplete="new-password"
-        [feedback]="false"
+        type="password"
         placeholder="Mật khẩu"
       />
 
@@ -68,7 +63,6 @@
           <i class="pi pi-refresh"></i>
         </button>
         <input
-          pInputText
           id="captcha"
           [(ngModel)]="captchaInput"
           name="captcha"

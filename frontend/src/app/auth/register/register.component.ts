@@ -1,23 +1,21 @@
 import { Component, DestroyRef, ElementRef, inject, signal, ViewChildren, QueryList } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 
 type Step = 'form' | 'otp';
 
 @Component({
   selector: 'app-register',
-  imports: [InputTextModule, PasswordModule, FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly messageService = inject(MessageService);
+  private readonly messageService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   ownerName = '';

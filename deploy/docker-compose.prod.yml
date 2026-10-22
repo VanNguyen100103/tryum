@@ -75,6 +75,12 @@ services:
       Sms__Textbee__SendUrl: ${TEXTBEE_URL:-https://api.textbee.dev/api/v1/gateway/send-sms}
       Sms__Textbee__DeviceId: ${TEXTBEE_DEVICE_ID:-}
       Sms__Textbee__SimSubscriptionId: ${TEXTBEE_SIM:-}
+      # ── Cloudflare R2: ảnh sản phẩm (bucket riêng tư, không đưa secret lên frontend) ──
+      R2__AccountId: ${R2_ACCOUNT_ID:-}
+      R2__AccessKeyId: ${R2_ACCESS_KEY_ID:-}
+      R2__SecretAccessKey: ${R2_SECRET_ACCESS_KEY:-}
+      R2__BucketName: ${R2_BUCKET_NAME:-tryum}
+      R2__PublicBaseUrl: ${R2_PUBLIC_BASE_URL:-}
     networks: [internal]
     # Không expose port: chỉ Caddy gọi nội bộ qua network "internal".
 

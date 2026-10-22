@@ -1,19 +1,159 @@
-<div class="page">
-  <div class="flex justify-content-between align-items-center mb-3">
-    <h2 class="m-0">Hàng hóa</h2>
-    <button pButton label="+ Thêm sản phẩm"></button>
+<section class="products-page">
+  <header class="page-heading">
+    <h1>Hàng hóa</h1>
+    <label class="search-box" aria-label="Tìm kiếm hàng hóa">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Theo mã, tên hàng" disabled title="Chưa có API tìm kiếm hàng hóa" />
+      <i class="pi pi-sliders-h search-filter-icon" aria-hidden="true"></i>
+    </label>
+    <div class="toolbar-actions">
+      <button type="button" class="action action--primary" disabled title="Chưa có API quản lý hàng hóa"><i class="pi pi-plus"></i> Tạo mới <i class="pi pi-angle-down"></i></button>
+      <button type="button" class="action" (click)="openImport()"><i class="pi pi-upload"></i> Import file</button>
+      <button type="button" class="action" disabled title="Chưa có API xuất hàng hóa"><i class="pi pi-download"></i> Xuất file</button>
+      <button type="button" class="icon-action" disabled aria-label="Tùy chỉnh cột" title="Chưa khả dụng"><i class="pi pi-list"></i></button>
+      <button type="button" class="icon-action" disabled aria-label="Cài đặt hàng hóa" title="Chưa khả dụng"><i class="pi pi-cog"></i></button>
+      <button type="button" class="icon-action" disabled aria-label="Trợ giúp" title="Chưa khả dụng"><i class="pi pi-question-circle"></i></button>
+    </div>
+  </header>
+
+  <div class="catalog-layout">
+    <aside class="filters" aria-label="Bộ lọc hàng hóa">
+      <section class="filter-group filter-group--category">
+        <div class="filter-title"><strong>Nhóm hàng</strong><button type="button" disabled>Tạo mới</button></div>
+        <button class="select-control" type="button" disabled>Chọn nhóm hàng <i class="pi pi-angle-down"></i></button>
+      </section>
+
+      <section class="filter-group">
+        <h2>Tồn kho</h2><label class="field-caption">Tình trạng tồn</label>
+        <button class="select-control" type="button" disabled>Tất cả <i class="pi pi-angle-down"></i></button>
+      </section>
+
+      <section class="filter-group">
+        <h2>Dự kiến hết hàng</h2>
+        <label class="radio-row"><input type="radio" name="expiry" checked disabled /><span>Toàn thời gian</span><i class="pi pi-angle-right"></i></label>
+        <label class="radio-row"><input type="radio" name="expiry" disabled /><span>Tùy chỉnh</span><i class="pi pi-calendar"></i></label>
+      </section>
+
+      <section class="filter-group">
+        <h2>Thời gian tạo</h2>
+        <label class="radio-row"><input type="radio" name="created" checked disabled /><span>Toàn thời gian</span><i class="pi pi-angle-right"></i></label>
+        <label class="radio-row"><input type="radio" name="created" disabled /><span>Tùy chỉnh</span><i class="pi pi-calendar"></i></label>
+      </section>
+
+      <section class="filter-group">
+        <h2>Nhà cung cấp</h2><button class="select-control" type="button" disabled>Chọn nhà cung cấp <i class="pi pi-angle-down"></i></button>
+      </section>
+      <section class="filter-group">
+        <h2>Vị trí</h2><button class="select-control" type="button" disabled>Chọn vị trí <i class="pi pi-angle-down"></i></button>
+      </section>
+      <section class="filter-group">
+        <h2>Loại hàng</h2><button class="select-control" type="button" disabled>Chọn loại hàng <i class="pi pi-angle-down"></i></button>
+      </section>
+      <section class="filter-group">
+        <h2>Bán trực tiếp</h2><div class="choice-pills"><button class="selected" type="button" disabled>Tất cả</button><button type="button" disabled>Có</button><button type="button" disabled>Không</button></div>
+      </section>
+      <section class="filter-group">
+        <h2>Liên kết kênh bán</h2><div class="choice-pills"><button class="selected" type="button" disabled>Tất cả</button><button type="button" disabled>Có</button><button type="button" disabled>Không</button></div>
+      </section>
+      <section class="filter-group"><h2>Trạng thái hàng hóa</h2><button class="select-control" type="button" disabled>Tất cả <i class="pi pi-angle-down"></i></button></section>
+    </aside>
+
+    <section class="table-card" aria-label="Danh sách hàng hóa">
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th class="check-col"><input type="checkbox" disabled aria-label="Chọn tất cả" /></th><th class="favorite-col"><i class="pi pi-star"></i></th><th class="image-col"></th>
+            <th>Mã hàng</th><th>Tên hàng</th><th>Giá bán</th><th>Giá vốn</th><th>Tồn kho</th><th>Khách đặt</th><th>Thời gian tạo</th><th>Dự kiến hết hàng</th>
+          </tr></thead>
+          <tbody>
+            @if (productsLoading) {
+              <tr class="empty-row"><td colspan="11"><div class="empty-state"><strong>Đang tải dữ liệu sản phẩm…</strong></div></td></tr>
+            } @else if (productsError) {
+              <tr class="empty-row"><td colspan="11"><div class="empty-state"><i class="pi pi-cloud empty-icon"></i><strong>Chưa kết nối được dữ liệu</strong><p>{{ productsError }}</p></div></td></tr>
+            } @else if (products.length) {
+              @for (product of products; track product.id) {
+                <tr class="product-row">
+                  <td class="check-col"><input type="checkbox" disabled [attr.aria-label]="'Chọn ' + product.name" /></td>
+                  <td class="favorite-col"><i class="pi pi-star"></i></td>
+                  <td class="image-col"><div class="product-image">@if (imageSources.get(product.id); as imageUrl) { <img [src]="imageUrl" [alt]="product.name" /> } @else { <i class="pi pi-box" [title]="product.imagesPending ? 'Ảnh đang được chuyển lên R2' : 'Chưa có ảnh sẵn sàng'"></i> }</div></td>
+                  <td>{{ product.sku }}</td><td class="name-cell">{{ product.name }}</td>
+                  <td class="numeric-cell">{{ product.salePrice === null ? '—' : product.salePrice.toLocaleString('vi-VN') }}</td>
+                  <td class="numeric-cell">{{ product.costPrice === null ? '—' : product.costPrice.toLocaleString('vi-VN') }}</td>
+                  <td class="numeric-cell">{{ product.stock === null ? '—' : product.stock.toLocaleString('vi-VN') }}</td>
+                  <td class="numeric-cell">—</td><td>—</td><td>—</td>
+                </tr>
+              }
+            } @else {
+              <tr class="empty-row"><td colspan="11"><div class="empty-state"><span class="empty-icon"><i class="pi pi-box"></i></span><strong>Chưa có dữ liệu hàng hóa</strong><p>Danh sách sẽ hiển thị tại đây sau khi có dữ liệu sản phẩm được nhập.</p></div></td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer"><span>{{ productsLoading ? 'Đang tải…' : pageStart + '–' + pageEnd + ' / ' + totalProducts }}</span><div class="pagination"><span>Dòng mỗi trang: {{ pageSize }}</span><button type="button" [disabled]="currentPage <= 1 || productsLoading" (click)="previousPage()" aria-label="Trang trước"><i class="pi pi-angle-left"></i></button><button type="button" [disabled]="currentPage * pageSize >= totalProducts || productsLoading" (click)="nextPage()" aria-label="Trang sau"><i class="pi pi-angle-right"></i></button></div></footer>
+    </section>
   </div>
-  <p-card>
-    <p-table [value]="[]" [rows]="10" [loading]="true">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Mã SKU</th>
-          <th>Tên</th>
-          <th>ĐVT</th>
-          <th>Giá bán</th>
-          <th>Thao tác</th>
-        </tr>
-      </ng-template>
-    </p-table>
-  </p-card>
-</div>
+</section>
+
+@if (importOpen) {
+  <div class="dialog-backdrop" (click)="closeImport()">
+    <section class="import-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title" (click)="$event.stopPropagation()">
+      <header class="dialog-header">
+        <h2 id="import-title">Nhập hàng hóa từ file dữ liệu</h2>
+        <span class="template-link">Tải file mẫu: <button type="button" (click)="downloadTemplate()">Excel (.xlsx)</button><i class="pi pi-info-circle" title="File mẫu chỉ có tiêu đề cột, không chứa dữ liệu ví dụ"></i></span>
+        <button class="dialog-close" type="button" aria-label="Đóng" (click)="closeImport()"><i class="pi pi-times"></i></button>
+      </header>
+
+      <div class="dialog-content">
+        <section class="import-setting">
+          <h3>Xử lý trùng mã hàng/mã vạch, khác tên hàng hóa?</h3>
+          <label><input type="radio" name="duplicate-name" checked /><span>Báo lỗi và dừng import</span></label>
+          <label><input type="radio" name="duplicate-name" /><span>Thay thế tên hàng cũ bằng tên hàng mới</span></label>
+        </section>
+        <section class="import-setting">
+          <h3>Xử lý trùng mã vạch, khác mã hàng?</h3>
+          <label><input type="radio" name="duplicate-barcode" checked /><span>Báo lỗi và dừng import</span></label>
+          <label><input type="radio" name="duplicate-barcode" /><span>Thay thế mã hàng cũ bằng mã hàng mới</span></label>
+        </section>
+        <section class="import-setting import-setting--compact">
+          <h3>Cập nhật tồn kho?</h3>
+          <label><input type="radio" name="update-stock" checked /><span>Không</span></label><label><input type="radio" name="update-stock" /><span>Có</span></label>
+        </section>
+        <section class="import-setting import-setting--compact">
+          <h3>Cập nhật giá vốn?</h3>
+          <label><input type="radio" name="update-cost" checked /><span>Không</span></label><label><input type="radio" name="update-cost" /><span>Có</span></label>
+        </section>
+        <section class="import-setting import-setting--compact">
+          <h3>Cập nhật mô tả?</h3>
+          <label><input type="radio" name="update-description" checked /><span>Không</span></label><label><input type="radio" name="update-description" /><span>Có</span></label>
+        </section>
+
+        @if (fileName) {
+          <div class="file-result" [class.file-result--error]="fileError">
+            <i [class]="fileError ? 'pi pi-exclamation-circle' : 'pi pi-file-check'"></i>
+            <div><strong>{{ fileName }}</strong><span>{{ fileError || fileSummary }}</span></div>
+            <button type="button" (click)="clearFile()" aria-label="Bỏ file"><i class="pi pi-times"></i></button>
+          </div>
+        }
+        @if (importReady) {
+          <p class="api-notice"><i class="pi pi-info-circle"></i> File được kiểm tra trước khi gửi. Sản phẩm sẽ lưu trong PostgreSQL; ảnh được chuyển nền lên bucket R2 riêng tư.</p>
+        }
+        @if (importResult) { <p class="api-notice api-notice--success"><i class="pi pi-check-circle"></i>{{ importResult }}</p> }
+        @if (importing) {
+          <section class="import-progress" aria-live="polite" aria-label="Tiến độ nhập hàng hóa">
+            <div class="import-progress__heading"><strong>{{ importStage }}</strong>@if (importProgress !== null) { <span>{{ importProgress }}%</span> }</div>
+            <div class="import-progress__track" [class.import-progress__track--indeterminate]="importProgress === null" role="progressbar" [attr.aria-valuenow]="importProgress" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="importProgress ?? 35"></span></div>
+            @if (importProgress === 100) { <p>Đang xử lý dữ liệu trên máy chủ; thời gian tùy theo số dòng và hình ảnh trong file.</p> }
+          </section>
+        }
+      </div>
+
+      <footer class="dialog-footer">
+          <span class="file-hint">Chọn file Excel (.xlsx) để kiểm tra cột và dữ liệu trước khi gửi.</span>
+        <div class="dialog-actions">
+          <label class="choose-file"><input class="file-input-overlay" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onFileSelected($event)" /><i class="pi pi-folder-open"></i> Chọn file dữ liệu</label>
+          <button class="import-submit" type="button" [disabled]="!importReady || importing" (click)="importFile()">{{ importing ? 'Đang nhập…' : 'Import dữ liệu' }}</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+}

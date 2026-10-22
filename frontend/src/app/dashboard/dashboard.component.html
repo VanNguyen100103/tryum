@@ -1,29 +1,67 @@
-<div class="page">
-  <h2>Dashboard</h2>
-  <div class="grid">
-    <div class="col-12 md:col-6 lg:col-3">
-      <p-card>
-        <p class="m-0 text-600 text-sm">Doanh thu hôm nay</p>
-        <p class="mt-2 text-2xl font-bold">0 đ</p>
-      </p-card>
+<section class="dashboard">
+  <header class="page-heading">
+    <div>
+      <div class="eyebrow"><span class="live-dot"></span> TỔNG QUAN CỬA HÀNG</div>
+      <h1>Kết quả bán hàng</h1>
+      <p class="subheading">{{ user()?.tenantName }} <span class="dot-sep">·</span> {{ today }}</p>
     </div>
-    <div class="col-12 md:col-6 lg:col-3">
-      <p-card>
-        <p class="m-0 text-600 text-sm">Số đơn</p>
-        <p class="mt-2 text-2xl font-bold">0</p>
-      </p-card>
-    </div>
-    <div class="col-12 md:col-6 lg:col-3">
-      <p-card>
-        <p class="m-0 text-600 text-sm">Lãi gộp</p>
-        <p class="mt-2 text-2xl font-bold">0 đ</p>
-      </p-card>
-    </div>
-    <div class="col-12 md:col-6 lg:col-3">
-      <p-card>
-        <p class="m-0 text-600 text-sm">Sản phẩm</p>
-        <p class="mt-2 text-2xl font-bold">0</p>
-      </p-card>
-    </div>
+    <a class="primary-action" routerLink="/app/pos"><i class="pi pi-shopping-cart"></i> Bán hàng</a>
+  </header>
+
+  <section class="summary-grid" aria-label="Tổng quan bán hàng">
+    <article class="summary-card">
+      <div class="summary-title">Doanh thu thuần <span class="summary-icon blue"><i class="pi pi-wallet"></i></span></div>
+      <strong>—</strong><small>Chưa có dữ liệu bán hàng</small>
+    </article>
+    <article class="summary-card">
+      <div class="summary-title">Đơn hàng <span class="summary-icon violet"><i class="pi pi-receipt"></i></span></div>
+      <strong>—</strong><small>Chưa có dữ liệu đơn hàng</small>
+    </article>
+    <article class="summary-card">
+      <div class="summary-title">Khách hàng <span class="summary-icon green"><i class="pi pi-users"></i></span></div>
+      <strong>—</strong><small>Chưa có dữ liệu khách hàng</small>
+    </article>
+    <article class="summary-card">
+      <div class="summary-title">Sản phẩm <span class="summary-icon amber"><i class="pi pi-box"></i></span></div>
+      <strong>—</strong><small>Chưa có dữ liệu hàng hóa</small>
+    </article>
+  </section>
+
+  <div class="dashboard-grid">
+    <section class="panel sales-panel">
+      <header class="panel-heading">
+        <div><h2>Doanh thu thuần</h2><p>Theo ngày</p></div>
+        <button class="period-select" type="button" disabled>Tháng này <i class="pi pi-angle-down"></i></button>
+      </header>
+      <div class="chart-empty">
+        <span class="chart-empty__icon"><i class="pi pi-chart-bar"></i></span>
+        <strong>Chưa có dữ liệu bán hàng</strong>
+        <p>Biểu đồ sẽ hiển thị khi cửa hàng có đơn hàng được ghi nhận.</p>
+      </div>
+    </section>
+
+    <aside class="panel activity-panel">
+      <header class="panel-heading"><div><h2>Hoạt động gần đây</h2><p>Tại {{ user()?.tenantName }}</p></div><i class="pi pi-history panel-heading__icon"></i></header>
+      <div class="activity-empty">
+        <span><i class="pi pi-inbox"></i></span>
+        <strong>Chưa có hoạt động</strong>
+        <p>Các đơn hàng và thao tác gần đây sẽ hiển thị tại đây.</p>
+      </div>
+      <div class="account-strip">
+        <span class="account-avatar">{{ auth.initials() }}</span>
+        <span><strong>{{ user()?.fullName }}</strong><small>{{ user()?.roleName }} · {{ user()?.email }}</small></span>
+      </div>
+    </aside>
   </div>
-</div>
+
+  <div class="lower-grid">
+    <section class="panel ranking-panel">
+      <header class="panel-heading"><div><h2>Top 10 hàng bán chạy</h2><p>Doanh thu thuần</p></div><button class="period-select" type="button" disabled>Tháng này <i class="pi pi-angle-down"></i></button></header>
+      <div class="compact-empty"><i class="pi pi-box"></i><span>Chưa có dữ liệu hàng hóa để thống kê</span></div>
+    </section>
+    <section class="panel ranking-panel">
+      <header class="panel-heading"><div><h2>Top 10 khách hàng</h2><p>Theo doanh thu</p></div><button class="period-select" type="button" disabled>Tháng này <i class="pi pi-angle-down"></i></button></header>
+      <div class="compact-empty"><i class="pi pi-users"></i><span>Chưa có dữ liệu khách hàng để thống kê</span></div>
+    </section>
+  </div>
+</section>

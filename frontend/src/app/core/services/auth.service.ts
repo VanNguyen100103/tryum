@@ -11,6 +11,7 @@ import type {
   RegisterRequest,
   SendOtpRequest,
   SendOtpResponse,
+  StoreLookupResponse,
   UserInfo,
 } from '../models/auth.models';
 import { TokenStorageService } from './token-storage.service';
@@ -56,6 +57,10 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, request).pipe(
       tap((res) => this.applySession(res)),
     );
+  }
+
+  resolveStore(slug: string): Observable<StoreLookupResponse> {
+    return this.http.get<StoreLookupResponse>(`${this.baseUrl}/stores/${encodeURIComponent(slug)}`);
   }
 
   /**

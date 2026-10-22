@@ -1,6 +1,144 @@
-<div class="page">
-  <h2>Bán hàng POS</h2>
-  <p-card>
-    <p class="m-0 text-600">Màn hình POS: tìm/quét mã vạch, giỏ hàng, thanh toán – Phase 5.</p>
-  </p-card>
-</div>
+<main class="pos-page" [class.pos-page--quick]="mode === 'quick'">
+  <header class="pos-toolbar">
+    <form class="scan-search" (submit)="searchFromBarcode($event)">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input name="search" [ngModel]="search" (ngModelChange)="onSearchChanged($event)" placeholder="Tìm tên, mã hàng hoặc quét mã vạch" aria-label="Tìm hoặc quét mã hàng" autocomplete="off" />
+      <button type="submit" aria-label="Tìm sản phẩm"><i class="pi pi-arrow-right"></i></button>
+    </form>
+    <div class="invoice-tabs" aria-label="Hóa đơn đang mở">
+      <button type="button" class="invoice-tab active"><i class="pi pi-arrow-right-arrow-left"></i> Hóa đơn 1 <span class="tab-close">×</span></button>
+      @if (invoiceCount > 1) { <button type="button" class="invoice-tab"><i class="pi pi-arrow-right-arrow-left"></i> Hóa đơn {{ invoiceCount }} <span class="tab-close" (click)="$event.stopPropagation()">×</span></button> }
+      <button type="button" class="add-invoice" (click)="newInvoice()" aria-label="Tạo hóa đơn mới"><i class="pi pi-plus"></i></button>
+    </div>
+    <span class="toolbar-spacer"></span>
+    <span class="pos-user"><i class="pi pi-user"></i> Bán hàng</span>
+  </header>
+
+  <div class="pos-workspace">
+    <section class="ticket-area" aria-label="Giỏ hàng">
+      <div class="ticket-head">
+        <span class="ticket-label">{{ mode === 'delivery' ? 'Đơn giao hàng' : mode === 'quick' ? 'Bán nhanh' : 'Hóa đơn 1' }}</span>
+        <span class="line-count">{{ totalQuantity }} sản phẩm</span>
+      </div>
+      @if (cart.length) {
+        <div class="cart-table-wrap">
+          <table class="cart-table">
+            <thead><tr><th>STT</th><th>Sản phẩm</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th></th></tr></thead>
+            <tbody>
+              @for (line of cart; track line.product.id; let i = $index) {
+                <tr>
+                  <td>{{ i + 1 }}</td>
+                  <td><strong>{{ line.product.name }}</strong><small>{{ line.product.sku }}</small></td>
+                  <td>{{ (line.product.salePrice ?? 0).toLocaleString('vi-VN') }}</td>
+                  <td><div class="quantity"><button type="button" (click)="changeQuantity(line.product.id, -1)" aria-label="Giảm">−</button><span>{{ line.quantity }}</span><button type="button" (click)="changeQuantity(line.product.id, 1)" aria-label="Tăng">+</button></div></td>
+                  <td class="money">{{ ((line.product.salePrice ?? 0) * line.quantity).toLocaleString('vi-VN') }}</td>
+                  <td><button class="remove-line" type="button" (click)="removeLine(line.product.id)" aria-label="Xóa sản phẩm"><i class="pi pi-trash"></i></button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-ticket"><div class="empty-basket"><i class="pi pi-shopping-bag"></i></div><strong>Chưa có sản phẩm trong hóa đơn</strong><span>Tìm hoặc chọn sản phẩm ở danh sách bên phải để bắt đầu bán hàng.</span></div>
+      }
+      <div class="ticket-bottom">
+        <button class="clear-cart" type="button" (click)="clearCart()" [disabled]="cart.length === 0"><i class="pi pi-trash"></i> Xóa giỏ</button>
+        <label class="note-field"><i class="pi pi-pencil"></i><input [(ngModel)]="note" name="note" placeholder="Ghi chú đơn hàng" /></label>
+        <div class="ticket-total"><span>Tổng tiền hàng <b>{{ totalQuantity }}</b></span><strong>{{ subtotal.toLocaleString('vi-VN') }}<small>₫</small></strong></div>
+      </div>
+    </section>
+
+    <aside class="catalog-panel" aria-label="Chọn hàng hóa">
+      <div class="catalog-top">
+        <div class="customer-picker" (focusout)="customerPickerOpen = false">
+          <div class="customer-field">
+            <i class="pi pi-user"></i>
+            <input [ngModel]="selectedCustomer?.name ?? customerSearch" (ngModelChange)="onCustomerSearchChanged($event)" (focus)="openCustomerPicker()" (click)="openCustomerPicker()" name="customerSearch" placeholder="Tìm khách hàng (F4)" autocomplete="off" />
+            @if (selectedCustomer) { <button class="customer-clear" type="button" (click)="clearCustomer()" aria-label="Bỏ chọn khách hàng">×</button> }
+            <button class="customer-add" type="button" (click)="openCreateCustomer()" aria-label="Thêm khách hàng"><i class="pi pi-plus"></i></button>
+          </div>
+          @if (customerPickerOpen) {
+            <div class="customer-results">
+              <button class="customer-new-row" type="button" (mousedown)="$event.preventDefault()" (click)="openCreateCustomer()"><i class="pi pi-plus-circle"></i> Thêm khách hàng mới</button>
+              @if (customerLoading) { <div class="customer-result-state"><i class="pi pi-spin pi-spinner"></i> Đang tìm khách hàng…</div> }
+              @else if (customerError) { <div class="customer-result-state error">{{ customerError }}<button type="button" (click)="loadCustomers()">Thử lại</button></div> }
+              @else if (!customerResults.length) { <div class="customer-result-state">{{ customerSearch ? 'Không tìm thấy khách hàng phù hợp' : 'Chưa có khách hàng' }}</div> }
+              @else {
+                @for (item of customerResults; track item.id) {
+                  <button class="customer-result" type="button" (mousedown)="$event.preventDefault()" (click)="selectCustomer(item)"><span class="customer-avatar">{{ item.name.slice(0, 1).toUpperCase() }}</span><span><strong>{{ item.name }}</strong><small>{{ item.phone || item.code }}</small></span></button>
+                }
+              }
+            </div>
+          }
+        </div>
+        <button class="price-list" type="button" disabled title="Bảng giá chưa được kết nối">Bảng giá chung <i class="pi pi-angle-down"></i></button>
+        <button class="catalog-icon" type="button" disabled aria-label="Danh mục"><i class="pi pi-list"></i></button>
+        <button class="catalog-icon" type="button" disabled aria-label="Lọc"><i class="pi pi-filter"></i></button>
+      </div>
+      @if (mode === 'delivery') {
+        <label class="delivery-address"><i class="pi pi-map-marker"></i><input [(ngModel)]="deliveryAddress" name="deliveryAddress" placeholder="Địa chỉ giao hàng" /></label>
+      }
+      @if (loadingProducts) {
+        <div class="catalog-state"><i class="pi pi-spin pi-spinner"></i><strong>Đang tải sản phẩm…</strong></div>
+      } @else if (productsError) {
+        <div class="catalog-state error"><i class="pi pi-cloud"></i><strong>{{ productsError }}</strong><button type="button" (click)="loadProducts()">Thử tải lại</button></div>
+      } @else if (!filteredProducts.length) {
+        <div class="catalog-state"><i class="pi pi-box"></i><strong>{{ search ? 'Không tìm thấy sản phẩm phù hợp' : 'Cửa hàng chưa có sản phẩm' }}</strong><span>{{ search ? 'Thử mã hàng hoặc tên sản phẩm khác.' : 'Sản phẩm được tải trực tiếp từ dữ liệu cửa hàng.' }}</span></div>
+      } @else {
+        <div class="product-grid">
+          @for (product of filteredProducts; track product.id) {
+            <button class="product-tile" type="button" (click)="addProduct(product)" [attr.aria-label]="'Thêm ' + product.name">
+              <span class="product-thumb">@if (imageSources.get(product.id); as imageUrl) { <img [src]="imageUrl" [alt]="product.name" /> } @else { <i class="pi pi-box"></i> }</span>
+              <span class="product-info"><span class="product-name">{{ product.name }}</span><span class="product-price">{{ (product.salePrice ?? 0).toLocaleString('vi-VN') }} ₫</span><small>{{ product.sku }}</small></span>
+            </button>
+          }
+        </div>
+      }
+      <div class="catalog-pagination"><button type="button" (click)="previousProducts()" [disabled]="productPage <= 1" aria-label="Trang trước"><i class="pi pi-angle-left"></i></button><span>{{ firstPage }}–{{ lastPage }} / {{ totalProducts.toLocaleString('vi-VN') }}</span><button type="button" (click)="nextProducts()" [disabled]="productPage * pageSize >= totalProducts" aria-label="Trang sau"><i class="pi pi-angle-right"></i></button></div>
+    </aside>
+  </div>
+
+  <footer class="pos-footer">
+    <nav class="sale-modes" aria-label="Chế độ bán hàng">
+      <button type="button" [class.active]="mode === 'quick'" (click)="mode = 'quick'"><i class="pi pi-bolt"></i> Bán nhanh</button>
+      <button type="button" [class.active]="mode === 'regular'" (click)="mode = 'regular'"><i class="pi pi-clock"></i> Bán thường</button>
+      <button type="button" [class.active]="mode === 'delivery'" (click)="mode = 'delivery'"><i class="pi pi-truck"></i> Bán giao hàng</button>
+    </nav>
+    <div class="footer-actions"><span class="branch"><i class="pi pi-map-marker"></i> Cửa hàng hiện tại</span><button class="hold-button" type="button" disabled title="Tạm tính chưa được kết nối">Lưu tạm</button><button class="checkout-button" type="button" [disabled]="cart.length === 0" (click)="checkout()"><i class="pi pi-wallet"></i> Thanh toán <strong>{{ subtotal.toLocaleString('vi-VN') }} ₫</strong></button></div>
+  </footer>
+</main>
+
+@if (customerDialogOpen) {
+  <div class="customer-dialog-backdrop" (click)="customerDialogOpen = false">
+    <section class="customer-dialog" role="dialog" aria-modal="true" aria-labelledby="customer-dialog-title" (click)="$event.stopPropagation()">
+      <header class="customer-dialog-header"><div><strong id="customer-dialog-title">Thêm khách hàng</strong><span>Chi nhánh tạo: Cửa hàng hiện tại</span></div><button type="button" aria-label="Đóng" (click)="customerDialogOpen = false">×</button></header>
+      <nav class="customer-dialog-tabs" aria-label="Thông tin khách hàng">
+        <button type="button" [class.active]="customerDialogTab === 'general'" (click)="customerDialogTab = 'general'">Thông tin chung</button>
+        <button type="button" [class.active]="customerDialogTab === 'invoice'" (click)="customerDialogTab = 'invoice'">Thông tin xuất hóa đơn</button>
+      </nav>
+      <form class="customer-form" (submit)="$event.preventDefault(); saveCustomer()">
+        @if (customerDialogTab === 'general') {
+          <div class="customer-form-grid">
+            <div class="customer-profile"><span class="customer-profile-avatar"><i class="pi pi-user"></i></span><small>Mã khách hàng sẽ tự tạo khi lưu</small></div>
+            <label>Tên khách hàng <b>*</b><input [(ngModel)]="customerDraft.name" name="newCustomerName" required maxlength="200" placeholder="Nhập tên khách hàng" /></label>
+            <label>Nhóm<select [(ngModel)]="customerDraft.groupName" name="newCustomerGroup"><option value="">Chọn nhóm khách hàng</option><option>Khách lẻ</option><option>Khách thân thiết</option><option>Khách sỉ</option></select></label>
+            <label>Điện thoại<input [(ngModel)]="customerDraft.phone" name="newCustomerPhone" type="tel" maxlength="40" placeholder="Nhập số điện thoại" /></label>
+            <label>Ngày sinh<input [(ngModel)]="customerDraft.birthDate" name="newCustomerBirthDate" type="date" /></label>
+            <label>Email<input [(ngModel)]="customerDraft.email" name="newCustomerEmail" type="email" maxlength="254" placeholder="name@example.com" /></label>
+            <fieldset><legend>Giới tính</legend><label><input [(ngModel)]="customerDraft.gender" name="newCustomerGender" type="radio" value="Nam" /> Nam</label><label><input [(ngModel)]="customerDraft.gender" name="newCustomerGender" type="radio" value="Nữ" /> Nữ</label></fieldset>
+            <label>Facebook<input [(ngModel)]="customerDraft.facebook" name="newCustomerFacebook" maxlength="255" placeholder="Facebook" /></label>
+            <label>Người phụ trách<input [(ngModel)]="customerDraft.assignedTo" name="newCustomerAssigned" maxlength="200" placeholder="Người phụ trách" /></label>
+            <label class="wide">Địa chỉ<input [(ngModel)]="customerDraft.address" name="newCustomerAddress" maxlength="500" placeholder="Số nhà, tòa nhà, ngõ, đường" /></label>
+            <label>Khu vực<input [(ngModel)]="customerDraft.region" name="newCustomerRegion" maxlength="160" placeholder="Tỉnh/Thành phố" /></label>
+            <label>Phường xã<input [(ngModel)]="customerDraft.ward" name="newCustomerWard" maxlength="160" placeholder="Phường/Xã" /></label>
+            <label class="wide">Ghi chú<textarea [(ngModel)]="customerDraft.note" name="newCustomerNote" maxlength="2000" rows="2" placeholder="Ghi chú khách hàng"></textarea></label>
+          </div>
+        } @else {
+          <div class="customer-invoice-fields"><p>Thông tin này dùng khi xuất hóa đơn cho khách hàng.</p><label>Tên công ty<input [(ngModel)]="customerDraft.companyName" name="customerCompany" maxlength="250" placeholder="Tên công ty" /></label><label>Mã số thuế<input [(ngModel)]="customerDraft.taxCode" name="customerTaxCode" maxlength="80" placeholder="Mã số thuế" /></label><label>Địa chỉ xuất hóa đơn<textarea [(ngModel)]="customerDraft.invoiceAddress" name="customerInvoiceAddress" maxlength="500" rows="3" placeholder="Địa chỉ trên hóa đơn"></textarea></label></div>
+        }
+      </form>
+      @if (customerError && !customerPickerOpen) { <div class="customer-form-error"><i class="pi pi-exclamation-circle"></i> {{ customerError }}</div> }
+      <footer class="customer-dialog-footer"><button type="button" class="customer-cancel" (click)="customerDialogOpen = false">Bỏ qua</button><button type="button" class="customer-save" [disabled]="customerSaveLoading" (click)="saveCustomer()">{{ customerSaveLoading ? 'Đang lưu…' : 'Lưu' }}</button></footer>
+    </section>
+  </div>
+}

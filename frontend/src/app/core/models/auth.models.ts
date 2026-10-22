@@ -6,6 +6,7 @@ export interface UserInfo {
   phone: string | null;
   tenantId: string;
   tenantName: string;
+  tenantSlug: string;
   roleCode: string;
   roleName: string;
 }
@@ -20,8 +21,15 @@ export interface AuthResponse {
 
 /** Đăng nhập: nhận email HOẶC số điện thoại (giống KiotViet). */
 export interface LoginRequest {
+  tenantSlug: string;
   identifier: string;
   password: string;
+}
+
+/** Cửa hàng đang hoạt động được tra cứu theo miền của cửa hàng. */
+export interface StoreLookupResponse {
+  slug: string;
+  tenantName: string;
 }
 
 export interface RegisterRequest {

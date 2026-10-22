@@ -34,6 +34,13 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(sp =>
             sp.GetRequiredService<ApplicationDbContext>());
 
+        services.AddOptions<R2Options>().Bind(configuration.GetSection(R2Options.SectionName));
+        services.AddHttpClient<CloudflareR2ObjectStorage>();
+        services.AddScoped<IObjectStorage>(sp => sp.GetRequiredService<CloudflareR2ObjectStorage>());
+        services.AddHttpClient("product-images", client => client.Timeout = TimeSpan.FromSeconds(30))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddHostedService<R2ProductImageSyncService>();
+
         // ── Options ─────────────────────────────────────────────────────────
         services
             .AddOptions<JwtOptions>()

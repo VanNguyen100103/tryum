@@ -109,6 +109,21 @@ public static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        group.MapGet("/stores/{slug}", async (
+                string slug,
+                IAuthService authService,
+                CancellationToken ct) =>
+            {
+                var store = await authService.ResolveStoreAsync(slug, ct);
+                return Results.Ok(store);
+            })
+            .AllowAnonymous()
+            .RequireRateLimiting("auth")
+            .WithSummary("Tra cứu cửa hàng đang hoạt động theo miền (slug)")
+            .Produces<StoreLookupResponse>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         group.MapPost("/login", async (
                 LoginRequest request,
                 IAuthService authService,
@@ -127,7 +142,7 @@ public static class AuthEndpoints
             })
             .AllowAnonymous()
             .RequireRateLimiting("auth")
-            .WithSummary("Đăng nhập, trả về access token + refresh token")
+            .WithSummary("Đăng nhập vào cửa hàng theo miền, trả về access token + refresh token")
             .Produces<AuthResponse>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden);

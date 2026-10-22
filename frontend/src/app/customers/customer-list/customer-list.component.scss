@@ -1,1 +1,5 @@
 .page { h2 { margin-top: 0; } }
+.flex { display: flex; }.justify-content-between { justify-content: space-between; }.align-items-center { align-items: center; }.mb-3 { margin-bottom: 1rem; }.m-0 { margin: 0; }.text-600 { color: #637087; }
+.customer-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.customer-table th { padding: 11px 13px; background: #f4f7fb; color: #35445b; font-weight: 600; }
+.customer-table td { padding: 26px 13px; border-top: 1px solid #e8edf3; }.customer-table .empty { text-align: center; color: #8492a5; }

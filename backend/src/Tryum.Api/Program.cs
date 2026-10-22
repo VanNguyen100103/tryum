@@ -126,6 +126,8 @@ try
     // ── Endpoints ─────────────────────────────────────────────────────────────
     app.MapHealthChecks("/health");
     app.MapAuthEndpoints();
+    app.MapProductEndpoints();
+    app.MapCustomerEndpoints();
 
     // ── Database: migrate + seed khi khởi động (mặc định bật ở Development) ───
     if (app.Configuration.GetValue("Database:ApplyMigrationsOnStartup", app.Environment.IsDevelopment()))

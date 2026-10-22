@@ -18,7 +18,10 @@ public interface IAuthService
     /// </summary>
     Task EnsurePhoneAvailableAsync(string phone, CancellationToken cancellationToken = default);
 
-    /// <summary>Đăng nhập bằng email HOẶC số điện thoại + mật khẩu, trả về access token và refresh token mới.</summary>
+    /// <summary>Tra cứu cửa hàng đang hoạt động theo slug miền công khai.</summary>
+    Task<StoreLookupResponse> ResolveStoreAsync(string slug, CancellationToken cancellationToken = default);
+
+    /// <summary>Đăng nhập bằng email HOẶC số điện thoại trong cửa hàng đã chọn.</summary>
     Task<AuthResponse> LoginAsync(LoginRequest request, string? ip = null, CancellationToken cancellationToken = default);
 
     /// <summary>Đổi refresh token lấy access token mới (có rotation: token cũ bị revoke).</summary>

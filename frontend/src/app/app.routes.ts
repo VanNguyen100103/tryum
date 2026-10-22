@@ -6,7 +6,7 @@ import { authGuard, guestGuard } from './core/guards/auth.guard';
  *
  * - `/`        → Landing page (public, marketing — kiểu KiotViet).
  * - `/auth/*`  → full-page (không layout), dùng cho login/register, có `guestGuard`.
- * - `/app/*`   → AppLayoutComponent (sidebar + topbar), các page con lazy-loaded, `authGuard`.
+ * - `/app/*`   → AppLayoutComponent (thanh điều hướng ngang), các page con lazy-loaded, `authGuard`.
  * - `**`       → redirect về /app (dashboard).
  *
  * Mỗi page nghiệp vụ sẽ được giới hạn quyền bằng `data: { roles: [...] }` (xem AuthGuard).
@@ -88,6 +88,42 @@ export const routes: Routes = [
             (c) => c.CustomerListComponent
           ),
         title: 'Khách hàng - Tryum',
+      },
+
+      {
+        path: 'employees',
+        loadComponent: () =>
+          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+        data: { featureTitle: 'Nhân viên' },
+        title: 'Nhân viên - Tryum',
+      },
+      {
+        path: 'purchases',
+        loadComponent: () =>
+          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+        data: { featureTitle: 'Mua hàng' },
+        title: 'Mua hàng - Tryum',
+      },
+      {
+        path: 'online',
+        loadComponent: () =>
+          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+        data: { featureTitle: 'Bán online' },
+        title: 'Bán online - Tryum',
+      },
+      {
+        path: 'cashbook',
+        loadComponent: () =>
+          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+        data: { featureTitle: 'Sổ quỹ' },
+        title: 'Sổ quỹ - Tryum',
+      },
+      {
+        path: 'accounting',
+        loadComponent: () =>
+          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+        data: { featureTitle: 'Thuế & Kế toán' },
+        title: 'Thuế & Kế toán - Tryum',
       },
 
       // Phase 6

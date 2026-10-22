@@ -1,7 +1,7 @@
-// ============ TRYUM LANDING — KiotViet-style ============
-:root {
-  --p1: #ff7a45;
-  --p2: #f03a1e;
+// ============ TRYUM LANDING — KiotViet-inspired layout ============
+:host {
+  --p1: #1684ff;
+  --p2: #075bd8;
   --grad: linear-gradient(135deg, var(--p1), var(--p2));
   --ink: #16202e;
   --sub: #5b6472;
@@ -9,11 +9,12 @@
   --soft: #f6f8fb;
   --navy: #0d1524;
   --rad: 14px;
+  display: block;
+  min-height: 100vh;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
-
-:host { display: block; }
 
 h1, h2, h3, h4 { color: var(--ink); margin: 0; font-weight: 800; letter-spacing: -0.02em; }
 p { margin: 0; }
@@ -28,7 +29,7 @@ i.pi { font-size: 1em; }
 .section--soft { background: var(--soft); }
 .section--glow {
   background:
-    radial-gradient(600px 300px at 50% 0%, rgba(240, 58, 30, 0.07), transparent 70%),
+    radial-gradient(600px 300px at 50% 0%, rgba(7, 91, 216, 0.07), transparent 70%),
     var(--soft);
 }
 
@@ -65,9 +66,9 @@ i.pi { font-size: 1em; }
 .btn--primary {
   color: #fff;
   background: var(--grad);
-  box-shadow: 0 6px 18px rgba(240, 58, 30, 0.28);
+  box-shadow: 0 6px 18px rgba(7, 91, 216, 0.24);
 }
-.btn--primary:hover { box-shadow: 0 10px 24px rgba(240, 58, 30, 0.36); }
+.btn--primary:hover { box-shadow: 0 10px 24px rgba(7, 91, 216, 0.32); }
 .btn--outline {
   color: var(--ink);
   background: #fff;
@@ -101,7 +102,7 @@ i.pi { font-size: 1em; }
   color: #fff;
   background: var(--grad);
   font-size: 18px;
-  box-shadow: 0 4px 12px rgba(240, 58, 30, 0.3);
+  box-shadow: 0 4px 12px rgba(7, 91, 216, 0.24);
 }
 .brand--light { color: #fff; }
 .brand--light .brand__name { color: #fff; }
@@ -179,7 +180,7 @@ i.pi { font-size: 1em; }
   font-size: 11px;
   font-weight: 800;
   color: var(--p2);
-  background: #ffe9e3;
+  background: #e8f2ff;
   padding: 3px 10px;
   border-radius: 999px;
 }
@@ -217,7 +218,7 @@ i.pi { font-size: 1em; }
 // ---------- Hero ----------
 .hero {
   background:
-    radial-gradient(800px 420px at 85% 10%, rgba(255, 122, 69, 0.12), transparent 60%),
+    radial-gradient(800px 420px at 85% 10%, rgba(22, 132, 255, 0.12), transparent 60%),
     radial-gradient(600px 380px at 8% 90%, rgba(29, 111, 214, 0.07), transparent 60%),
     #fff;
   overflow: hidden;
@@ -404,7 +405,7 @@ i.pi { font-size: 1em; }
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #ffe9e3;
+  background: #e8f2ff;
   color: var(--p2);
   font-size: 20px;
 }
@@ -438,7 +439,7 @@ i.pi { font-size: 1em; }
   background: var(--grad);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 8px 20px rgba(240, 58, 30, 0.25);
+  box-shadow: 0 8px 20px rgba(7, 91, 216, 0.22);
 }
 
 // ---------- Feature / tab panel ----------
@@ -490,7 +491,7 @@ i.pi { font-size: 1em; }
   background: var(--grad);
   color: #fff;
   font-size: 26px;
-  box-shadow: 0 12px 28px rgba(240, 58, 30, 0.3);
+  box-shadow: 0 12px 28px rgba(7, 91, 216, 0.28);
 }
 
 // ---------- Solutions grid ----------
@@ -512,7 +513,7 @@ i.pi { font-size: 1em; }
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #ffe9e3;
+  background: #e8f2ff;
   color: var(--p2);
   font-size: 20px;
 }
@@ -610,7 +611,7 @@ i.pi { font-size: 1em; }
 .fin-card:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(22, 32, 46, 0.1); }
 .fin-card__visual {
   background:
-    radial-gradient(220px 200px at 30% 20%, rgba(255, 122, 69, 0.16), transparent 65%),
+    radial-gradient(220px 200px at 30% 20%, rgba(22, 132, 255, 0.16), transparent 65%),
     #fafbfc;
   display: grid;
   place-items: center;
@@ -624,7 +625,7 @@ i.pi { font-size: 1em; }
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #ffe9e3;
+  background: #e8f2ff;
   color: var(--p2);
   font-size: 19px;
 }
@@ -664,7 +665,7 @@ i.pi { font-size: 1em; }
   font-size: 13px;
   padding: 8px 14px;
   border-radius: 999px;
-  box-shadow: 0 8px 18px rgba(240, 58, 30, 0.35);
+  box-shadow: 0 8px 18px rgba(7, 91, 216, 0.28);
 }
 
 .mock-card3d {
@@ -708,7 +709,7 @@ i.pi { font-size: 1em; }
 // ---------- Security ----------
 .security { background: var(--navy); color: #fff; padding: 84px 0; }
 .security__inner { text-align: center; max-width: 780px; margin: 0 auto; }
-.security__icon { font-size: 44px; color: #ff7a45; margin-bottom: 18px; }
+.security__icon { font-size: 44px; color: var(--p2); margin-bottom: 18px; }
 .security h2 { color: #fff; font-size: clamp(24px, 3.4vw, 34px); line-height: 1.3; }
 .security p { margin-top: 16px; color: #b8c2d4; font-size: 16px; line-height: 1.7; }
 .security__badges { display: flex; justify-content: center; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
@@ -826,7 +827,7 @@ i.pi { font-size: 1em; }
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: #ffe9e3;
+  background: #e8f2ff;
   color: var(--p2);
   font-size: 23px;
   margin-bottom: 4px;
@@ -873,7 +874,7 @@ i.pi { font-size: 1em; }
   flex-direction: column;
   gap: 18px;
 }
-.price-card--highlight { border: 2px solid var(--p2); box-shadow: 0 20px 44px rgba(240, 58, 30, 0.14); }
+.price-card--highlight { border: 2px solid var(--p2); box-shadow: 0 20px 44px rgba(7, 91, 216, 0.14); }
 .price-card__popular {
   position: absolute;
   top: -14px;
@@ -928,7 +929,7 @@ i.pi { font-size: 1em; }
 // ---------- CTA band ----------
 .cta-band {
   background:
-    radial-gradient(560px 300px at 80% 0%, rgba(255, 122, 69, 0.25), transparent 60%),
+    radial-gradient(560px 300px at 80% 0%, rgba(22, 132, 255, 0.25), transparent 60%),
     radial-gradient(460px 300px at 15% 100%, rgba(29, 111, 214, 0.2), transparent 60%),
     var(--navy);
   padding: 84px 0;
@@ -956,7 +957,7 @@ i.pi { font-size: 1em; }
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #ffe9e3;
+  background: #e8f2ff;
   color: var(--p2);
   font-size: 19px;
 }
@@ -986,7 +987,7 @@ i.pi { font-size: 1em; }
   color: #b8c2d4;
   transition: all 0.15s;
 }
-.footer__social a:hover { color: #fff; border-color: #ff7a45; background: rgba(255, 122, 69, 0.12); }
+.footer__social a:hover { color: #fff; border-color: #1684ff; background: rgba(22, 132, 255, 0.16); }
 .footer__col h4 {
   color: #fff;
   font-size: 13px;
@@ -1003,7 +1004,7 @@ i.pi { font-size: 1em; }
 }
 .footer__col a:hover { color: #fff; }
 .footer__hotline { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 5px 0; }
-.footer__hotline i { color: #ff7a45; }
+.footer__hotline i { color: #1684ff; }
 .footer__hours { font-size: 12.5px; color: #7e8aa0; margin-top: 8px; }
 .footer__bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);

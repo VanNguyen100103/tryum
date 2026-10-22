@@ -94,6 +94,20 @@ public sealed class AuthService(
         return await IssueTokensAsync(user, ip, cancellationToken);
     }
 
+    public async Task<StoreLookupResponse> ResolveStoreAsync(
+        string slug,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSlug = slug.Trim().ToLowerInvariant();
+        var tenant = await context.Set<Tenant>()
+            .FirstOrDefaultAsync(t => t.Slug == normalizedSlug && t.IsActive, cancellationToken);
+
+        if (tenant is null)
+            throw new NotFoundException("Không tìm thấy cửa hàng đang hoạt động với miền này.");
+
+        return new StoreLookupResponse(tenant.Slug, tenant.Name);
+    }
+
     public async Task<AuthResponse> LoginAsync(
         LoginRequest request,
         string? ip = null,
@@ -101,7 +115,7 @@ public sealed class AuthService(
     {
         // Chưa có tenant trong context lúc đăng nhập => phải bỏ query filter để tìm user.
         // Identifier nhận email HOẶC số điện thoại (KiotViet đăng nhập bằng SĐT).
-        var user = await FindUserByIdentifierAsync(request.Identifier, cancellationToken);
+        var user = await FindUserByIdentifierAsync(request.Identifier, request.TenantSlug, cancellationToken);
 
         if (user is null || !passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedException();
@@ -156,7 +170,10 @@ public sealed class AuthService(
     /// Tìm user theo email HOẶC số điện thoại. Nhận diện có dấu @ thì coi là email,
     /// ngược lại thử chuẩn hoá E.164 (KiotViet cho đăng nhập bằng SĐT).
     /// </summary>
-    private async Task<User?> FindUserByIdentifierAsync(string identifier, CancellationToken cancellationToken)
+    private async Task<User?> FindUserByIdentifierAsync(
+        string identifier,
+        string? tenantSlug,
+        CancellationToken cancellationToken)
     {
         var value = identifier.Trim();
 
@@ -165,6 +182,10 @@ public sealed class AuthService(
             .Include(u => u.Role)
             .Include(u => u.Tenant)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(tenantSlug))
+            query = query.Where(u => u.Tenant != null
+                && u.Tenant.Slug == tenantSlug.Trim().ToLowerInvariant());
 
         if (value.Contains('@', StringComparison.Ordinal))
         {
@@ -207,6 +228,7 @@ public sealed class AuthService(
             user.Phone,
             user.TenantId,
             user.Tenant?.Name ?? string.Empty,
+            user.Tenant?.Slug ?? string.Empty,
             user.Role?.Code ?? RoleCode.Cashier.ToString(),
             user.Role?.Name ?? string.Empty);
 

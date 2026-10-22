@@ -73,6 +73,12 @@ public sealed class LoginRequestValidator : AbstractValidator<LoginRequest>
 {
     public LoginRequestValidator()
     {
+        RuleFor(x => x.TenantSlug)
+            .MaximumLength(63)
+            .Matches("^[a-z0-9]+(?:-[a-z0-9]+)*$")
+            .When(x => !string.IsNullOrWhiteSpace(x.TenantSlug))
+            .WithMessage("Miền cửa hàng không hợp lệ.");
+
         RuleFor(x => x.Identifier)
             .NotEmpty().WithMessage("Số điện thoại hoặc email là bắt buộc.")
             .Must(BeValidIdentifier)
