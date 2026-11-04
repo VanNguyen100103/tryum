@@ -4,10 +4,10 @@
 set -uo pipefail
 
 DOMAIN=tryum-api
-TOKEN="${DUCKDNS_TOKEN:-}"          # đặt trong deploy/.env: DUCKDNS_TOKEN=...
+ENV=/home/ubuntu/tryum/deploy/.env
+TOKEN=$(grep '^DUCKDNS_TOKEN=' "$ENV" | cut -d= -f2- || true)
 VM1_IP=129.225.202.82
 VM2_IP=141.147.145.6
-ENV=/home/ubuntu/tryum/deploy/.env
 STATE=/home/ubuntu/.failover.state
 TG_TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' "$ENV" | cut -d= -f2- || true)
 TG_CHAT=$(grep '^TELEGRAM_CHAT_ID=' "$ENV" | cut -d= -f2- || true)
@@ -23,10 +23,10 @@ notify() {
     --data-urlencode "chat_id=$TG_CHAT" --data-urlencode "text=$1" >/dev/null 2>&1 || true
 }
 
-# Kiểm tra VM1 Caddy qua private IP (3 lần, cần cả 3 fail mới tính là down).
+# Kiểm tra VM1 qua API trên private IP (3 lần, cần cả 3 fail mới tính là down).
 fails=0
 for i in 1 2 3; do
-  CODE=$(curl -sk -m 8 -o /dev/null -w '%{http_code}' -H "Host: tryum-api.duckdns.org" https://10.0.0.232/health || echo 000)
+  CODE=$(curl -s -m 8 -o /dev/null -w '%{http_code}' http://10.0.0.232:8080/health || echo 000)
   [ "$CODE" = "200" ] && break
   fails=$((fails + 1))
   sleep 5
