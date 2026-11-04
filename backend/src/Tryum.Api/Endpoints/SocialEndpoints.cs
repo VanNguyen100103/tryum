@@ -132,7 +132,7 @@ public static class SocialEndpoints
         var fallback = new GeneratedPost(
             "Tryum - Bán hàng nhẹ nhàng hơn",
             "Quán nhỏ cũng cần một hệ thống bán hàng tử tế.\n\nTryum giúp bạn bán hàng tại quầy, quản lý kho, khách hàng, in hóa đơn và tạo vận đơn Goship trong cùng một màn hình.\n\nDùng thử miễn phí tại tryum.vn.",
-            ImageUrl("modern Vietnamese small shop counter with tablet POS, blue brand accents, clean commercial photography"));
+            ImageUrl("professional commercial advertising photo, hero product shot of a Vietnamese food or drink item, studio lighting, vibrant colors, clean minimal background, no text, no watermark, high detail"));
 
         if (string.IsNullOrWhiteSpace(options.GroqApiKey))
             return fallback;
@@ -141,7 +141,7 @@ public static class SocialEndpoints
             Bạn là copywriter Facebook cho Tryum - phần mềm quản lý bán hàng cho quán ăn và cửa hàng nhỏ tại Việt Nam.
             Hãy viết một bài đăng Facebook tự nhiên, không sáo rỗng, không dùng Markdown.
             Chỉ trả về JSON thuần theo đúng cấu trúc:
-            {"title":"tiêu đề ngắn dưới 70 ký tự","content":"nội dung 3-6 đoạn ngắn, có CTA dùng thử tryum.vn","imagePrompt":"một câu tiếng Anh mô tả ảnh nền thương mại, không có chữ"}
+            {"title":"tiêu đề ngắn dưới 70 ký tự","content":"nội dung 3-6 đoạn ngắn, có CTA dùng thử tryum.vn","imagePrompt":"một câu tiếng Anh mô tả ảnh quảng cáo chuyên nghiệp: chủ thể sản phẩm/món ăn nổi bật chính giữa, ánh sáng studio, màu sắc tươi, nền sạch tối giản, không có chữ, không watermark, phong cách commercial advertising photography"}
             """;
 
         var user = $"Chủ đề bài đăng: {topic}. Viết cho fanpage Tryum, giọng thân thiện, đáng tin cậy, hướng tới chủ quán/cửa hàng nhỏ.";
@@ -192,7 +192,7 @@ public static class SocialEndpoints
                 title,
                 content,
                 ImageUrl(string.IsNullOrWhiteSpace(imagePrompt)
-                    ? "modern Vietnamese small shop counter with tablet POS, blue brand accents"
+                    ? "professional commercial advertising photo, hero product shot, studio lighting, vibrant colors, clean minimal background, no text, no watermark"
                     : imagePrompt));
         }
         catch (Exception ex)
