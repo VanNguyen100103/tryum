@@ -9,6 +9,7 @@ using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Prometheus;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Threading.RateLimiting;
@@ -208,6 +209,22 @@ try
     // không phải IP của Caddy (nếu không mọi người dùng chung một bucket).
     app.UseForwardedHeaders();
 
+    var metricsToken = builder.Configuration["Metrics:Token"];
+    app.UseWhen(context => context.Request.Path.StartsWithSegments("/metrics"), branch =>
+    {
+        branch.Use(async (context, next) =>
+        {
+            if (!string.IsNullOrWhiteSpace(metricsToken) &&
+                context.Request.Headers.Authorization != $"Bearer {metricsToken}")
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
+            await next();
+        });
+    });
+    app.UseHttpMetrics(options => options.ReduceStatusCodeCardinality());
+
     // Span tối thiểu cho mọi request, kể cả khi instrumentation ASP.NET Core không hook được.
     app.Use(async (context, next) =>
     {
@@ -244,6 +261,7 @@ try
     app.UseHttpsRedirection();
 
     // ── Endpoints ─────────────────────────────────────────────────────────────
+    app.MapMetrics("/metrics");
     app.MapHealthChecks("/health");
     app.MapAuthEndpoints();
     app.MapProductEndpoints();

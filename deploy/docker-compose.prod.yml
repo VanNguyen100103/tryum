@@ -135,6 +135,7 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-tryum-api}
       OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-service.namespace=tryum,deployment.environment=production}
+      Metrics__Token: ${METRICS_TOKEN:-}
     networks: [internal]
     # Không expose port: chỉ Caddy gọi nội bộ qua network "internal".
 
