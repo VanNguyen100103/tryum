@@ -97,6 +97,23 @@ docker logs --tail 100 tryum-api-1 2>&1 | grep -iE 'ERR|Exception' | tail -20
 #   process_working_set_bytes < 800MB
 ```
 
+## 5b. Cảnh báo tự động (Telegram)
+
+Bot: `@tryum_alerts_2026_bot` — chat_id `7429814751`.
+
+```text
+Cron VM1: */5 * * * * /usr/local/bin/tryum-alert.sh
+Kiểm tra: /health != 200 · 5xx mới > 20/5phút · RAM > 90% · Disk > 90%
+Chống spam: chỉ gửi khi ĐỔI trạng thái (ok→down, down→ok)
+Creds: TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID trong deploy/.env
+```
+
+Chạy thủ công:
+
+```bash
+/usr/local/bin/tryum-alert.sh
+```
+
 ## 6. Xử lý sự cố
 
 | Sự cố | Biểu hiện | Hệ thống | Hành động |
