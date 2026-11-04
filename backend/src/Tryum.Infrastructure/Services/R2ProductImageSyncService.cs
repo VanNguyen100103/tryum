@@ -20,7 +20,7 @@ public sealed class R2ProductImageSyncService(
     private const int BatchSize = 60;
     private const int MaxParallelDownloads = 12;
     private const long MaxImageBytes = 8 * 1024 * 1024;
-    private static readonly TimeSpan LeaderTtl = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan LeaderTtl = TimeSpan.FromMinutes(5);
     private const string LeaderKey = "r2sync:leader";
     private readonly string _owner = $"{Environment.MachineName}:{Environment.ProcessId}";
     private static readonly HashSet<string> AllowedImageHosts = new(StringComparer.OrdinalIgnoreCase)
@@ -46,14 +46,14 @@ public sealed class R2ProductImageSyncService(
                 // Chỉ 1 instance được sync để tránh upload trùng lên R2.
                 if (!await IsLeaderAsync(stoppingToken))
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
                     continue;
                 }
 
                 var batch = await LoadPendingAsync(stoppingToken);
                 if (batch.Count == 0)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(90), stoppingToken);
                     continue;
                 }
 
