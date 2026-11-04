@@ -16,7 +16,8 @@ public sealed class AuthService(
     IApplicationDbContext context,
     IPasswordHasher passwordHasher,
     ITokenService tokenService,
-    IOtpService otpService) : IAuthService
+    IOtpService otpService,
+    IRedisStore redis) : IAuthService
 {
     private static readonly (RoleCode Code, string Name, string Description)[] DefaultRoles =
     [
@@ -115,7 +116,21 @@ public sealed class AuthService(
     {
         // Chưa có tenant trong context lúc đăng nhập => phải bỏ query filter để tìm user.
         // Identifier nhận email HOẶC số điện thoại (KiotViet đăng nhập bằng SĐT).
-        var user = await FindUserByIdentifierAsync(request.Identifier, request.TenantSlug, cancellationToken);
+        // Redis cache: đọc snapshot trước, miss mới query Postgres (tiết kiệm ~150–500ms/lần login).
+        var cacheKey = LoginCacheKey(request.Identifier, request.TenantSlug);
+        var cached = await redis.GetAsync<UserLoginSnapshot>(cacheKey, cancellationToken);
+
+        User? user;
+        if (cached is not null)
+        {
+            user = cached.ToUser();
+        }
+        else
+        {
+            user = await FindUserByIdentifierAsync(request.Identifier, request.TenantSlug, cancellationToken);
+            if (user is not null)
+                await redis.SetAsync(cacheKey, UserLoginSnapshot.From(user), LoginCacheTtl, cancellationToken);
+        }
 
         if (user is null || !passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedException();
@@ -128,6 +143,10 @@ public sealed class AuthService(
 
         return await IssueTokensAsync(user, ip, cancellationToken);
     }
+
+    /// <summary>Xoá cache login của user – gọi khi đổi mật khẩu / khoá user / đổi role.</summary>
+    public Task InvalidateLoginCacheAsync(string identifier, string? tenantSlug, CancellationToken cancellationToken = default)
+        => redis.RemoveAsync(LoginCacheKey(identifier, tenantSlug), cancellationToken);
 
     public async Task<AuthResponse> RefreshAsync(
         RefreshRequest request,
@@ -166,8 +185,10 @@ public sealed class AuthService(
         return ToUserInfo(user);
     }
 
-    /// <summary>
-    /// Tìm user theo email HOẶC số điện thoại. Nhận diện có dấu @ thì coi là email,
+    /// <summary>TTL cache user cho login (ngắn để tránh stale nếu sau này có đổi mật khẩu/khoá user).</summary>
+    private static readonly TimeSpan LoginCacheTtl = TimeSpan.FromMinutes(5);
+
+    /// <summary>Tìm user theo email HOẶC số điện thoại. Nhận diện có dấu @ thì coi là email,
     /// ngược lại thử chuẩn hoá E.164 (KiotViet cho đăng nhập bằng SĐT).
     /// </summary>
     private async Task<User?> FindUserByIdentifierAsync(
@@ -233,6 +254,14 @@ public sealed class AuthService(
             user.Role?.Name ?? string.Empty);
 
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
+    /// <summary>Key cache user cho login (IRedisStore tự thêm prefix "tryum:").</summary>
+    private static string LoginCacheKey(string identifier, string? tenantSlug)
+    {
+        var id = identifier.Trim().ToLowerInvariant();
+        var slug = string.IsNullOrWhiteSpace(tenantSlug) ? "-" : tenantSlug.Trim().ToLowerInvariant();
+        return $"user:{id}:{slug}";
+    }
 
     private async Task EnsureEmailAvailableAsync(string email, CancellationToken cancellationToken)
     {

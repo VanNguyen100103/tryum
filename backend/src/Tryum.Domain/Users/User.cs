@@ -77,4 +77,44 @@ public class User : AuditableEntity, ITenantOwned
 
         return claims;
     }
+
+    /// <summary>
+    /// Tạo lại User từ snapshot cache (Redis) cho luồng login – KHÔNG đi qua DB.
+    /// Id được set trong class nên vẫn giữ protected set ở BaseEntity.
+    /// </summary>
+    public static User FromCache(
+        Guid id,
+        string email,
+        string passwordHash,
+        string fullName,
+        string? phone,
+        bool isActive,
+        Guid tenantId,
+        Guid? roleId,
+        string? roleCode,
+        string? roleName,
+        string? tenantName,
+        string? tenantSlug,
+        bool tenantIsActive)
+    {
+        var user = new User
+        {
+            Id = id,
+            Email = email,
+            PasswordHash = passwordHash,
+            FullName = fullName,
+            Phone = phone,
+            IsActive = isActive,
+            TenantId = tenantId,
+            RoleId = roleId,
+        };
+
+        if (roleCode is not null)
+            user.Role = new Role { Code = roleCode, Name = roleName ?? string.Empty };
+
+        if (tenantName is not null)
+            user.Tenant = new Tenants.Tenant { Name = tenantName, Slug = tenantSlug ?? string.Empty, IsActive = tenantIsActive };
+
+        return user;
+    }
 }

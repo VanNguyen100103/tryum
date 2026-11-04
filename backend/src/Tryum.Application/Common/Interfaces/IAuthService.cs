@@ -24,6 +24,9 @@ public interface IAuthService
     /// <summary>Đăng nhập bằng email HOẶC số điện thoại trong cửa hàng đã chọn.</summary>
     Task<AuthResponse> LoginAsync(LoginRequest request, string? ip = null, CancellationToken cancellationToken = default);
 
+    /// <summary>Xoá cache login của user – gọi khi đổi mật khẩu / khoá user / đổi vai trò.</summary>
+    Task InvalidateLoginCacheAsync(string identifier, string? tenantSlug, CancellationToken cancellationToken = default);
+
     /// <summary>Đổi refresh token lấy access token mới (có rotation: token cũ bị revoke).</summary>
     Task<AuthResponse> RefreshAsync(RefreshRequest request, string? ip = null, CancellationToken cancellationToken = default);
 
