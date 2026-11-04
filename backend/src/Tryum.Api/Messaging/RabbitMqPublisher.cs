@@ -95,6 +95,18 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
                 durable: true,
                 autoDelete: false,
                 cancellationToken: ct);
+            // Đảm bảo queue + binding tồn tại để event không bị vứt khi chưa có consumer.
+            await _channel.QueueDeclareAsync(
+                queue: OrderEvents.QueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                cancellationToken: ct);
+            await _channel.QueueBindAsync(
+                queue: OrderEvents.QueueName,
+                exchange: _options.Exchange,
+                routingKey: OrderEvents.RoutingKeyOrderCreated,
+                cancellationToken: ct);
             return _channel;
         }
         catch (Exception ex)

@@ -111,6 +111,7 @@ try
     builder.Services.AddHttpClient("social", client => client.Timeout = TimeSpan.FromSeconds(30));
     builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
     builder.Services.AddSingleton<RabbitMqPublisher>();
+    builder.Services.AddHostedService<OrderEventConsumer>();
     builder.Services.AddExceptionHandler<AppExceptionHandler>();
 
     // ── JWT ───────────────────────────────────────────────────────────────────
