@@ -12,13 +12,13 @@ using OpenTelemetry.Trace;
 using Prometheus;
 using Scalar.AspNetCore;
 using Serilog;
-using System.Threading.RateLimiting;
 using Tryum.Api.Common;
 using Tryum.Api.Assistant;
 using Tryum.Api.Endpoints;
 using Tryum.Api.Messaging;
 using Tryum.Api.Shipping;
 using Tryum.Application;
+using Tryum.Application.Common.Interfaces;
 using Tryum.Application.Common.Security;
 using Tryum.Infrastructure;
 using Tryum.Infrastructure.Common;
@@ -134,29 +134,6 @@ try
             };
         });
 
-    // Rate limiting cho endpoint đăng nhập / đăng ký (chống brute force)
-    builder.Services.AddRateLimiter(options =>
-    {
-        options.AddPolicy("auth", httpContext =>
-            RateLimitPartition.GetFixedWindowLimiter(
-                httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = 20,
-                    Window = TimeSpan.FromMinutes(1),
-                    QueueLimit = 0,
-                }));
-        options.AddPolicy("assistant", httpContext =>
-            RateLimitPartition.GetFixedWindowLimiter(
-                httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = 30,
-                    Window = TimeSpan.FromMinutes(1),
-                    QueueLimit = 0,
-                }));
-    });
-
     // ── CORS (Cloudflare Pages ở prod) ────────────────────────────────────────
     const string CorsPolicy = "spa";
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()?
@@ -244,7 +221,48 @@ try
     });
 
     app.UseCors(CorsPolicy);
-    app.UseRateLimiter();
+
+    // ── Rate limiting phân tán qua Redis (dùng chung cho nhiều instance) ─────
+    // Thay cho AddRateLimiter/UseRateLimiter in-memory: mỗi instance trước đây tự đếm
+    // riêng nên chạy 3 bản sau LB sẽ yếu đi 3 lần. Giờ đếm chung trên Redis.
+    var rateLimits = new Dictionary<string, (int Limit, TimeSpan Window)>(StringComparer.Ordinal)
+    {
+        ["auth"] = (20, TimeSpan.FromMinutes(1)),
+        ["assistant"] = (30, TimeSpan.FromMinutes(1)),
+    };
+    app.Use(async (context, next) =>
+    {
+        var attr = context.GetEndpoint()?.Metadata.GetMetadata<EnableRateLimitingAttribute>();
+        if (attr is null || string.IsNullOrWhiteSpace(attr.PolicyName)
+            || !rateLimits.TryGetValue(attr.PolicyName, out var rule))
+        {
+            await next();
+            return;
+        }
+
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var redis = context.RequestServices.GetRequiredService<IRedisStore>();
+        var key = $"rl:{attr.PolicyName}:{ip}";
+
+        var count = await redis.IncrementAsync(key);
+        if (count == 1)
+            await redis.SetExpiryAsync(key, rule.Window);
+
+        if (count > rule.Limit)
+        {
+            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            context.Response.Headers["Retry-After"] = ((int)rule.Window.TotalSeconds).ToString();
+            await context.Response.WriteAsJsonAsync(new
+            {
+                title = "TooManyRequests",
+                status = StatusCodes.Status429TooManyRequests,
+                detail = "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
+            });
+            return;
+        }
+
+        await next();
+    });
 
     app.UseAuthentication();                       // đọc JWT → HttpContext.User
     app.UseMiddleware<TenantContextMiddleware>();  // gán TenantContext từ claim
