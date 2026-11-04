@@ -1,0 +1,59 @@
+# Caddy cho VM2 (entrypoint backup). Upstream: VM2 local (api:8080) + VM1 (10.0.0.232:8080).
+{
+	email {$ACME_EMAIL:admin@example.com}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+(api_lb) {
+	lb_policy round_robin
+	health_uri /health
+	health_interval 10s
+	health_timeout 3s
+	fail_duration 15s
+}
+
+{$API_DOMAIN} {
+	import security_headers
+	encode zstd gzip
+
+	request_body {
+		max_size 10MB
+	}
+
+	handle /health {
+		reverse_proxy api:8080 10.0.0.232:8080 {
+			import api_lb
+		}
+	}
+
+	handle /metrics {
+		reverse_proxy api:8080 10.0.0.232:8080 {
+			import api_lb
+		}
+	}
+
+	handle /api/* {
+		reverse_proxy api:8080 10.0.0.232:8080 {
+			import api_lb
+		}
+	}
+
+	# VM2 không chạy SPA (web nằm Cloudflare) → trả 404 cho phần còn lại.
+	handle {
+		respond 404
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

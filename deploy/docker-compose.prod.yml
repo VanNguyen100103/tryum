@@ -161,7 +161,7 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
-    depends_on: [api, web]
+    depends_on: [api]
     environment:
       # Tên miền phục vụ (bỏ port để Caddy bind 443 trong container).
       # Dry-run: localhost · Production: tryum-api.duckdns.org

@@ -65,8 +65,8 @@ jobs:
             docker pull ghcr.io/vannguyen100103/tryum-api:otel
             docker tag tryum-api:latest tryum-api:previous 2>/dev/null || true
             docker tag ghcr.io/vannguyen100103/tryum-api:otel tryum-api:latest
-            docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --force-recreate api api2
-            docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --no-deps --force-recreate caddy
+            docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.vm1.yml --env-file deploy/.env up -d --force-recreate api api2
+            docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.vm1.yml --env-file deploy/.env up -d --no-deps --force-recreate caddy
 
             # Chờ cả 2 API healthy (check qua mạng nội bộ từ container caddy).
             ok=0
@@ -81,8 +81,8 @@ jobs:
             if [ "$ok" != "1" ]; then
               echo "VM1 health FAIL -> rollback"
               docker tag tryum-api:previous tryum-api:latest
-              docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --force-recreate api api2
-              docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --no-deps --force-recreate caddy
+              docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.vm1.yml --env-file deploy/.env up -d --force-recreate api api2
+              docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.vm1.yml --env-file deploy/.env up -d --no-deps --force-recreate caddy
               exit 1
             fi
             echo "VM1 deployed OK"

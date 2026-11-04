@@ -1,0 +1,6 @@
+# VM1 override: publish api ra private IP để Caddy trên VM2 (backup) LB sang được.
+# Dùng: docker compose -f docker-compose.prod.yml -f docker-compose.vm1.yml up -d
+services:
+  api:
+    ports:
+      - "10.0.0.232:8080:8080"
