@@ -32,7 +32,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push API (linux/arm64)
+      - name: Build and push API (linux/amd64)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -42,3 +42,64 @@ jobs:
           tags: ghcr.io/vannguyen100103/tryum-api:otel
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GHCR_USER: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Deploy VM1 (api + api2 + caddy)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ubuntu
+          key: ${{ secrets.VM_SSH_KEY }}
+          script_stop: true
+          envs: GHCR_USER,GHCR_TOKEN
+          script: |
+            set -e
+            cd ~/tryum
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            docker pull ghcr.io/vannguyen100103/tryum-api:otel
+            docker tag tryum-api:latest tryum-api:previous 2>/dev/null || true
+            docker tag ghcr.io/vannguyen100103/tryum-api:otel tryum-api:latest
+            docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --force-recreate api api2
+            docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --no-deps --force-recreate caddy
+            sleep 18
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health || echo 000)
+            if [ "$code" != "200" ]; then
+              echo "VM1 health=$code -> rollback"
+              docker tag tryum-api:previous tryum-api:latest
+              docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --force-recreate api api2
+              docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --no-deps --force-recreate caddy
+              exit 1
+            fi
+            echo "VM1 deployed OK"
+
+      - name: Deploy VM2 (api)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.VM2_SSH_KEY }}
+          script_stop: true
+          envs: GHCR_USER,GHCR_TOKEN
+          script: |
+            set -e
+            cd ~/tryum
+            echo "$GHCR_TOKEN" | sudo -n /usr/bin/docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            sudo -n /usr/bin/docker pull ghcr.io/vannguyen100103/tryum-api:otel
+            sudo -n /usr/bin/docker tag tryum-api:latest tryum-api:previous 2>/dev/null || true
+            sudo -n /usr/bin/docker tag ghcr.io/vannguyen100103/tryum-api:otel tryum-api:latest
+            sudo -n /usr/bin/docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.node.yml --env-file deploy/.env up -d --force-recreate api
+            sleep 15
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health || echo 000)
+            if [ "$code" != "200" ]; then
+              echo "VM2 health=$code -> rollback"
+              sudo -n /usr/bin/docker tag tryum-api:previous tryum-api:latest
+              sudo -n /usr/bin/docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.node.yml --env-file deploy/.env up -d --force-recreate api
+              exit 1
+            fi
+            echo "VM2 deployed OK"
