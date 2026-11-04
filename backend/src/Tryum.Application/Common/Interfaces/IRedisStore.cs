@@ -12,6 +12,15 @@ public interface IRedisStore
     /// <summary>Đọc giá trị đã lưu (deserialize JSON); không có/Redis lỗi → default.</summary>
     Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default);
 
+    /// <summary>Đọc giá trị dạng chuỗi thô (không JSON); không có → null.</summary>
+    Task<string?> GetStringAsync(string key, CancellationToken cancellationToken = default);
+
+    /// <summary>Ghi chuỗi thô (không JSON), tuỳ chọn TTL.</summary>
+    Task SetStringAsync(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Đọc counter dạng số nguyên (không JSON); không có/lỗi → 0.</summary>
+    Task<long> GetCounterAsync(string key, CancellationToken cancellationToken = default);
+
     /// <summary>Ghi giá trị (serialize JSON), tuỳ chọn TTL.</summary>
     Task SetAsync<T>(string key, T value, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
 

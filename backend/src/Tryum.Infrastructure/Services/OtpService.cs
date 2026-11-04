@@ -95,15 +95,15 @@ public sealed class OtpService(
         var countKey = CountKey(e164);
 
         // 1) Khoá do đoán sai.
-        var untilLocked = await _redis!.GetAsync<DateTimeOffset>(lockKey, ct);
-        if (untilLocked.HasValue)
+        var lockRaw = await _redis!.GetStringAsync(lockKey, ct);
+        if (DateTimeOffset.TryParse(lockRaw, out var untilLocked) && now <= untilLocked)
         {
-            if (now <= untilLocked.Value)
-                throw new RateLimitedException(
-                    "Bạn đã nhập sai mã quá nhiều lần. Vui lòng gửi mã OTP mới sau ít phút.",
-                    "otp_locked");
-            await _redis.RemoveAsync(lockKey, ct);
+            throw new RateLimitedException(
+                "Bạn đã nhập sai mã quá nhiều lần. Vui lòng gửi mã OTP mới sau ít phút.",
+                "otp_locked");
         }
+        if (lockRaw is not null)
+            await _redis.RemoveAsync(lockKey, ct);
 
         // 2) Cooldown.
         var existing = await _redis.GetAsync<OtpEntry>(otpKey, ct);
@@ -121,7 +121,7 @@ public sealed class OtpService(
         }
 
         // 3) Giới hạn tin/24h.
-        var sent = await _redis.GetAsync<long>(countKey, ct) ?? 0;
+        var sent = await _redis.GetCounterAsync(countKey, ct);
         if (sent >= _options.MaxSendsPerDay)
             throw new RateLimitedException(
                 "Bạn đã yêu cầu quá nhiều mã OTP. Vui lòng thử lại sau 24 giờ.",
@@ -166,7 +166,8 @@ public sealed class OtpService(
 
             if (entry.Attempts >= _options.MaxAttempts)
             {
-                await _redis.SetAsync(LockKey(e164), now.AddSeconds(_options.TtlSeconds),
+                await _redis.SetStringAsync(LockKey(e164),
+                    now.AddSeconds(_options.TtlSeconds).ToUniversalTime().ToString("O"),
                     TimeSpan.FromSeconds(_options.TtlSeconds), ct);
                 await _redis.RemoveAsync(otpKey, ct);
                 throw new RateLimitedException(
@@ -346,7 +347,7 @@ public sealed class OtpService(
             Encoding.UTF8.GetBytes(a),
             Encoding.UTF8.GetBytes(b));
 
-    internal sealed class OtpEntry
+    public sealed class OtpEntry
     {
         public string CodeHash { get; set; } = string.Empty;
         public DateTimeOffset IssuedAtUtc { get; set; }

@@ -30,6 +30,52 @@ public sealed class RedisStore(IOptions<RedisOptions> options, ILogger<RedisStor
         }
     }
 
+    public async Task<string?> GetStringAsync(string key, CancellationToken cancellationToken = default)
+    {
+        var db = Database;
+        if (db is null) return null;
+        try
+        {
+            var value = await db.StringGetAsync(Key(key));
+            return value.HasValue ? value.ToString() : null;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Redis đọc key {Key} lỗi", key);
+            return null;
+        }
+    }
+
+    public async Task SetStringAsync(string key, string value, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
+    {
+        var db = Database;
+        if (db is null) return;
+        try
+        {
+            await db.StringSetAsync(Key(key), value, ttl);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Redis ghi key {Key} lỗi", key);
+        }
+    }
+
+    public async Task<long> GetCounterAsync(string key, CancellationToken cancellationToken = default)
+    {
+        var db = Database;
+        if (db is null) return 0;
+        try
+        {
+            var value = await db.StringGetAsync(Key(key));
+            return value.HasValue && long.TryParse(value.ToString(), out var parsed) ? parsed : 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Redis đọc counter {Key} lỗi", key);
+            return 0;
+        }
+    }
+
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
         var db = Database;

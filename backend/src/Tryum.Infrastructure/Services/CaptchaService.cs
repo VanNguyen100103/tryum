@@ -147,7 +147,7 @@ public sealed class CaptchaService(CaptchaOptions? options = null, IRedisStore? 
             Encoding.UTF8.GetBytes(a),
             Encoding.UTF8.GetBytes(b));
 
-    private sealed class CaptchaEntry
+    public sealed class CaptchaEntry
     {
         public string CodeHash { get; set; } = string.Empty;
         public DateTimeOffset ExpiresAtUtc { get; set; }
