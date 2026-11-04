@@ -23,7 +23,7 @@
 
 # Load balancing cho API: chia request + tự loại instance chết.
 (api_lb) {
-	lb_policy least_conn
+	lb_policy round_robin
 	health_uri /health
 	health_interval 10s
 	health_timeout 3s
@@ -41,21 +41,21 @@
 
 	# Health check – public cho UptimeRobot theo dõi.
 	handle /health {
-		reverse_proxy api:8080 {
+		reverse_proxy api:8080 api2:8080 {
 			import api_lb
 		}
 	}
 
 	# Prometheus metrics (bảo vệ bằng Bearer token ở API)
 	handle /metrics {
-		reverse_proxy api:8080 {
+		reverse_proxy api:8080 api2:8080 {
 			import api_lb
 		}
 	}
 
 	# API
 	handle /api/* {
-		reverse_proxy api:8080 {
+		reverse_proxy api:8080 api2:8080 {
 			import api_lb
 		}
 	}

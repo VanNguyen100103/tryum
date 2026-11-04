@@ -139,6 +139,12 @@ services:
     networks: [internal]
     # Không expose port: chỉ Caddy gọi nội bộ qua network "internal".
 
+  # Replica thứ 2 (cùng image/env) để Caddy load-balance.
+  # Background sync ảnh không chạy trùng nhờ leader-election Redis trong R2ProductImageSyncService.
+  api2:
+    extends:
+      service: api
+
   web:
     build:
       context: ..
