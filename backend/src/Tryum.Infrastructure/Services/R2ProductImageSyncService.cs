@@ -14,11 +14,15 @@ namespace Tryum.Infrastructure.Services;
 public sealed class R2ProductImageSyncService(
     IServiceScopeFactory scopeFactory,
     IOptions<R2Options> options,
+    IRedisStore redis,
     ILogger<R2ProductImageSyncService> logger) : BackgroundService
 {
     private const int BatchSize = 60;
     private const int MaxParallelDownloads = 12;
     private const long MaxImageBytes = 8 * 1024 * 1024;
+    private static readonly TimeSpan LeaderTtl = TimeSpan.FromMinutes(3);
+    private const string LeaderKey = "r2sync:leader";
+    private readonly string _owner = $"{Environment.MachineName}:{Environment.ProcessId}";
     private static readonly HashSet<string> AllowedImageHosts = new(StringComparer.OrdinalIgnoreCase)
     {
         "cdn2-retail-images.kiotviet.vn",
@@ -39,6 +43,13 @@ public sealed class R2ProductImageSyncService(
 
             try
             {
+                // Chỉ 1 instance được sync để tránh upload trùng lên R2.
+                if (!await IsLeaderAsync(stoppingToken))
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    continue;
+                }
+
                 var batch = await LoadPendingAsync(stoppingToken);
                 if (batch.Count == 0)
                 {
@@ -62,6 +73,20 @@ public sealed class R2ProductImageSyncService(
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
+    }
+
+    private async Task<bool> IsLeaderAsync(CancellationToken cancellationToken)
+    {
+        if (await redis.TryAcquireLockAsync(LeaderKey, _owner, LeaderTtl, cancellationToken))
+            return true;
+
+        if (await redis.GetStringAsync(LeaderKey, cancellationToken) == _owner)
+        {
+            await redis.SetExpiryAsync(LeaderKey, LeaderTtl, cancellationToken);
+            return true;
+        }
+
+        return false;
     }
 
     private async Task<List<PendingImage>> LoadPendingAsync(CancellationToken cancellationToken)

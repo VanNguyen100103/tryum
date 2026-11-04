@@ -21,6 +21,15 @@
 	}
 }
 
+# Load balancing cho API: chia request + tự loại instance chết.
+(api_lb) {
+	lb_policy least_conn
+	health_uri /health
+	health_interval 10s
+	health_timeout 3s
+	fail_duration 15s
+}
+
 {$API_DOMAIN} {
 	import security_headers
 
@@ -32,12 +41,23 @@
 
 	# Health check – public cho UptimeRobot theo dõi.
 	handle /health {
-		reverse_proxy api:8080
+		reverse_proxy api:8080 {
+			import api_lb
+		}
+	}
+
+	# Prometheus metrics (bảo vệ bằng Bearer token ở API)
+	handle /metrics {
+		reverse_proxy api:8080 {
+			import api_lb
+		}
 	}
 
 	# API
 	handle /api/* {
-		reverse_proxy api:8080
+		reverse_proxy api:8080 {
+			import api_lb
+		}
 	}
 
 	# Web (SPA) – chỉ dùng cho dry-run giống production.

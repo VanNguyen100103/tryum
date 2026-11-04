@@ -36,6 +36,12 @@ public interface IRedisStore
     /// <summary>Đặt lại TTL cho key đã tồn tại.</summary>
     Task SetExpiryAsync(string key, TimeSpan ttl, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Thử giành lock phân tán (SET NX PX). Dùng cho background job chỉ muốn 1 instance chạy.
+    /// Redis chưa cấu hình → trả true (chế độ 1 instance).
+    /// </summary>
+    Task<bool> TryAcquireLockAsync(string key, string owner, TimeSpan ttl, CancellationToken cancellationToken = default);
+
     /// <summary>Cache pattern: đọc cache, miss thì chạy factory rồi ghi cache.</summary>
     Task<T> GetOrSetAsync<T>(string key, TimeSpan ttl, Func<Task<T>> factory, CancellationToken cancellationToken = default);
 }

@@ -168,6 +168,21 @@ public sealed class RedisStore(IOptions<RedisOptions> options, ILogger<RedisStor
         }
     }
 
+    public async Task<bool> TryAcquireLockAsync(string key, string owner, TimeSpan ttl, CancellationToken cancellationToken = default)
+    {
+        var db = Database;
+        if (db is null) return true; // không có Redis → chạy như 1 instance
+        try
+        {
+            return await db.StringSetAsync(Key(key), owner, ttl, When.NotExists);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Redis lock key {Key} lỗi, cho phép chạy", key);
+            return true;
+        }
+    }
+
     public async Task<T> GetOrSetAsync<T>(string key, TimeSpan ttl, Func<Task<T>> factory, CancellationToken cancellationToken = default)
     {
         var cached = await GetAsync<T>(key, cancellationToken);
