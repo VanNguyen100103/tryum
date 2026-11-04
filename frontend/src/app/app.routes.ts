@@ -107,8 +107,7 @@ export const routes: Routes = [
       {
         path: 'online',
         loadComponent: () =>
-          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
-        data: { featureTitle: 'Bán online' },
+          import('./online/online.component').then((c) => c.OnlineComponent),
         title: 'Bán online - Tryum',
       },
       {

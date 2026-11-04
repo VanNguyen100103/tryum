@@ -1,0 +1,186 @@
+<div class="online-page">
+  <header class="page-head">
+    <div>
+      <span class="eyebrow">Bán online</span>
+      <h1>Đăng bài Facebook</h1>
+      <p>Soạn nội dung và đăng trực tiếp lên fanpage đã kết nối.</p>
+    </div>
+    <button type="button" class="btn ghost" routerLink="/app/dashboard">
+      <i class="pi pi-arrow-left"></i> Tổng quan
+    </button>
+  </header>
+
+  <section class="card connect-card">
+    <div class="card-head">
+      <div>
+        <h2><i class="pi pi-facebook"></i> Fanpage Facebook</h2>
+        <p>Kết nối một lần, sau đó đăng bài ngay trong Tryum.</p>
+      </div>
+      @if (connected()) {
+        <span class="badge is-on"><i class="pi pi-check"></i> Đã kết nối</span>
+      } @else {
+        <span class="badge">Chưa kết nối</span>
+      }
+    </div>
+
+    @if (connected()) {
+      <div class="connected-row">
+        <div class="page-avatar">{{ (pageName() || 'T').slice(0, 1).toUpperCase() }}</div>
+        <div>
+          <strong>{{ pageName() }}</strong>
+          <span>Page ID: {{ pageId() }}</span>
+        </div>
+        <button type="button" class="btn ghost danger" (click)="disconnect()">Ngắt kết nối</button>
+      </div>
+    } @else {
+      <div class="connect-form">
+        <label>
+          Page ID
+          <input
+            name="fbPageId"
+            [ngModel]="connectPageId()"
+            (ngModelChange)="connectPageId.set($event)"
+            placeholder="Ví dụ: 61568302767209"
+          />
+        </label>
+        <label>
+          Page Access Token
+          <input
+            name="fbToken"
+            type="password"
+            [ngModel]="connectToken()"
+            (ngModelChange)="connectToken.set($event)"
+            placeholder="Dán Page Access Token"
+          />
+        </label>
+        <button type="button" class="btn primary" [disabled]="connecting()" (click)="connect()">
+          {{ connecting() ? 'Đang kiểm tra…' : 'Kết nối fanpage' }}
+        </button>
+      </div>
+      <div class="hint">
+        <i class="pi pi-info-circle"></i>
+        Lấy Page ID và Page Access Token trong Meta for Developers → Graph API Explorer,
+        chọn quyền <b>pages_manage_posts</b> và <b>pages_read_engagement</b>.
+        Token được lưu phía server, không trả về trình duyệt.
+      </div>
+    }
+  </section>
+
+  <div class="compose-grid">
+    <section class="card compose-card">
+      <div class="card-head">
+        <div>
+          <h2>Soạn bài đăng</h2>
+          <p>Chọn mẫu có sẵn hoặc tự viết nội dung.</p>
+        </div>
+      </div>
+
+      <div class="ai-generate">
+        <label>
+          Chủ đề AI viết
+          <input
+            name="aiTopic"
+            [ngModel]="topic()"
+            (ngModelChange)="topic.set($event)"
+            placeholder="Ví dụ: quán ăn nhỏ quản lý bán hàng"
+          />
+        </label>
+        <button type="button" class="btn ai" [disabled]="generating()" (click)="generateAi()">
+          <i class="pi" [class.pi-sparkles]="!generating()" [class.pi-spin]="generating()" [class.pi-spinner]="generating()"></i>
+          {{ generating() ? 'AI đang viết…' : 'AI tạo bài + ảnh' }}
+        </button>
+      </div>
+
+      <div class="templates">
+        @for (template of templates; track template.label) {
+          <button type="button" (click)="useTemplate(template.text)">{{ template.label }}</button>
+        }
+      </div>
+
+      <label class="field">
+        Tiêu đề
+        <input
+          name="postTitle"
+          maxlength="120"
+          [ngModel]="title()"
+          (ngModelChange)="title.set($event)"
+          placeholder="Tiêu đề bài đăng"
+        />
+      </label>
+
+      <label class="field">
+        Nội dung
+        <textarea
+          name="postMessage"
+          rows="10"
+          maxlength="5000"
+          [ngModel]="message()"
+          (ngModelChange)="message.set($event)"
+          placeholder="Viết nội dung bài đăng…"
+        ></textarea>
+        <small>{{ message().length }}/5000</small>
+      </label>
+
+      @if (imageUrl()) {
+        <div class="image-preview">
+          <img [src]="imageUrl()" alt="Ảnh AI tạo cho bài đăng" />
+          <button type="button" (click)="imageUrl.set('')" aria-label="Bỏ ảnh">×</button>
+        </div>
+      }
+
+      <label class="field">
+        Link đính kèm (không bắt buộc)
+        <input
+          name="postLink"
+          [ngModel]="link()"
+          (ngModelChange)="link.set($event)"
+          placeholder="https://tryum.vn"
+        />
+      </label>
+
+      @if (lastPostId()) {
+        <div class="success-line">
+          <i class="pi pi-check-circle"></i> Đã đăng bài · ID {{ lastPostId() }}
+        </div>
+      }
+
+      <button type="button" class="btn primary publish" [disabled]="publishing() || !message().trim()" (click)="publish()">
+        <i class="pi pi-send"></i>
+        {{ publishing() ? 'Đang đăng…' : 'Đăng lên fanpage' }}
+      </button>
+    </section>
+
+    <section class="card preview-card">
+      <div class="card-head">
+        <div>
+          <h2>Xem trước</h2>
+          <p>Bài đăng sẽ hiển thị trên fanpage.</p>
+        </div>
+      </div>
+      <div class="fb-preview">
+        <div class="fb-preview__head">
+          <div class="page-avatar small">{{ (pageName() || 'T').slice(0, 1).toUpperCase() }}</div>
+          <div>
+            <strong>{{ pageName() || 'Fanpage của bạn' }}</strong>
+            <span>Vừa xong · <i class="pi pi-globe"></i></span>
+          </div>
+        </div>
+        <p class="fb-preview__text">
+          @if (title()) { <strong class="fb-preview__title">{{ title() }}</strong> }
+          {{ message() || 'Nội dung bài đăng sẽ hiện ở đây…' }}
+        </p>
+        @if (imageUrl()) {
+          <img class="fb-preview__image" [src]="imageUrl()" alt="Ảnh bài đăng" />
+        }
+        @if (link()) {
+          <div class="fb-preview__link">{{ link() }}</div>
+        }
+        <div class="fb-preview__actions">
+          <span><i class="pi pi-thumbs-up"></i> Thích</span>
+          <span><i class="pi pi-comment"></i> Bình luận</span>
+          <span><i class="pi pi-share-alt"></i> Chia sẻ</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

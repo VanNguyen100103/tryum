@@ -4,7 +4,8 @@
 .app-header { position: sticky; top: 0; z-index: 30; box-shadow: 0 2px 8px #172c4815; }
 .utility-bar { height: 49px; display: flex; align-items: center; justify-content: space-between; padding: 0 max(24px, calc((100vw - 1600px) / 2)); background: #fff; }
 .brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: #092b59; font-size: 19px; line-height: 1; font-weight: 750; letter-spacing: -.55px; }
-.brand-mark { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: #0785ed; color: #fff; font-size: 15px; }
+.brand-mark { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: transparent; color: #fff; font-size: 15px; }
+.brand-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .utility-bar__right { display: flex; align-items: center; gap: 13px; height: 100%; }
 .shop-context { display: inline-flex; align-items: center; gap: 7px; color: #34445c; font-size: 12px; font-weight: 550; }
 .shop-context i { color: #0877df; font-size: 14px; }

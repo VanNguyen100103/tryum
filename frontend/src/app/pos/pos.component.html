@@ -1,144 +1,1299 @@
-<main class="pos-page" [class.pos-page--quick]="mode === 'quick'">
-  <header class="pos-toolbar">
-    <form class="scan-search" (submit)="searchFromBarcode($event)">
-      <i class="pi pi-search" aria-hidden="true"></i>
-      <input name="search" [ngModel]="search" (ngModelChange)="onSearchChanged($event)" placeholder="Tìm tên, mã hàng hoặc quét mã vạch" aria-label="Tìm hoặc quét mã hàng" autocomplete="off" />
-      <button type="submit" aria-label="Tìm sản phẩm"><i class="pi pi-arrow-right"></i></button>
-    </form>
-    <div class="invoice-tabs" aria-label="Hóa đơn đang mở">
-      <button type="button" class="invoice-tab active"><i class="pi pi-arrow-right-arrow-left"></i> Hóa đơn 1 <span class="tab-close">×</span></button>
-      @if (invoiceCount > 1) { <button type="button" class="invoice-tab"><i class="pi pi-arrow-right-arrow-left"></i> Hóa đơn {{ invoiceCount }} <span class="tab-close" (click)="$event.stopPropagation()">×</span></button> }
-      <button type="button" class="add-invoice" (click)="newInvoice()" aria-label="Tạo hóa đơn mới"><i class="pi pi-plus"></i></button>
+<main class="pos-shell">
+  <header class="pos-top">
+    <a class="pos-brand" routerLink="/app/dashboard" title="Về trang tổng quan">
+      <i class="pi pi-shop" aria-hidden="true"></i>
+      <span>Tryum</span>
+    </a>
+
+    <div class="pos-search-wrap">
+      <form class="pos-search" (submit)="submitSearch($event)">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          #searchInput
+          name="search"
+          [ngModel]="search()"
+          (ngModelChange)="onSearchChanged($event)"
+          placeholder="Tìm hàng hóa (F2) — quét mã vạch rồi Enter"
+          autocomplete="off"
+          aria-label="Tìm hàng hóa hoặc quét mã vạch"
+        />
+        @if (search()) {
+          <button type="button" class="search-clear" (click)="closeSearch()" aria-label="Xóa tìm kiếm">×</button>
+        }
+        <kbd>F2</kbd>
+      </form>
+
+      @if (searchOpen()) {
+        <button type="button" class="search-backdrop" aria-label="Đóng tìm kiếm" (click)="closeSearch()"></button>
+        <div class="search-dropdown">
+          @if (searchLoading()) {
+            <div class="search-state"><i class="pi pi-spin pi-spinner"></i> Đang tìm hàng hóa…</div>
+          } @else if (!searchResults().length) {
+            <div class="search-state">Không tìm thấy hàng hóa phù hợp.</div>
+          } @else {
+            @for (product of searchResults(); track product.id) {
+              <button type="button" class="search-result" (click)="selectSearchResult(product)">
+                <span class="search-result-thumb">
+                  @if (images()[product.id]; as imageUrl) {
+                    <img [src]="imageUrl" [alt]="product.name" />
+                  } @else {
+                    <i class="pi pi-image"></i>
+                  }
+                </span>
+                <span class="search-result-copy">
+                  <strong>{{ product.name }}</strong>
+                  <small>{{ product.sku }} · Tồn: {{ product.stock ?? '—' }}</small>
+                </span>
+                <b>{{ fmt(product.salePrice) }} đ</b>
+              </button>
+            }
+          }
+          <button type="button" class="search-add-new" (click)="openCreateProduct()">
+            <i class="pi pi-plus"></i> Thêm mới hàng hóa
+          </button>
+        </div>
+      }
     </div>
-    <span class="toolbar-spacer"></span>
-    <span class="pos-user"><i class="pi pi-user"></i> Bán hàng</span>
+
+    <div class="invoice-tabs" role="tablist" aria-label="Hóa đơn đang mở">
+      @for (ticket of tickets(); track ticket.id; let i = $index) {
+        <button
+          type="button"
+          role="tab"
+          class="invoice-tab"
+          [class.is-active]="activeIndex() === i"
+          [attr.aria-selected]="activeIndex() === i"
+          (click)="selectTicket(i)"
+        >
+          <i class="pi pi-arrow-right-arrow-left" aria-hidden="true"></i>
+          <span>{{ ticket.label }}</span>
+          <span class="ticket-count">{{ ticket.cart.length }}</span>
+          <span class="tab-close" role="button" tabindex="0" aria-label="Đóng hóa đơn" (click)="$event.stopPropagation(); closeTicket(i)">×</span>
+        </button>
+      }
+      <button type="button" class="add-tab" (click)="addTicket()" aria-label="Thêm hóa đơn mới">
+        <i class="pi pi-plus"></i>
+      </button>
+    </div>
+
+    <div class="top-actions">
+      <span class="seller-chip"><i class="pi pi-user"></i>{{ sellerName }}</span>
+      <a class="top-icon" routerLink="/app/settings" aria-label="Cài đặt thanh toán" title="Cài đặt thanh toán">
+        <i class="pi pi-cog"></i>
+      </a>
+    </div>
   </header>
 
-  <div class="pos-workspace">
-    <section class="ticket-area" aria-label="Giỏ hàng">
-      <div class="ticket-head">
-        <span class="ticket-label">{{ mode === 'delivery' ? 'Đơn giao hàng' : mode === 'quick' ? 'Bán nhanh' : 'Hóa đơn 1' }}</span>
-        <span class="line-count">{{ totalQuantity }} sản phẩm</span>
+  <div class="pos-main" [class.has-checkout]="checkoutPanelOpen() || activeTicket()?.channel === 'Quick' || activeTicket()?.channel === 'Delivery'" [class.quick-empty]="quickEmpty()" [class.no-catalog]="activeTicket()?.channel !== 'Quick'" [class.delivery-layout]="activeTicket()?.channel === 'Delivery'">
+    <!-- ── Hóa đơn ───────────────────────────────────────────────────── -->
+    @if (!quickEmpty()) {
+    <section class="invoice-panel" aria-label="Hóa đơn đang bán">
+      <div class="panel-head">
+        <div class="panel-title">
+          <strong>{{ activeTicket()?.label }}</strong>
+          <span>{{ totalQuantity() }} sản phẩm</span>
+        </div>
+        <div class="panel-actions">
+          <button type="button" class="ghost-button" (click)="clearCart()" [disabled]="!cart().length">
+            <i class="pi pi-trash"></i> Xóa hết
+          </button>
+        </div>
       </div>
-      @if (cart.length) {
-        <div class="cart-table-wrap">
+
+      @if (cart().length) {
+        <div class="cart-scroll">
           <table class="cart-table">
-            <thead><tr><th>STT</th><th>Sản phẩm</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th></th></tr></thead>
+            <thead>
+              <tr>
+                <th class="col-index">#</th>
+                <th>Mã hàng</th>
+                <th class="col-name">Tên hàng</th>
+                <th class="col-price">Đơn giá</th>
+                <th class="col-qty">Số lượng</th>
+                <th class="col-discount">Giảm giá</th>
+                <th class="col-total">Thành tiền</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
             <tbody>
-              @for (line of cart; track line.product.id; let i = $index) {
+              @for (line of cart(); track line.product.id; let i = $index) {
                 <tr>
-                  <td>{{ i + 1 }}</td>
-                  <td><strong>{{ line.product.name }}</strong><small>{{ line.product.sku }}</small></td>
-                  <td>{{ (line.product.salePrice ?? 0).toLocaleString('vi-VN') }}</td>
-                  <td><div class="quantity"><button type="button" (click)="changeQuantity(line.product.id, -1)" aria-label="Giảm">−</button><span>{{ line.quantity }}</span><button type="button" (click)="changeQuantity(line.product.id, 1)" aria-label="Tăng">+</button></div></td>
-                  <td class="money">{{ ((line.product.salePrice ?? 0) * line.quantity).toLocaleString('vi-VN') }}</td>
-                  <td><button class="remove-line" type="button" (click)="removeLine(line.product.id)" aria-label="Xóa sản phẩm"><i class="pi pi-trash"></i></button></td>
+                  <td class="col-index">{{ i + 1 }}</td>
+                  <td class="sku">{{ line.product.sku }}</td>
+                  <td class="col-name">
+                    <strong>{{ line.product.name }}</strong>
+                    @if (line.product.stock !== null) {
+                      <small [class.out-of-stock]="line.product.stock < line.quantity">Tồn: {{ line.product.stock }}</small>
+                    }
+                  </td>
+                  <td class="col-price">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      [name]="'price-' + line.product.id"
+                      [ngModel]="line.unitPrice"
+                      (ngModelChange)="setUnitPrice(line.product.id, $event)"
+                      aria-label="Đơn giá"
+                    />
+                  </td>
+                  <td class="col-qty">
+                    <div class="qty-stepper">
+                      <button type="button" (click)="changeQuantity(line.product.id, -1)" aria-label="Giảm số lượng">−</button>
+                      <input
+                        type="number"
+                        min="1"
+                        [name]="'qty-' + line.product.id"
+                        [ngModel]="line.quantity"
+                        (ngModelChange)="setQuantity(line.product.id, $event)"
+                        aria-label="Số lượng"
+                      />
+                      <button type="button" (click)="changeQuantity(line.product.id, 1)" aria-label="Tăng số lượng">+</button>
+                    </div>
+                  </td>
+                  <td class="col-discount">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      [name]="'discount-' + line.product.id"
+                      [ngModel]="line.discount"
+                      (ngModelChange)="setLineDiscount(line.product.id, $event)"
+                      aria-label="Giảm giá dòng"
+                    />
+                  </td>
+                  <td class="col-total money">{{ fmt(lineTotal(line)) }} đ</td>
+                  <td class="col-actions">
+                    <button type="button" class="row-remove" (click)="removeLine(line.product.id)" aria-label="Xóa dòng">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
       } @else {
-        <div class="empty-ticket"><div class="empty-basket"><i class="pi pi-shopping-bag"></i></div><strong>Chưa có sản phẩm trong hóa đơn</strong><span>Tìm hoặc chọn sản phẩm ở danh sách bên phải để bắt đầu bán hàng.</span></div>
+        <div class="empty-cart">
+          <span class="empty-mark"><i class="pi pi-shopping-basket"></i></span>
+          <strong>Hóa đơn chưa có sản phẩm</strong>
+          <p>Quét mã vạch ở ô tìm kiếm hoặc bấm vào sản phẩm bên phải để thêm vào hóa đơn.</p>
+        </div>
       }
-      <div class="ticket-bottom">
-        <button class="clear-cart" type="button" (click)="clearCart()" [disabled]="cart.length === 0"><i class="pi pi-trash"></i> Xóa giỏ</button>
-        <label class="note-field"><i class="pi pi-pencil"></i><input [(ngModel)]="note" name="note" placeholder="Ghi chú đơn hàng" /></label>
-        <div class="ticket-total"><span>Tổng tiền hàng <b>{{ totalQuantity }}</b></span><strong>{{ subtotal.toLocaleString('vi-VN') }}<small>₫</small></strong></div>
+
+      <div class="invoice-foot">
+        <label class="note-input">
+          <i class="pi pi-pencil" aria-hidden="true"></i>
+          <input
+            name="note"
+            [ngModel]="activeTicket()?.note ?? ''"
+            (ngModelChange)="setNote($event)"
+            placeholder="Ghi chú đơn hàng"
+            maxlength="1000"
+          />
+        </label>
+        @if (activeTicket()?.channel === 'Delivery') {
+          <label class="note-input delivery-input">
+            <i class="pi pi-map-marker" aria-hidden="true"></i>
+            <input
+              name="deliveryAddress"
+              [ngModel]="activeTicket()?.deliveryAddress ?? ''"
+              (ngModelChange)="setDeliveryAddress($event)"
+              placeholder="Địa chỉ giao hàng"
+              maxlength="500"
+            />
+          </label>
+        }
+        <div class="invoice-sum">
+          <span>Tổng tiền hàng <b>{{ totalQuantity() }}</b></span>
+          <strong>{{ fmt(subtotal()) }} <small>đ</small></strong>
+        </div>
       </div>
     </section>
+    }
 
-    <aside class="catalog-panel" aria-label="Chọn hàng hóa">
-      <div class="catalog-top">
-        <div class="customer-picker" (focusout)="customerPickerOpen = false">
-          <div class="customer-field">
-            <i class="pi pi-user"></i>
-            <input [ngModel]="selectedCustomer?.name ?? customerSearch" (ngModelChange)="onCustomerSearchChanged($event)" (focus)="openCustomerPicker()" (click)="openCustomerPicker()" name="customerSearch" placeholder="Tìm khách hàng (F4)" autocomplete="off" />
-            @if (selectedCustomer) { <button class="customer-clear" type="button" (click)="clearCustomer()" aria-label="Bỏ chọn khách hàng">×</button> }
-            <button class="customer-add" type="button" (click)="openCreateCustomer()" aria-label="Thêm khách hàng"><i class="pi pi-plus"></i></button>
-          </div>
-          @if (customerPickerOpen) {
-            <div class="customer-results">
-              <button class="customer-new-row" type="button" (mousedown)="$event.preventDefault()" (click)="openCreateCustomer()"><i class="pi pi-plus-circle"></i> Thêm khách hàng mới</button>
-              @if (customerLoading) { <div class="customer-result-state"><i class="pi pi-spin pi-spinner"></i> Đang tìm khách hàng…</div> }
-              @else if (customerError) { <div class="customer-result-state error">{{ customerError }}<button type="button" (click)="loadCustomers()">Thử lại</button></div> }
-              @else if (!customerResults.length) { <div class="customer-result-state">{{ customerSearch ? 'Không tìm thấy khách hàng phù hợp' : 'Chưa có khách hàng' }}</div> }
-              @else {
-                @for (item of customerResults; track item.id) {
-                  <button class="customer-result" type="button" (mousedown)="$event.preventDefault()" (click)="selectCustomer(item)"><span class="customer-avatar">{{ item.name.slice(0, 1).toUpperCase() }}</span><span><strong>{{ item.name }}</strong><small>{{ item.phone || item.code }}</small></span></button>
-                }
-              }
-            </div>
+    <!-- ── Danh mục hàng hóa ────────────────────────────────────────── -->
+    @if (activeTicket()?.channel === 'Quick') {
+    <section class="catalog-panel" aria-label="Danh mục hàng hóa">
+      <div class="panel-head">
+        <div class="panel-title">
+          <strong>Hàng hóa</strong>
+          <span>{{ fmt(productTotal()) }} mặt hàng</span>
+        </div>
+        <div class="panel-actions muted">
+          @if (selectedCategory()) {
+            <button type="button" class="ghost-button" (click)="selectQuickCategory('')">
+              <i class="pi pi-arrow-left"></i> Tất cả nhóm
+            </button>
+          } @else {
+            {{ search() ? 'Kết quả tìm kiếm' : 'Tất cả hàng hóa' }}
           }
         </div>
-        <button class="price-list" type="button" disabled title="Bảng giá chưa được kết nối">Bảng giá chung <i class="pi pi-angle-down"></i></button>
-        <button class="catalog-icon" type="button" disabled aria-label="Danh mục"><i class="pi pi-list"></i></button>
-        <button class="catalog-icon" type="button" disabled aria-label="Lọc"><i class="pi pi-filter"></i></button>
       </div>
-      @if (mode === 'delivery') {
-        <label class="delivery-address"><i class="pi pi-map-marker"></i><input [(ngModel)]="deliveryAddress" name="deliveryAddress" placeholder="Địa chỉ giao hàng" /></label>
-      }
-      @if (loadingProducts) {
-        <div class="catalog-state"><i class="pi pi-spin pi-spinner"></i><strong>Đang tải sản phẩm…</strong></div>
-      } @else if (productsError) {
-        <div class="catalog-state error"><i class="pi pi-cloud"></i><strong>{{ productsError }}</strong><button type="button" (click)="loadProducts()">Thử tải lại</button></div>
-      } @else if (!filteredProducts.length) {
-        <div class="catalog-state"><i class="pi pi-box"></i><strong>{{ search ? 'Không tìm thấy sản phẩm phù hợp' : 'Cửa hàng chưa có sản phẩm' }}</strong><span>{{ search ? 'Thử mã hàng hoặc tên sản phẩm khác.' : 'Sản phẩm được tải trực tiếp từ dữ liệu cửa hàng.' }}</span></div>
+
+      @if (quickEmpty() && !selectedCategory() && quickCategories().length) {
+        <div class="quick-category-grid">
+          @for (category of quickCategories(); track category.value) {
+            <button type="button" class="quick-category-card" (click)="selectQuickCategory(category.value)">
+              <span class="quick-category-icon"><i class="pi pi-tags"></i></span>
+              <span class="quick-category-name">{{ category.label }}</span>
+            </button>
+          }
+        </div>
+      } @else if (productsLoading()) {
+        <div class="catalog-state"><i class="pi pi-spin pi-spinner"></i><strong>Đang tải hàng hóa…</strong></div>
+      } @else if (productsError()) {
+        <div class="catalog-state error">
+          <i class="pi pi-cloud"></i>
+          <strong>{{ productsError() }}</strong>
+          <button type="button" class="ghost-button" (click)="loadProducts()">Thử lại</button>
+        </div>
+      } @else if (!filteredProducts().length) {
+        <div class="catalog-state">
+          <i class="pi pi-box"></i>
+          <strong>{{ selectedCategory() ? 'Nhóm này chưa có hàng hóa' : (search() ? 'Không tìm thấy hàng hóa phù hợp' : 'Cửa hàng chưa có hàng hóa') }}</strong>
+          <p>{{ search() ? 'Thử mã hàng, tên khác hoặc quét lại mã vạch.' : 'Nhập hàng hóa ở trang Hàng hóa trước khi bán.' }}</p>
+        </div>
       } @else {
         <div class="product-grid">
-          @for (product of filteredProducts; track product.id) {
-            <button class="product-tile" type="button" (click)="addProduct(product)" [attr.aria-label]="'Thêm ' + product.name">
-              <span class="product-thumb">@if (imageSources.get(product.id); as imageUrl) { <img [src]="imageUrl" [alt]="product.name" /> } @else { <i class="pi pi-box"></i> }</span>
-              <span class="product-info"><span class="product-name">{{ product.name }}</span><span class="product-price">{{ (product.salePrice ?? 0).toLocaleString('vi-VN') }} ₫</span><small>{{ product.sku }}</small></span>
+          @for (product of filteredProducts(); track product.id) {
+            <button type="button" class="product-card" (click)="addProduct(product)" [attr.aria-label]="'Thêm ' + product.name">
+              <span class="product-thumb">
+                @if (images()[product.id]; as imageUrl) {
+                  <img [src]="imageUrl" [alt]="product.name" />
+                } @else {
+                  <i class="pi pi-image"></i>
+                }
+              </span>
+              <span class="product-copy">
+                <span class="product-name">{{ product.name }}</span>
+                <span class="product-sku">{{ product.sku }}</span>
+                <span class="product-price">{{ fmt(product.salePrice) }} đ</span>
+              </span>
+              @if (product.stock !== null) {
+                <span class="product-stock" [class.is-low]="product.stock <= 5">Tồn {{ product.stock }}</span>
+              }
+              <span class="product-add"><i class="pi pi-plus"></i></span>
             </button>
           }
         </div>
       }
-      <div class="catalog-pagination"><button type="button" (click)="previousProducts()" [disabled]="productPage <= 1" aria-label="Trang trước"><i class="pi pi-angle-left"></i></button><span>{{ firstPage }}–{{ lastPage }} / {{ totalProducts.toLocaleString('vi-VN') }}</span><button type="button" (click)="nextProducts()" [disabled]="productPage * pageSize >= totalProducts" aria-label="Trang sau"><i class="pi pi-angle-right"></i></button></div>
+
+      @if (!(quickEmpty() && !selectedCategory())) {
+        <div class="pagination">
+          <button type="button" (click)="previousProducts()" [disabled]="productPage() <= 1" aria-label="Trang trước">
+            <i class="pi pi-angle-left"></i>
+          </button>
+          <span>Trang {{ productPage() }} / {{ Math.max(1, Math.ceil(productTotal() / pageSize)) }}</span>
+          <button type="button" (click)="nextProducts()" [disabled]="productPage() * pageSize >= productTotal()" aria-label="Trang sau">
+            <i class="pi pi-angle-right"></i>
+          </button>
+        </div>
+      }
+    </section>
+    }
+
+    <!-- ── Thông tin giao hàng ──────────────────────────────────────── -->
+    @if (activeTicket()?.channel === 'Delivery') {
+      <section class="shipping-form-panel" aria-label="Thông tin giao hàng">
+        <div class="shipping-form-head">
+          <div>
+            <strong>Thông tin giao hàng</strong>
+            <span>{{ activeTicket()?.customer?.name || 'Chưa chọn khách hàng' }}</span>
+          </div>
+          @if (activeTicket()?.customer; as customer) {
+            <span class="shipping-points">Điểm: {{ customer.points }}</span>
+          }
+        </div>
+
+        <div class="shipping-form-body">
+          <div class="delivery-grid">
+            <label>Người nhận
+              <input [value]="activeTicket()?.customer?.name ?? 'Chọn khách hàng'" disabled />
+            </label>
+            <label>Số điện thoại
+              <input [value]="activeTicket()?.customer?.phone ?? ''" disabled />
+            </label>
+            <label class="wide">Địa chỉ (số nhà, đường)
+              <input
+                name="deliveryAddressCenter"
+                [ngModelOptions]="{ standalone: true }"
+                [ngModel]="activeTicket()?.deliveryAddress ?? ''"
+                (ngModelChange)="setDeliveryAddress($event)"
+                placeholder="Số nhà, tòa nhà, ngõ, đường…"
+                maxlength="500"
+              />
+            </label>
+            <label>Tỉnh/Thành
+              <select [value]="deliveryCityId()" (change)="onDeliveryCityChange($any($event.target).value)">
+                <option value="">Chọn Tỉnh/Thành</option>
+                @for (city of shippingCities(); track city.id) {
+                  <option [value]="city.id">{{ city.name }}</option>
+                }
+              </select>
+            </label>
+            <label>Quận/Huyện
+              <select [value]="deliveryDistrictId()" (change)="onDeliveryDistrictChange($any($event.target).value)">
+                <option value="">Chọn Quận/Huyện</option>
+                @for (district of shippingDistricts(); track district.id) {
+                  <option [value]="district.id">{{ district.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="wide">Phường/Xã
+              <select [value]="deliveryWardId()" (change)="onDeliveryWardChange($any($event.target).value)">
+                <option value="">Chọn Phường/Xã</option>
+                @for (ward of shippingWards(); track ward.id) {
+                  <option [value]="ward.id">{{ ward.name }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <div class="parcel-row">
+            <label>Cân nặng (g)
+              <input type="number" min="1" [ngModel]="shippingWeight()" (ngModelChange)="shippingWeight.set(+$event || 1)" />
+            </label>
+            <label>Dài (cm)
+              <input type="number" min="1" [ngModel]="shippingLength()" (ngModelChange)="shippingLength.set(+$event || 1)" />
+            </label>
+            <label>Rộng (cm)
+              <input type="number" min="1" [ngModel]="shippingWidth()" (ngModelChange)="shippingWidth.set(+$event || 1)" />
+            </label>
+            <label>Cao (cm)
+              <input type="number" min="1" [ngModel]="shippingHeight()" (ngModelChange)="shippingHeight.set(+$event || 1)" />
+            </label>
+          </div>
+
+          <div class="shipping-actions">
+            <button type="button" class="delivery-link" (click)="openPickupConfig()">
+              {{ pickupConfigured() ? 'Đổi điểm lấy hàng' : 'Cấu hình điểm lấy hàng' }}
+            </button>
+            @if (deliveryPartnerTab() === 'Goship') {
+              <button type="button" class="delivery-primary" [disabled]="shippingLoading()" (click)="quoteShipping()">
+                {{ shippingLoading() ? 'Đang lấy giá…' : 'Lấy bảng giá vận chuyển' }}
+              </button>
+            }
+          </div>
+
+          @if (pickupOpen()) {
+            <div class="pickup-box">
+              <div class="pickup-title">Điểm lấy hàng của cửa hàng</div>
+              <select [value]="pickupCityId()" (change)="onPickupCityChange($any($event.target).value)">
+                <option value="">Tỉnh/Thành</option>
+                @for (city of pickupCities(); track city.id) {
+                  <option [value]="city.id">{{ city.name }}</option>
+                }
+              </select>
+              <select [value]="pickupDistrictId()" (change)="onPickupDistrictChange($any($event.target).value)">
+                <option value="">Quận/Huyện</option>
+                @for (district of pickupDistricts(); track district.id) {
+                  <option [value]="district.id">{{ district.name }}</option>
+                }
+              </select>
+              <select [value]="pickupWardId()" (change)="pickupWardId.set($any($event.target).value)">
+                <option value="">Phường/Xã</option>
+                @for (ward of pickupWards(); track ward.id) {
+                  <option [value]="ward.id">{{ ward.name }}</option>
+                }
+              </select>
+              <button type="button" class="delivery-primary" [disabled]="pickupSaving()" (click)="savePickup()">
+                {{ pickupSaving() ? 'Đang lưu…' : 'Lưu điểm lấy hàng' }}
+              </button>
+            </div>
+          }
+
+          @if (shippingError()) {
+            <div class="delivery-error"><i class="pi pi-exclamation-circle"></i> {{ shippingError() }}</div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- ── Thanh toán ───────────────────────────────────────────────── -->
+    @if (checkoutPanelOpen() || activeTicket()?.channel === 'Quick' || activeTicket()?.channel === 'Delivery') {
+    <aside class="checkout-panel" aria-label="Thanh toán hóa đơn">
+      <div class="checkout-head">
+        <div>
+          <strong>{{ sellerName }}</strong>
+          <span>{{ clock() | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        @if (checkoutPanelOpen() && activeTicket()?.channel === 'Regular') {
+          <button type="button" class="checkout-close" (click)="checkoutPanelOpen.set(false)" aria-label="Đóng thanh toán">×</button>
+        }
+      </div>
+
+      <div class="customer-block">
+        @if (activeTicket()?.customer; as customer) {
+          <div class="customer-selected" (click)="openCustomerDetail(customer)">
+            <span class="customer-avatar">{{ customer.name.slice(0, 1).toUpperCase() }}</span>
+            <div class="customer-selected-info">
+              <span class="customer-name-line">
+                <strong>{{ customer.name }}</strong>
+                <small class="customer-phone">{{ customer.phone || customer.code }}</small>
+              </span>
+              <small class="customer-points">Điểm: {{ customer.points }}</small>
+              @if (customer.debtAmount !== 0) {
+                <small class="customer-debt">Công nợ: {{ fmt(customer.debtAmount) }} đ</small>
+              }
+            </div>
+            <button type="button" class="customer-clear" (click)="$event.stopPropagation(); clearCustomer()" aria-label="Bỏ chọn khách">×</button>
+          </div>
+        } @else {
+          <div class="customer-search-field">
+            <i class="pi pi-search"></i>
+            <input
+              name="customerSearchInline"
+              [ngModel]="customerSearch()"
+              (ngModelChange)="onCustomerSearchChanged($event)"
+              placeholder="Tìm khách hàng (F4)"
+              autocomplete="off"
+            />
+          </div>
+        }
+        <button type="button" class="customer-add" (click)="openCreateCustomer()" aria-label="Tạo khách hàng mới">
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
+
+      @if (customerPickerOpen() && (checkoutPanelOpen() || activeTicket()?.channel === 'Quick' || activeTicket()?.channel === 'Delivery')) {
+        <div class="customer-inline-results">
+          <div class="customer-list">
+            @if (customerLoading()) {
+              <div class="list-state"><i class="pi pi-spin pi-spinner"></i> Đang tìm…</div>
+            } @else if (customerError()) {
+              <div class="list-state error">{{ customerError() }}</div>
+            } @else if (!customerResults().length) {
+              <div class="list-state">Chưa có khách hàng phù hợp</div>
+            } @else {
+              @for (item of customerResults(); track item.id) {
+                <button type="button" class="customer-row" (click)="selectCustomer(item)">
+                  <span class="customer-avatar">{{ item.name.slice(0, 1).toUpperCase() }}</span>
+                  <span><strong>{{ item.name }}</strong><small>{{ item.phone || item.code }}</small></span>
+                </button>
+              }
+            }
+          </div>
+          <button type="button" class="customer-popover-add" (click)="openCreateCustomer()">
+            <i class="pi pi-plus"></i> Thêm khách hàng mới
+          </button>
+        </div>
+      }
+
+      @if (activeTicket()?.channel === 'Delivery') {
+        <div class="delivery-rates-panel">
+          <div class="partner-tabs">
+            <button type="button" [class.is-active]="deliveryPartnerTab() === 'Goship'" (click)="selectDeliveryPartner('Goship')">
+              <i class="pi pi-box"></i> Goship
+            </button>
+            <button type="button" [class.is-active]="deliveryPartnerTab() === 'Self'" (click)="selectDeliveryPartner('Self')">
+              <i class="pi pi-send"></i> Tự giao hàng
+            </button>
+          </div>
+
+          @if (deliveryPartnerTab() === 'Goship') {
+            @if (shippingRates().length) {
+              <div class="rate-list">
+                @for (rate of shippingRates(); track rate.id) {
+                  <button
+                    type="button"
+                    class="rate-card"
+                    [class.is-selected]="selectedShippingRate()?.id === rate.id"
+                    (click)="selectShippingRate(rate)"
+                  >
+                    <span class="rate-logo">
+                      @if (rate.carrierLogo) {
+                        <img [src]="rate.carrierLogo" [alt]="rate.carrierName || rate.carrierShortName || 'Hãng vận chuyển'" />
+                      } @else {
+                        {{ (rate.carrierShortName || rate.carrierName || '?').slice(0, 2).toUpperCase() }}
+                      }
+                    </span>
+                    <span class="rate-main">
+                      <strong>{{ rate.carrierName || rate.carrierShortName }}</strong>
+                      <small>{{ rate.service }} · {{ rate.expected || 'Đang cập nhật' }}</small>
+                      @if (rate.successPercent !== null) {
+                        <small class="rate-success">Tỉ lệ giao thành công {{ rate.successPercent }}%</small>
+                      }
+                    </span>
+                    <b>{{ fmt(rate.totalFee) }} đ</b>
+                  </button>
+                }
+              </div>
+              <div class="rate-options">
+                <label>
+                  <input
+                    type="checkbox"
+                    [ngModelOptions]="{ standalone: true }"
+                    [ngModel]="insuranceEnabled()"
+                    (ngModelChange)="insuranceEnabled.set($event)"
+                  />
+                  Khai giá {{ fmt(total()) }} đ
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    [ngModelOptions]="{ standalone: true }"
+                    [ngModel]="senderPaysShipping()"
+                    (ngModelChange)="senderPaysShipping.set($event)"
+                  />
+                  Người gửi trả phí
+                </label>
+              </div>
+            } @else {
+              <div class="shipping-hint">Chọn địa chỉ bên trái rồi bấm <b>Lấy bảng giá vận chuyển</b>.</div>
+            }
+          } @else {
+            <label class="self-fee">
+              Phí giao hàng tự giao
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                [ngModel]="selfShippingFee()"
+                (ngModelChange)="setSelfShippingFee(+$event || 0)"
+              />
+            </label>
+          }
+
+          @if (shippingFee() > 0) {
+            <div class="delivery-selected">
+              <span>Phí giao hàng</span>
+              <strong>{{ fmt(shippingFee()) }} đ</strong>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="summary">
+        <div class="summary-row">
+          <span>Tổng tiền hàng <b>({{ totalQuantity() }})</b></span>
+          <strong>{{ fmt(subtotal()) }} đ</strong>
+        </div>
+        <label class="summary-row editable">
+          <span>Giảm giá</span>
+          <input
+            type="number"
+            min="0"
+            step="1000"
+            name="orderDiscount"
+            [ngModel]="activeTicket()?.discount ?? 0"
+            (ngModelChange)="setOrderDiscount($event)"
+            aria-label="Giảm giá hóa đơn"
+          />
+        </label>
+        <label class="summary-row editable coupon-row">
+          <span>Mã coupon</span>
+          <input
+            name="coupon"
+            [ngModel]="activeTicket()?.couponCode ?? ''"
+            (ngModelChange)="setCoupon($event)"
+            placeholder="Nhập mã"
+            maxlength="60"
+            aria-label="Mã coupon"
+          />
+        </label>
+
+        <div class="summary-row points-row">
+          <span>Điểm <b>({{ activeTicket()?.customer?.points ?? 0 }})</b></span>
+          <span class="points-actions">
+            @if (pointsDiscount() > 0) {
+              <b class="points-discount">-{{ fmt(pointsDiscount()) }} đ</b>
+            }
+            <button
+              type="button"
+              role="switch"
+              class="points-switch"
+              [class.on]="usePoints()"
+              [attr.aria-checked]="usePoints()"
+              [disabled]="!activeTicket()?.customer || (activeTicket()?.customer?.points ?? 0) <= 0"
+              (click)="togglePoints()"
+              aria-label="Dùng điểm"
+            >
+              <span></span>
+            </button>
+          </span>
+        </div>
+
+        <div class="summary-row due">
+          <span>Khách cần trả</span>
+          <strong>{{ fmt(total()) }} đ</strong>
+        </div>
+
+        <label class="summary-row editable received-row">
+          <span>Khách thanh toán</span>
+          <input
+            type="number"
+            min="0"
+            step="1000"
+            name="received"
+            [ngModel]="receivedOverride() ?? total()"
+            (ngModelChange)="setReceived($event)"
+            [disabled]="splitPayments().length > 0"
+            aria-label="Số tiền khách thanh toán"
+          />
+        </label>
+
+        <div class="pay-methods" role="radiogroup" aria-label="Phương thức thanh toán">
+          @for (method of methods; track method.value) {
+            <label class="pay-method" [class.is-active]="paymentMethod() === method.value">
+              <input
+                type="radio"
+                [name]="'payMethod'"
+                [value]="method.value"
+                [ngModel]="paymentMethod()"
+                (ngModelChange)="setPaymentMethod(method.value)"
+              />
+              <span>{{ method.label }}</span>
+            </label>
+          }
+          <div class="payment-menu-wrap">
+            <button
+              type="button"
+              class="payment-menu-trigger"
+              (click)="togglePaymentMenu()"
+              [attr.aria-expanded]="paymentMenuOpen()"
+              aria-haspopup="menu"
+              aria-label="Tùy chọn thanh toán"
+              title="Thanh toán kết hợp"
+            >
+              ⋮
+            </button>
+            @if (paymentMenuOpen()) {
+              <button type="button" class="payment-menu-backdrop" aria-label="Đóng menu" (click)="closePaymentMenu()"></button>
+              <div class="payment-menu" role="menu">
+                <button type="button" role="menuitem" (click)="openSplitFromMenu()">
+                  <i class="pi pi-sitemap"></i> Thanh toán kết hợp
+                </button>
+                @if (splitPayments().length) {
+                  <button type="button" role="menuitem" (click)="clearSplitPayments()">
+                    <i class="pi pi-times"></i> Bỏ thanh toán kết hợp
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (paid() > total() && paymentMethod() === 'Cash') {
+          <div class="overpay-choice">
+            <label class="overpay-option">
+              <input type="radio" name="overpay" [checked]="!creditOverpayment()" (change)="creditOverpayment.set(false)" />
+              <span>Tiền thừa trả khách</span>
+              <b>{{ fmt(change()) }} đ</b>
+            </label>
+            <label class="overpay-option" [class.disabled]="!activeTicket()?.customer">
+              <input
+                type="radio"
+                name="overpay"
+                [checked]="creditOverpayment()"
+                [disabled]="!activeTicket()?.customer"
+                (change)="creditOverpayment.set(true)"
+              />
+              <span>Tính vào công nợ</span>
+            </label>
+          </div>
+        } @else if (remaining() > 0 && paymentMethod() !== 'Cash' && paymentMethod() !== 'Transfer') {
+          <div class="debt-row">
+            <span>Còn lại (ghi nợ)</span>
+            <strong>{{ fmt(remaining()) }} đ</strong>
+          </div>
+        }
+
+        @if (paymentMethod() === 'Transfer' && !splitPayments().length) {
+          <div class="transfer-qr">
+            <div class="transfer-qr-head">
+              <span><i class="pi pi-qrcode"></i> Quét mã để chuyển khoản</span>
+              <b>{{ fmt(transferQr()?.amount ?? total()) }} đ</b>
+            </div>
+
+            @if (transferQrLoading()) {
+              <div class="transfer-qr-state"><i class="pi pi-spin pi-spinner"></i> Đang tạo mã QR…</div>
+            } @else if (transferQrError()) {
+              <div class="transfer-qr-state error">{{ transferQrError() }}</div>
+            } @else if (transferQr(); as session) {
+              @if (session.status === 'Paid') {
+                <div class="transfer-qr-paid">
+                  <i class="pi pi-check-circle"></i>
+                  <strong>Đã nhận chuyển khoản</strong>
+                  <span>{{ fmt(session.transferredAmount ?? session.amount) }} đ</span>
+                  <small>Bấm THANH TOÁN để xuất hóa đơn</small>
+                </div>
+              } @else {
+                <img [src]="session.qrUrl" [alt]="'QR ' + session.reference" />
+                <p class="transfer-qr-ref">Nội dung: <strong>{{ session.reference }}</strong></p>
+                <p class="transfer-qr-wait"><i class="pi pi-spin pi-spinner"></i> Đang chờ khách chuyển khoản…</p>
+                <button type="button" class="transfer-confirm" (click)="confirmTransferQr(session)">
+                  Đã nhận tiền
+                </button>
+              }
+            }
+          </div>
+        }
+
+        @if (paymentMethod() !== 'Transfer' || splitPayments().length) {
+          <div class="quick-cash" aria-label="Gợi ý số tiền">
+            @for (amount of quickAmounts(); track amount) {
+              <button
+                type="button"
+                [class.is-active]="(receivedOverride() ?? total()) === amount"
+                (click)="setQuickAmount(amount)"
+              >
+                {{ fmt(amount) }}
+              </button>
+            }
+          </div>
+        }
+
+        @if (splitPayments().length) {
+          <div class="split-summary">
+            <div class="split-head">
+              <span>Thanh toán nhiều phương thức</span>
+              <button type="button" (click)="openPaymentDialog()">Sửa</button>
+            </div>
+            @for (line of splitPayments(); track $index) {
+              <div class="split-row">
+                <span>{{ methodLabel(line.method) }}</span>
+                <strong>{{ fmt(line.amount) }} đ</strong>
+              </div>
+            }
+          </div>
+        }
+
+        @if (splitPayments().length) {
+          <button type="button" class="multi-pay-link" (click)="openPaymentDialog()">
+            <i class="pi pi-pencil"></i> Sửa thanh toán kết hợp
+          </button>
+        }
+
+        @if (pendingTransfers().length) {
+          <div class="pending-box">
+            <strong>Chờ chuyển khoản</strong>
+            @for (item of pendingTransfers(); track item.order.id) {
+              <button type="button" class="pending-row" (click)="reopenTransfer(item)">
+                <span>{{ item.order.code }}</span>
+                <b>{{ fmt(item.qr?.amount ?? item.order.remaining) }} đ</b>
+                <i class="pi pi-qrcode"></i>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <button type="button" class="pay-button" [disabled]="!cart().length || busy()" (click)="checkout()">
+        @if (busy()) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-wallet"></i>
+        }
+        <span>THANH TOÁN</span>
+        <b>{{ fmt(total()) }} đ</b>
+      </button>
     </aside>
+    }
   </div>
 
-  <footer class="pos-footer">
-    <nav class="sale-modes" aria-label="Chế độ bán hàng">
-      <button type="button" [class.active]="mode === 'quick'" (click)="mode = 'quick'"><i class="pi pi-bolt"></i> Bán nhanh</button>
-      <button type="button" [class.active]="mode === 'regular'" (click)="mode = 'regular'"><i class="pi pi-clock"></i> Bán thường</button>
-      <button type="button" [class.active]="mode === 'delivery'" (click)="mode = 'delivery'"><i class="pi pi-truck"></i> Bán giao hàng</button>
+  <footer class="pos-bottom">
+    <nav class="mode-tabs" aria-label="Chế độ bán hàng">
+      <button type="button" [class.is-active]="activeTicket()?.channel === 'Quick'" (click)="setChannel('Quick')">
+        <i class="pi pi-bolt"></i> Bán nhanh
+      </button>
+      <button type="button" [class.is-active]="activeTicket()?.channel === 'Regular'" (click)="setChannel('Regular')">
+        <i class="pi pi-clock"></i> Bán thường
+      </button>
+      <button type="button" [class.is-active]="activeTicket()?.channel === 'Delivery'" (click)="setChannel('Delivery')">
+        <i class="pi pi-truck"></i> Bán giao hàng
+      </button>
     </nav>
-    <div class="footer-actions"><span class="branch"><i class="pi pi-map-marker"></i> Cửa hàng hiện tại</span><button class="hold-button" type="button" disabled title="Tạm tính chưa được kết nối">Lưu tạm</button><button class="checkout-button" type="button" [disabled]="cart.length === 0" (click)="checkout()"><i class="pi pi-wallet"></i> Thanh toán <strong>{{ subtotal.toLocaleString('vi-VN') }} ₫</strong></button></div>
+    <span class="shortcut-hint">F2 tìm hàng · F4 khách hàng · F9 thanh toán</span>
+    <div class="footer-right">
+      <span class="branch"><i class="pi pi-map-marker"></i> Cửa hàng hiện tại</span>
+      @if (!checkoutPanelOpen()) {
+        <button type="button" class="footer-checkout" [disabled]="!cart().length || busy()" (click)="openCheckout()">
+          <i class="pi pi-wallet"></i>
+          <span>THANH TOÁN</span>
+          <b>{{ fmt(total()) }} đ</b>
+        </button>
+      }
+    </div>
   </footer>
 </main>
 
-@if (customerDialogOpen) {
-  <div class="customer-dialog-backdrop" (click)="customerDialogOpen = false">
-    <section class="customer-dialog" role="dialog" aria-modal="true" aria-labelledby="customer-dialog-title" (click)="$event.stopPropagation()">
-      <header class="customer-dialog-header"><div><strong id="customer-dialog-title">Thêm khách hàng</strong><span>Chi nhánh tạo: Cửa hàng hiện tại</span></div><button type="button" aria-label="Đóng" (click)="customerDialogOpen = false">×</button></header>
-      <nav class="customer-dialog-tabs" aria-label="Thông tin khách hàng">
-        <button type="button" [class.active]="customerDialogTab === 'general'" (click)="customerDialogTab = 'general'">Thông tin chung</button>
-        <button type="button" [class.active]="customerDialogTab === 'invoice'" (click)="customerDialogTab = 'invoice'">Thông tin xuất hóa đơn</button>
+@if (customerPickerOpen() && !(checkoutPanelOpen() || activeTicket()?.channel === 'Quick' || activeTicket()?.channel === 'Delivery')) {
+  <button type="button" class="picker-dismiss picker-dismiss--global" aria-label="Đóng danh sách khách hàng" (click)="customerPickerOpen.set(false)"></button>
+  <div class="customer-popover customer-popover--global">
+    <input
+      type="search"
+      name="customerSearch"
+      [ngModel]="customerSearch()"
+      (ngModelChange)="onCustomerSearchChanged($event)"
+      placeholder="Tìm theo tên hoặc số điện thoại"
+    />
+    <div class="customer-list">
+      @if (customerLoading()) {
+        <div class="list-state"><i class="pi pi-spin pi-spinner"></i> Đang tìm…</div>
+      } @else if (customerError()) {
+        <div class="list-state error">{{ customerError() }}</div>
+      } @else if (!customerResults().length) {
+        <div class="list-state">Chưa có khách hàng phù hợp</div>
+      } @else {
+        @for (item of customerResults(); track item.id) {
+          <button type="button" class="customer-row" (click)="selectCustomer(item)">
+            <span class="customer-avatar">{{ item.name.slice(0, 1).toUpperCase() }}</span>
+            <span><strong>{{ item.name }}</strong><small>{{ item.phone || item.code }}</small></span>
+          </button>
+        }
+      }
+    </div>
+    <button type="button" class="customer-popover-add" (click)="openCreateCustomer()">
+      <i class="pi pi-plus"></i> Thêm khách hàng mới
+    </button>
+  </div>
+}
+
+<!-- ── Tạo khách hàng ──────────────────────────────────────────────────── -->
+@if (customerDialogOpen()) {
+  <div class="modal-backdrop" (click)="customerDialogOpen.set(false)">
+    <section class="modal customer-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal-head">
+        <div><strong>Thêm khách hàng</strong><span>Thông tin dùng cho hóa đơn và tích điểm</span></div>
+        <button type="button" class="modal-close" (click)="customerDialogOpen.set(false)" aria-label="Đóng">×</button>
+      </header>
+      <nav class="modal-tabs">
+        <button type="button" [class.is-active]="customerDialogTab() === 'general'" (click)="customerDialogTab.set('general')">Thông tin chung</button>
+        <button type="button" [class.is-active]="customerDialogTab() === 'invoice'" (click)="customerDialogTab.set('invoice')">Thông tin xuất hóa đơn</button>
       </nav>
       <form class="customer-form" (submit)="$event.preventDefault(); saveCustomer()">
-        @if (customerDialogTab === 'general') {
-          <div class="customer-form-grid">
-            <div class="customer-profile"><span class="customer-profile-avatar"><i class="pi pi-user"></i></span><small>Mã khách hàng sẽ tự tạo khi lưu</small></div>
-            <label>Tên khách hàng <b>*</b><input [(ngModel)]="customerDraft.name" name="newCustomerName" required maxlength="200" placeholder="Nhập tên khách hàng" /></label>
-            <label>Nhóm<select [(ngModel)]="customerDraft.groupName" name="newCustomerGroup"><option value="">Chọn nhóm khách hàng</option><option>Khách lẻ</option><option>Khách thân thiết</option><option>Khách sỉ</option></select></label>
-            <label>Điện thoại<input [(ngModel)]="customerDraft.phone" name="newCustomerPhone" type="tel" maxlength="40" placeholder="Nhập số điện thoại" /></label>
-            <label>Ngày sinh<input [(ngModel)]="customerDraft.birthDate" name="newCustomerBirthDate" type="date" /></label>
-            <label>Email<input [(ngModel)]="customerDraft.email" name="newCustomerEmail" type="email" maxlength="254" placeholder="name@example.com" /></label>
-            <fieldset><legend>Giới tính</legend><label><input [(ngModel)]="customerDraft.gender" name="newCustomerGender" type="radio" value="Nam" /> Nam</label><label><input [(ngModel)]="customerDraft.gender" name="newCustomerGender" type="radio" value="Nữ" /> Nữ</label></fieldset>
-            <label>Facebook<input [(ngModel)]="customerDraft.facebook" name="newCustomerFacebook" maxlength="255" placeholder="Facebook" /></label>
-            <label>Người phụ trách<input [(ngModel)]="customerDraft.assignedTo" name="newCustomerAssigned" maxlength="200" placeholder="Người phụ trách" /></label>
-            <label class="wide">Địa chỉ<input [(ngModel)]="customerDraft.address" name="newCustomerAddress" maxlength="500" placeholder="Số nhà, tòa nhà, ngõ, đường" /></label>
-            <label>Khu vực<input [(ngModel)]="customerDraft.region" name="newCustomerRegion" maxlength="160" placeholder="Tỉnh/Thành phố" /></label>
-            <label>Phường xã<input [(ngModel)]="customerDraft.ward" name="newCustomerWard" maxlength="160" placeholder="Phường/Xã" /></label>
-            <label class="wide">Ghi chú<textarea [(ngModel)]="customerDraft.note" name="newCustomerNote" maxlength="2000" rows="2" placeholder="Ghi chú khách hàng"></textarea></label>
+        @if (customerDialogTab() === 'general') {
+          <div class="customer-layout">
+            <div class="customer-avatar-panel">
+              <div class="customer-avatar-large"><i class="pi pi-user"></i></div>
+              <button type="button" class="customer-avatar-button" (click)="customerAvatarNotice()">Chọn ảnh</button>
+            </div>
+
+            <div class="customer-fields-col">
+              <div class="customer-inline-row">
+                <label>Mã khách hàng</label>
+                <input name="customerCode" value="Mặc định" disabled />
+              </div>
+              <div class="customer-inline-row">
+                <label>Tên khách hàng <b>*</b></label>
+                <input name="customerName" [ngModel]="customerDraft().name" (ngModelChange)="patchDraft('name', $event)" maxlength="200" placeholder="Bắt buộc" required />
+              </div>
+              <div class="customer-inline-row">
+                <label>Điện thoại</label>
+                <input name="customerPhone" type="tel" [ngModel]="customerDraft().phone" (ngModelChange)="patchDraft('phone', $event)" maxlength="40" placeholder="Số điện thoại" />
+              </div>
+              <div class="customer-inline-row">
+                <label>Địa chỉ</label>
+                <input name="customerAddress" [ngModel]="customerDraft().address" (ngModelChange)="patchDraft('address', $event)" maxlength="500" placeholder="Số nhà, tòa nhà, ngõ, đường…" />
+              </div>
+              <div class="customer-inline-row">
+                <label>Khu vực</label>
+                <input name="customerRegion" [ngModel]="customerDraft().region" (ngModelChange)="patchDraft('region', $event)" maxlength="160" placeholder="Chọn Tỉnh/TP - Quận/Huyện" />
+              </div>
+              <div class="customer-inline-row">
+                <label>Phường xã</label>
+                <input name="customerWard" [ngModel]="customerDraft().ward" (ngModelChange)="patchDraft('ward', $event)" maxlength="160" placeholder="Chọn Phường/Xã" />
+              </div>
+            </div>
+
+            <div class="customer-fields-col">
+              <div class="customer-inline-row">
+                <label>Nhóm</label>
+                <select name="customerGroup" [ngModel]="customerDraft().groupName" (ngModelChange)="patchDraft('groupName', $event)">
+                  <option value="">Chọn nhóm</option>
+                  <option>Khách lẻ</option>
+                  <option>Khách thân thiết</option>
+                  <option>Khách sỉ</option>
+                </select>
+              </div>
+              <div class="customer-inline-row">
+                <label>Ngày sinh</label>
+                <input name="customerBirthDate" type="date" [ngModel]="customerDraft().birthDate" (ngModelChange)="patchDraft('birthDate', $event)" />
+              </div>
+              <div class="customer-inline-row">
+                <label>Giới tính</label>
+                <span class="customer-gender">
+                  <label><input type="radio" name="customerGender" value="Nam" [ngModel]="customerDraft().gender" (ngModelChange)="patchDraft('gender', $event)" /> Nam</label>
+                  <label><input type="radio" name="customerGender" value="Nữ" [ngModel]="customerDraft().gender" (ngModelChange)="patchDraft('gender', $event)" /> Nữ</label>
+                </span>
+              </div>
+              <div class="customer-inline-row">
+                <label>Email</label>
+                <input name="customerEmail" type="email" [ngModel]="customerDraft().email" (ngModelChange)="patchDraft('email', $event)" maxlength="254" placeholder="name@example.com" />
+              </div>
+              <div class="customer-inline-row">
+                <label>Facebook</label>
+                <input name="customerFacebook" [ngModel]="customerDraft().facebook" (ngModelChange)="patchDraft('facebook', $event)" maxlength="255" placeholder="Link Facebook" />
+              </div>
+              <div class="customer-inline-row customer-inline-row--note">
+                <label>Ghi chú</label>
+                <textarea name="customerNote" rows="3" [ngModel]="customerDraft().note" (ngModelChange)="patchDraft('note', $event)" maxlength="2000" placeholder="Ghi chú khách hàng"></textarea>
+              </div>
+            </div>
           </div>
         } @else {
-          <div class="customer-invoice-fields"><p>Thông tin này dùng khi xuất hóa đơn cho khách hàng.</p><label>Tên công ty<input [(ngModel)]="customerDraft.companyName" name="customerCompany" maxlength="250" placeholder="Tên công ty" /></label><label>Mã số thuế<input [(ngModel)]="customerDraft.taxCode" name="customerTaxCode" maxlength="80" placeholder="Mã số thuế" /></label><label>Địa chỉ xuất hóa đơn<textarea [(ngModel)]="customerDraft.invoiceAddress" name="customerInvoiceAddress" maxlength="500" rows="3" placeholder="Địa chỉ trên hóa đơn"></textarea></label></div>
+          <div class="form-grid">
+            <label class="wide">Tên công ty
+              <input name="customerCompany" [ngModel]="customerDraft().companyName" (ngModelChange)="patchDraft('companyName', $event)" maxlength="250" placeholder="Tên công ty" />
+            </label>
+            <label>Mã số thuế
+              <input name="customerTaxCode" [ngModel]="customerDraft().taxCode" (ngModelChange)="patchDraft('taxCode', $event)" maxlength="80" placeholder="Mã số thuế" />
+            </label>
+            <label class="wide">Địa chỉ xuất hóa đơn
+              <textarea name="customerInvoiceAddress" rows="3" [ngModel]="customerDraft().invoiceAddress" (ngModelChange)="patchDraft('invoiceAddress', $event)" maxlength="500" placeholder="Địa chỉ trên hóa đơn"></textarea>
+            </label>
+          </div>
         }
       </form>
-      @if (customerError && !customerPickerOpen) { <div class="customer-form-error"><i class="pi pi-exclamation-circle"></i> {{ customerError }}</div> }
-      <footer class="customer-dialog-footer"><button type="button" class="customer-cancel" (click)="customerDialogOpen = false">Bỏ qua</button><button type="button" class="customer-save" [disabled]="customerSaveLoading" (click)="saveCustomer()">{{ customerSaveLoading ? 'Đang lưu…' : 'Lưu' }}</button></footer>
+      @if (customerError()) {
+        <div class="form-error"><i class="pi pi-exclamation-circle"></i> {{ customerError() }}</div>
+      }
+      <footer class="modal-foot">
+        <button type="button" class="button ghost" (click)="customerDialogOpen.set(false)">Bỏ qua</button>
+        <button type="button" class="button primary" [disabled]="customerSaveLoading()" (click)="saveCustomer()">
+          {{ customerSaveLoading() ? 'Đang lưu…' : 'Lưu khách hàng' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+<!-- ── Chi tiết khách hàng ─────────────────────────────────────────────── -->
+@if (customerDetailOpen()) {
+  <div class="modal-backdrop" (click)="customerDetailOpen.set(false)">
+    <section class="modal customer-detail-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal-head">
+        <div>
+          <strong>{{ customerDetail()?.customer?.name || 'Khách hàng' }} <small>{{ customerDetail()?.customer?.code }}</small></strong>
+          <span>{{ sellerName }} · {{ clock() | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <button type="button" class="modal-close" (click)="customerDetailOpen.set(false)" aria-label="Đóng">×</button>
+      </header>
+
+      @if (customerDetail(); as detail) {
+        <div class="customer-detail-summary">
+          <span>Nợ: <b>{{ fmt(detail.customer.debtAmount) }} đ</b></span>
+          <span>Tổng bán trừ trả hàng: <b>{{ fmt(detail.totalSales) }} đ</b></span>
+        </div>
+      }
+
+      <nav class="modal-tabs">
+        <button type="button" [class.is-active]="customerDetailTab() === 'info'" (click)="customerDetailTab.set('info')">Thông tin</button>
+        <button type="button" [class.is-active]="customerDetailTab() === 'invoice'" (click)="customerDetailTab.set('invoice')">Thông tin xuất hóa đơn</button>
+        <button type="button" [class.is-active]="customerDetailTab() === 'history'" (click)="customerDetailTab.set('history')">Lịch sử bán/trả hàng</button>
+        <button type="button" [class.is-active]="customerDetailTab() === 'debt'" (click)="customerDetailTab.set('debt')">Dư nợ</button>
+      </nav>
+
+      <div class="customer-detail-body">
+        @if (customerDetailLoading()) {
+          <div class="customer-detail-state"><i class="pi pi-spin pi-spinner"></i> Đang tải thông tin khách hàng…</div>
+        } @else if (customerDetail(); as detail) {
+          @if (customerDetailTab() === 'info') {
+            <div class="customer-detail-grid">
+              <div><label>Mã khách hàng</label><strong>{{ detail.customer.code }}</strong></div>
+              <div><label>Tên khách hàng</label><strong>{{ detail.customer.name }}</strong></div>
+              <div><label>Điện thoại</label><strong>{{ detail.customer.phone || '—' }}</strong></div>
+              <div><label>Email</label><strong>{{ detail.customer.email || '—' }}</strong></div>
+              <div><label>Nhóm</label><strong>{{ detail.customer.groupName || '—' }}</strong></div>
+              <div><label>Ngày sinh</label><strong>{{ detail.customer.birthDate || '—' }}</strong></div>
+              <div><label>Giới tính</label><strong>{{ detail.customer.gender || '—' }}</strong></div>
+              <div><label>Facebook</label><strong>{{ detail.customer.facebook || '—' }}</strong></div>
+              <div><label>Khu vực</label><strong>{{ detail.customer.region || '—' }}</strong></div>
+              <div><label>Phường xã</label><strong>{{ detail.customer.ward || '—' }}</strong></div>
+              <div class="wide"><label>Địa chỉ</label><strong>{{ detail.customer.address || '—' }}</strong></div>
+              <div class="wide"><label>Ghi chú</label><strong>{{ detail.customer.note || '—' }}</strong></div>
+            </div>
+          } @else if (customerDetailTab() === 'invoice') {
+            <div class="customer-detail-grid">
+              <div class="wide"><label>Tên công ty</label><strong>{{ detail.customer.companyName || '—' }}</strong></div>
+              <div><label>Mã số thuế</label><strong>{{ detail.customer.taxCode || '—' }}</strong></div>
+              <div class="wide"><label>Địa chỉ xuất hóa đơn</label><strong>{{ detail.customer.invoiceAddress || '—' }}</strong></div>
+            </div>
+          } @else if (customerDetailTab() === 'history') {
+            <div class="customer-history-wrap">
+              <table class="customer-history-table">
+                <thead>
+                  <tr><th>Mã hóa đơn</th><th>Thời gian</th><th>Người bán</th><th>Tổng cộng</th><th>Trạng thái</th></tr>
+                </thead>
+                <tbody>
+                  @if (!detail.orders.length) {
+                    <tr><td colspan="5" class="customer-history-empty">Chưa có giao dịch nào.</td></tr>
+                  } @else {
+                    @for (order of detail.orders; track order.id) {
+                      <tr>
+                        <td class="order-code">{{ order.code }}</td>
+                        <td>{{ order.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ order.soldByName || '—' }}</td>
+                        <td class="num">{{ fmt(order.total) }} đ</td>
+                        <td><span class="history-status">{{ customerStatusLabel(order.status) }}</span></td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+              @if (detail.total > detail.pageSize) {
+                <div class="customer-history-pager">
+                  <button type="button" [disabled]="detail.page <= 1" (click)="customerHistoryGo(detail.page - 1)">‹</button>
+                  <span>Trang {{ detail.page }} / {{ customerHistoryPages(detail) }}</span>
+                  <button type="button" [disabled]="detail.page >= customerHistoryPages(detail)" (click)="customerHistoryGo(detail.page + 1)">›</button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="customer-debt-grid">
+              <div class="debt-card">
+                <span>Dư nợ hiện tại</span>
+                <strong>{{ fmt(detail.customer.debtAmount) }} đ</strong>
+              </div>
+              <div class="debt-card">
+                <span>Tổng bán trừ trả hàng</span>
+                <strong>{{ fmt(detail.totalSales) }} đ</strong>
+              </div>
+              <div class="debt-card">
+                <span>Điểm tích lũy</span>
+                <strong>{{ detail.customer.points }}</strong>
+              </div>
+              <div class="debt-card">
+                <span>Số giao dịch</span>
+                <strong>{{ detail.total }}</strong>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </section>
+  </div>
+}
+
+<!-- ── Thêm nhanh hàng hóa ─────────────────────────────────────────────── -->
+@if (productDialogOpen()) {
+  <div class="modal-backdrop" (click)="productDialogOpen.set(false)">
+    <section class="modal product-quick-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal-head">
+        <div><strong>Thêm mới hàng hóa</strong><span>Lưu xong sẽ thêm luôn vào hóa đơn đang bán</span></div>
+        <button type="button" class="modal-close" (click)="productDialogOpen.set(false)" aria-label="Đóng">×</button>
+      </header>
+      <form class="product-quick-form" (submit)="$event.preventDefault(); saveProduct()">
+        <div class="form-grid">
+          <label>Mã hàng <b>*</b>
+            <input name="newProductSku" [ngModel]="productDraft().sku" (ngModelChange)="patchProductDraft('sku', $event)" maxlength="120" placeholder="VD: SP000123" />
+          </label>
+          <label>Tên hàng <b>*</b>
+            <input name="newProductName" [ngModel]="productDraft().name" (ngModelChange)="patchProductDraft('name', $event)" maxlength="500" placeholder="Tên sản phẩm" />
+          </label>
+          <label>Mã vạch
+            <input name="newProductBarcode" [ngModel]="productDraft().barcode" (ngModelChange)="patchProductDraft('barcode', $event)" maxlength="120" placeholder="Quét hoặc nhập mã vạch" />
+          </label>
+          <label>Giá bán
+            <input type="number" min="0" step="1000" name="newProductPrice" [ngModel]="productDraft().salePrice" (ngModelChange)="patchProductDraft('salePrice', $event)" />
+          </label>
+          <label>Giá vốn
+            <input type="number" min="0" step="1000" name="newProductCost" [ngModel]="productDraft().costPrice" (ngModelChange)="patchProductDraft('costPrice', $event)" />
+          </label>
+          <label>Tồn kho
+            <input type="number" min="0" step="1" name="newProductStock" [ngModel]="productDraft().stock" (ngModelChange)="patchProductDraft('stock', $event)" />
+          </label>
+        </div>
+      </form>
+      @if (productError()) {
+        <div class="form-error"><i class="pi pi-exclamation-circle"></i> {{ productError() }}</div>
+      }
+      <footer class="modal-foot">
+        <button type="button" class="button ghost" (click)="productDialogOpen.set(false)">Bỏ qua</button>
+        <button type="button" class="button primary" [disabled]="productSaving()" (click)="saveProduct()">
+          {{ productSaving() ? 'Đang lưu…' : 'Lưu & thêm vào hóa đơn' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+<!-- ── Thanh toán nhiều phương thức ─────────────────────────────────────── -->
+@if (paymentDialogOpen()) {
+  <div class="modal-backdrop" (click)="closePaymentDialog()">
+    <section class="modal payment-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal-head">
+        <strong>Thanh toán nhiều phương thức</strong>
+        <button type="button" class="modal-close" (click)="closePaymentDialog()" aria-label="Đóng">×</button>
+      </header>
+
+      <div class="amount-line">
+        <label for="draftAmount">Số tiền</label>
+        <input
+          id="draftAmount"
+          type="number"
+          min="0"
+          step="1000"
+          [ngModel]="draftAmount()"
+          (ngModelChange)="draftAmount.set(toNumber($event))"
+        />
+      </div>
+
+      <div class="amount-chips">
+        @for (amount of quickAmounts(); track amount) {
+          <button type="button" (click)="draftAmount.set(amount)">{{ fmt(amount) }}</button>
+        }
+      </div>
+
+      <div class="method-pills">
+        @for (method of methods; track method.value) {
+          <button
+            type="button"
+            class="method-pill"
+            [class.is-active]="draftMethod() === method.value"
+            (click)="draftMethod.set(method.value)"
+          >
+            {{ method.label }}
+          </button>
+        }
+      </div>
+
+      <button type="button" class="button primary add-payment" (click)="addDraftLine()">
+        <i class="pi pi-plus"></i> Thêm vào danh sách
+      </button>
+
+      <div class="split-lines">
+        @if (!draftLines().length) {
+          <div class="list-state">Chưa có khoản thanh toán nào. Nhập số tiền, chọn phương thức rồi bấm thêm.</div>
+        } @else {
+          @for (line of draftLines(); track $index; let i = $index) {
+            <div class="split-line">
+              <i class="pi pi-wallet"></i>
+              <span>{{ methodLabel(line.method) }}</span>
+              <b>{{ fmt(line.amount) }} đ</b>
+              <button type="button" (click)="removeDraftLine(i)" aria-label="Xóa khoản thanh toán">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          }
+        }
+      </div>
+
+      @if (draftRemaining() > 0) {
+        <div class="split-qr">
+          <div class="split-qr-head">
+            <div>
+              <strong>QR chuyển khoản phần còn lại</strong>
+              <span>Tự sinh theo {{ fmt(draftRemaining()) }} đ · tự cộng khi khách chuyển khoản.</span>
+            </div>
+            <button type="button" class="button ghost small" (click)="toggleQr()">
+              {{ qrVisible() ? 'Ẩn mã' : 'Hiện mã QR' }}
+            </button>
+          </div>
+          @if (qrVisible()) {
+            <div class="split-qr-body">
+              @if (qrLoading()) {
+                <div class="list-state"><i class="pi pi-spin pi-spinner"></i> Đang tạo mã QR…</div>
+              } @else if (qrError()) {
+                <div class="list-state error">{{ qrError() }}</div>
+              } @else if (qrSession(); as session) {
+                <img [src]="session.qrUrl" [alt]="'QR ' + session.reference" />
+                <b>{{ fmt(session.amount) }} đ</b>
+                <span>Nội dung: {{ session.reference }}</span>
+                <span class="qr-wait"><i class="pi pi-spin pi-spinner"></i> Đang chờ khách chuyển khoản…</span>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (lastQrReceived(); as received) {
+        <p class="qr-received"><i class="pi pi-check-circle"></i> Đã cộng {{ fmt(received) }} đ từ chuyển khoản.</p>
+      }
+
+      <div class="payment-sum">
+        <div class="summary-row"><span>Khách cần trả</span><strong>{{ fmt(total()) }} đ</strong></div>
+        <div class="summary-row"><span>Khách thanh toán</span><strong>{{ fmt(draftAllocated()) }} đ</strong></div>
+        @if (draftRemaining() > 0) {
+          <div class="summary-row debt"><span>Còn thiếu</span><strong>{{ fmt(draftRemaining()) }} đ</strong></div>
+        }
+      </div>
+
+      <footer class="modal-foot">
+        <button type="button" class="button ghost" (click)="closePaymentDialog()">Bỏ qua</button>
+        <button type="button" class="button primary" (click)="applyDraftLines()">Xong</button>
+      </footer>
+    </section>
+  </div>
+}
+
+<!-- ── VietQR chờ chuyển khoản ──────────────────────────────────────────── -->
+@if (vietQrOpen() && activeTransfer(); as transfer) {
+  <div class="modal-backdrop" (click)="closeVietQr()">
+    <section class="modal qr-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal-head">
+        <strong>Mã VietQR thanh toán</strong>
+        <button type="button" class="modal-close" (click)="closeVietQr()" aria-label="Đóng">×</button>
+      </header>
+
+      @if (vietQrLoading()) {
+        <div class="qr-loading"><i class="pi pi-spin pi-spinner"></i> Đang tạo mã VietQR…</div>
+      } @else if (vietQrError()) {
+        <div class="qr-error">
+          <i class="pi pi-exclamation-triangle"></i>
+          <strong>{{ vietQrError() }}</strong>
+          <p>Cấu hình SePay:BankBin / SePay:AccountNumber trong API để hiện mã QR. Bạn vẫn có thể xác nhận thủ công khi khách báo đã chuyển.</p>
+        </div>
+      } @else if (transfer.qr) {
+        @if (transfer.qr; as qr) {
+          <div class="qr-card">
+            <img [src]="qr.imageUrl" [alt]="'VietQR ' + qr.orderCode" />
+            <p class="qr-amount">{{ fmt(qr.amount) }} đ</p>
+            <p class="qr-bank">{{ qr.bankName }} · {{ qr.accountNumber }}</p>
+            <p class="qr-owner">{{ qr.accountName }}</p>
+          </div>
+          <div class="qr-meta">
+            <span>Nội dung chuyển khoản</span>
+            <strong>{{ qr.orderCode }}</strong>
+          </div>
+          <div class="qr-status">
+            <i class="pi pi-spin pi-spinner"></i>
+            Đang chờ khách chuyển khoản… Hệ thống tự xác nhận khi nhận webhook SePay.
+          </div>
+        }
+      }
+
+      <footer class="qr-actions">
+        <button type="button" class="button print" (click)="printQr()" [disabled]="!transfer.qr">
+          <i class="pi pi-print"></i> In mã QR
+        </button>
+        <button type="button" class="button ghost" (click)="confirmTransferManually()" [disabled]="checkingTransfer()">
+          <i class="pi pi-check-circle"></i> Tôi đã nhận tiền
+        </button>
+        @if (isDev) {
+          <button type="button" class="button dev" (click)="simulateTransfer()">
+            <i class="pi pi-bolt"></i> Giả lập (dev)
+          </button>
+        }
+      </footer>
+    </section>
+  </div>
+}
+
+<!-- ── Thanh toán thành công ────────────────────────────────────────────── -->
+@if (successOrder(); as order) {
+  <div class="modal-backdrop" (click)="closeSuccess()">
+    <section class="modal success-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <span class="success-mark"><i class="pi pi-check"></i></span>
+      <h2>Thanh toán thành công</h2>
+      <p class="success-code">{{ order.code }} · {{ statusLabel(order.status) }}</p>
+      <div class="success-summary">
+        <div class="summary-row"><span>Tổng tiền hàng</span><strong>{{ fmt(order.subtotal) }} đ</strong></div>
+        @if (order.discount > 0) {
+          <div class="summary-row"><span>Giảm giá</span><strong>-{{ fmt(order.discount) }} đ</strong></div>
+        }
+        <div class="summary-row grand"><span>Khách đã trả</span><strong>{{ fmt(order.paidAmount) }} đ</strong></div>
+        @if (order.changeAmount > 0) {
+          <div class="summary-row change"><span>Tiền thừa</span><strong>{{ fmt(order.changeAmount) }} đ</strong></div>
+        }
+      </div>
+      <footer class="modal-foot">
+        <button type="button" class="button ghost" (click)="closeSuccess()">Đóng</button>
+        <button type="button" class="button primary" (click)="printReceipt(order)">
+          <i class="pi pi-print"></i> In hóa đơn
+        </button>
+      </footer>
     </section>
   </div>
 }

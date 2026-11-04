@@ -1,10 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
+import { AssistantChatComponent } from '../shared/assistant-chat/assistant-chat.component';
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, AssistantChatComponent],
   templateUrl: './app-layout.component.html',
   styleUrl: './app-layout.component.scss',
 })

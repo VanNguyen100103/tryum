@@ -2,7 +2,7 @@
   <header class="app-header">
     <div class="utility-bar">
       <a class="brand" routerLink="/app/dashboard" aria-label="Tryum – Tổng quan">
-        <span class="brand-mark"><i class="pi pi-shop"></i></span>
+        <span class="brand-mark"><img src="tryum-mark.png" alt="" /></span>
         <span>Tryum</span>
       </a>
 
@@ -59,7 +59,7 @@
         </div>
 
         <a routerLink="/app/purchases" routerLinkActive="is-active" class="nav-link"><i class="pi pi-shopping-bag"></i><span>Mua hàng</span></a>
-        <a routerLink="/app/pos" routerLinkActive="is-active" class="nav-link"><i class="pi pi-receipt"></i><span>Đơn hàng</span></a>
+        <a routerLink="/app/pos" routerLinkActive="is-active" class="nav-link"><i class="pi pi-receipt"></i><span>Bán hàng</span></a>
         <a routerLink="/app/customers" routerLinkActive="is-active" class="nav-link"><i class="pi pi-users"></i><span>Khách hàng</span></a>
         <a routerLink="/app/employees" routerLinkActive="is-active" class="nav-link"><i class="pi pi-user-edit"></i><span>Nhân viên</span></a>
         <a routerLink="/app/cashbook" routerLinkActive="is-active" class="nav-link"><i class="pi pi-wallet"></i><span>Sổ quỹ</span></a>
@@ -79,4 +79,6 @@
   <main class="app-content">
     <router-outlet />
   </main>
+
+  <app-assistant-chat />
 </div>

@@ -1,6 +1,97 @@
-<div class="page">
-  <h2>Cài đặt</h2>
-  <section class="card">
-    <p class="m-0 text-600">Quản lý tenant, nhân viên, phân quyền – Phase 2.</p>
-  </section>
+<div class="settings-page">
+  <header class="settings-head">
+    <div>
+      <h1>Cài đặt</h1>
+      <p>Cấu hình thanh toán chuyển khoản (SePay + VietQR) và webhook xác nhận tự động.</p>
+    </div>
+    <button type="button" class="refresh" (click)="load()" [disabled]="loading()">
+      <i class="pi" [class.pi-spin]="loading()" [class.pi-spinner]="loading()" [class.pi-refresh]="!loading()"></i>
+      Làm mới
+    </button>
+  </header>
+
+  @if (loading()) {
+    <section class="card state"><i class="pi pi-spin pi-spinner"></i> Đang tải cấu hình…</section>
+  } @else if (error()) {
+    <section class="card state error"><i class="pi pi-exclamation-circle"></i> {{ error() }}</section>
+  } @else if (settings(); as config) {
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Webhook thanh toán</h2>
+          <p>SePay gọi vào URL này mỗi khi có tiền vào tài khoản; API tự khớp mã hóa đơn và xác nhận đơn.</p>
+        </div>
+        <span class="badge" [class.on]="config.webhookSecured" [class.off]="!config.webhookSecured">
+          <i class="pi" [class.pi-shield]="config.webhookSecured" [class.pi-exclamation-triangle]="!config.webhookSecured"></i>
+          {{ config.webhookSecured ? config.authMode : 'Chưa bảo vệ' }}
+        </span>
+      </div>
+
+      <div class="webhook-url">
+        <code>{{ config.webhookUrl }}</code>
+        <button type="button" class="copy" (click)="copyWebhook(config.webhookUrl)">
+          <i class="pi pi-copy"></i> Copy
+        </button>
+      </div>
+
+      <ol class="steps">
+        <li>Mở <a href="https://my.sepay.vn/webhooks" target="_blank" rel="noopener">my.sepay.vn → Webhooks</a> và bấm <b>Thêm webhook</b>.</li>
+        <li>Dán URL ở trên, chọn <b>Bảo mật: HMAC-SHA256</b>, tạo Secret Key rồi lưu vào <code>SEPAY_WEBHOOK_SECRET</code> của API.</li>
+        <li>Bật <b>Tất cả tài khoản</b> và chọn loại giao dịch <b>Tiền vào</b>, sau đó lưu.</li>
+      </ol>
+
+      <div class="hint">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          API trả <code>&#123;"success": true&#125;</code> cho mọi giao dịch hợp lệ, chống trùng bằng
+          <code>UNIQUE(provider, event_id)</code> — SePay gửi lại (retry) cũng không cộng tiền hai lần.
+          Nội dung chuyển khoản cần chứa mã hóa đơn dạng <code>HD000123</code> (mã QR đã tự điền sẵn).
+        </span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Tài khoản nhận tiền · VietQR</h2>
+          <p>Dùng để sinh mã QR động cho từng hóa đơn trên màn hình bán hàng.</p>
+        </div>
+        <span class="badge" [class.on]="config.bank.configured" [class.off]="!config.bank.configured">
+          <i class="pi" [class.pi-check-circle]="config.bank.configured" [class.pi-minus-circle]="!config.bank.configured"></i>
+          {{ config.bank.configured ? 'Đã cấu hình' : 'Chưa cấu hình' }}
+        </span>
+      </div>
+
+      @if (config.bank.configured) {
+        <dl class="bank-grid">
+          <div><dt>Ngân hàng</dt><dd>{{ config.bank.name || '—' }}</dd></div>
+          <div><dt>Mã BIN</dt><dd>{{ config.bank.bin }}</dd></div>
+          <div><dt>Số tài khoản</dt><dd class="mono">{{ config.bank.accountNumber }}</dd></div>
+          <div><dt>Chủ tài khoản</dt><dd>{{ config.bank.accountName || '—' }}</dd></div>
+          <div><dt>Mẫu QR</dt><dd>{{ config.vietQrTemplate }}</dd></div>
+        </dl>
+      } @else {
+        <p class="empty">
+          Thêm <code>SEPAY_BANK_BIN</code>, <code>SEPAY_ACCOUNT_NUMBER</code>, <code>SEPAY_ACCOUNT_NAME</code>
+          vào file <code>deploy/.env</code> rồi khởi động lại API. POS vẫn bán được bằng tiền mặt/thẻ,
+          riêng chuyển khoản sẽ hiện nút xác nhận thủ công.
+        </p>
+      }
+    </section>
+
+    <section class="card muted-card">
+      <h2>Biến môi trường liên quan</h2>
+      <div class="env-list">
+        <code>SePay__WebhookSecret</code>
+        <code>SePay__BankBin</code>
+        <code>SePay__AccountNumber</code>
+        <code>SePay__AccountName</code>
+        <code>SePay__VietQrTemplate</code>
+        <code>SePay__PublicApiUrl</code>
+      </div>
+      <p>
+        Xem mẫu đầy đủ trong <code>deploy/.env.example</code>. Không commit secret thật vào git.
+      </p>
+    </section>
+  }
 </div>

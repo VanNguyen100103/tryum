@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
+import { AssistantChatComponent } from '../shared/assistant-chat/assistant-chat.component';
 
 interface NavGroup {
   label: string;
@@ -104,7 +105,7 @@ interface ContactChannel {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [RouterLink, AssistantChatComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })

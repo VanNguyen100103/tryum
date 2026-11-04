@@ -1,7 +1,7 @@
 name = "tryum-web"
-main = "index.js"
 compatibility_date = "2025-01-01"
 
 [assets]
 directory = "./dist/tryum-frontend/browser"
-binding = "ASSETS"
+not_found_handling = "single-page-application"
+html_handling = "none"
