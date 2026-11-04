@@ -51,8 +51,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URL: http://+:8080
-      ConnectionStrings__DefaultConnection: >-
-        Host=postgres;Port=5432;Database=${POSTGRES_DB:-tryum_db};Username=${POSTGRES_USER:-tryum};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_STRING:-Host=postgres;Port=5432;Database=tryum_db;Username=tryum;Password=change-me}
       Jwt__Issuer: ${JWT_ISSUER:-tryum-api}
       Jwt__Audience: ${JWT_AUDIENCE:-tryum-web}
       Jwt__SecretKey: ${JWT_SECRET_KEY:?thiếu JWT_SECRET_KEY trong .env}
