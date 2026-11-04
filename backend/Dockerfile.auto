@@ -1,0 +1,42 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
+WORKDIR /src
+COPY backend/src/Tryum.Domain/Tryum.Domain.csproj src/Tryum.Domain/
+COPY backend/src/Tryum.Application/Tryum.Application.csproj src/Tryum.Application/
+COPY backend/src/Tryum.Infrastructure/Tryum.Infrastructure.csproj src/Tryum.Infrastructure/
+COPY backend/src/Tryum.Api/Tryum.Api.csproj src/Tryum.Api/
+RUN dotnet restore src/Tryum.Api/Tryum.Api.csproj
+COPY backend/ ./
+RUN dotnet publish src/Tryum.Api/Tryum.Api.csproj -c Release -o /app/publish --no-restore
+
+FROM otel/autoinstrumentation-dotnet:latest AS otel
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
+WORKDIR /app
+
+ENV ASPNETCORE_URL=http://+:8080 \
+    ASPNETCORE_ENVIRONMENT=Production \
+    DOTNET_gcServer=1 \
+    DOTNET_TieredPMStubs=0
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/publish ./
+COPY --from=otel /autoinstrumentation /autoinstrumentation
+
+ENV OTEL_DOTNET_AUTO_HOME=/autoinstrumentation \
+    OTEL_DOTNET_AUTO_TRACES_ENABLED=true \
+    OTEL_DOTNET_AUTO_METRICS_ENABLED=true \
+    CORECLR_ENABLE_PROFILING=1 \
+    CORECLR_PROFILER={918728DD-259F-4A6A-AC2B-B85E1B658318} \
+    CORECLR_PROFILER_PATH=/autoinstrumentation/linux/OpenTelemetry.AutoInstrumentation.Native.so \
+    DOTNET_STARTUP_HOOKS=/autoinstrumentation/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll
+
+RUN chown -R app:app /app /autoinstrumentation
+USER app
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS http://localhost:8080/health || exit 1
+ENTRYPOINT ["/app/Tryum.Api"]

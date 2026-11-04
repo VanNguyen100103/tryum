@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: backend/Dockerfile
+          file: backend/Dockerfile.auto
           platforms: linux/amd64
           push: true
           tags: ghcr.io/vannguyen100103/tryum-api:otel
