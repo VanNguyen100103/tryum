@@ -15,7 +15,7 @@ receivers:
             type: Bearer
             credentials: ${env:METRICS_TOKEN}
           static_configs:
-            - targets: ["api:8080"]
+            - targets: ["api:8080", "api2:8080", "10.0.0.164:8080"]
 
 processors:
   memory_limiter:

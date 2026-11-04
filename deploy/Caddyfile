@@ -41,21 +41,21 @@
 
 	# Health check – public cho UptimeRobot theo dõi.
 	handle /health {
-		reverse_proxy api:8080 api2:8080 {
+		reverse_proxy api:8080 api2:8080 10.0.0.164:8080 {
 			import api_lb
 		}
 	}
 
 	# Prometheus metrics (bảo vệ bằng Bearer token ở API)
 	handle /metrics {
-		reverse_proxy api:8080 api2:8080 {
+		reverse_proxy api:8080 api2:8080 10.0.0.164:8080 {
 			import api_lb
 		}
 	}
 
 	# API
 	handle /api/* {
-		reverse_proxy api:8080 api2:8080 {
+		reverse_proxy api:8080 api2:8080 10.0.0.164:8080 {
 			import api_lb
 		}
 	}
