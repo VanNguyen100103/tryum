@@ -38,6 +38,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
     public DbSet<PosQrSession> PosQrSessions => Set<PosQrSession>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     /// <summary>
     /// Tenant hiện tại dùng trong global query filter.

@@ -19,14 +19,14 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.Host);
 
-    public async Task PublishAsync(string routingKey, object payload, CancellationToken ct = default)
+    public async Task<bool> PublishAsync(string routingKey, object payload, CancellationToken ct = default)
     {
-        if (!IsConfigured) return;
+        if (!IsConfigured) return false;
 
         try
         {
             var channel = await GetChannelAsync(ct);
-            if (channel is null) return;
+            if (channel is null) return false;
 
             var body = JsonSerializer.SerializeToUtf8Bytes(payload, JsonOptions);
             var properties = new BasicProperties
@@ -52,10 +52,13 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
             {
                 _publishLock.Release();
             }
+
+            return true;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Không publish được event {RoutingKey} lên RabbitMQ", routingKey);
+            return false;
         }
     }
 

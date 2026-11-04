@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Tryum.Application.Common.Security;
+using Tryum.Domain.Common;
 using Tryum.Domain.Customers;
 using Tryum.Domain.Sales;
 using Tryum.Infrastructure.Common;
@@ -90,7 +92,6 @@ public static class OrderEndpoints
             CreateOrderRequest request,
             ApplicationDbContext db,
             HttpContext http,
-            Tryum.Api.Messaging.RabbitMqPublisher rabbit,
             CancellationToken ct) =>
         {
             if (request.Lines is null || request.Lines.Count == 0)
@@ -322,19 +323,24 @@ public static class OrderEndpoints
             }
 
             db.Orders.Add(order);
+            // Outbox: ghi event order.created CÙNG transaction với hóa đơn, tránh mất event.
+            db.OutboxMessages.Add(new OutboxMessage
+            {
+                EventType = "order.created",
+                RoutingKey = "order.created",
+                Payload = JsonSerializer.Serialize(new
+                {
+                    tenantId = order.TenantId,
+                    orderId = order.Id,
+                    code = order.Code,
+                    order.Total,
+                    channel = order.Channel.ToString(),
+                    order.CustomerId,
+                    createdAt = order.CreatedAt,
+                }),
+            });
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-
-            await rabbit.PublishAsync("order.created", new
-            {
-                tenantId = order.TenantId,
-                orderId = order.Id,
-                code = order.Code,
-                order.Total,
-                channel = order.Channel.ToString(),
-                order.CustomerId,
-                createdAt = order.CreatedAt,
-            }, ct);
 
             return Results.Created($"/api/v1/orders/{order.Id}", ToResponse(order));
         })

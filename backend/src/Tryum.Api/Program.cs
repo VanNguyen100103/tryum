@@ -112,6 +112,7 @@ try
     builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
     builder.Services.AddSingleton<RabbitMqPublisher>();
     builder.Services.AddHostedService<OrderEventConsumer>();
+    builder.Services.AddHostedService<OutboxPublisher>();
     builder.Services.AddExceptionHandler<AppExceptionHandler>();
 
     // ── JWT ───────────────────────────────────────────────────────────────────
@@ -301,6 +302,9 @@ try
         await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
         Log.Information("Đã áp dụng migration và seed dữ liệu khởi tạo.");
     }
+
+    // Đảm bảo bảng outbox_messages tồn tại (idempotent) – bảng outbox chưa nằm trong migration.
+    await OutboxSchema.EnsureCreatedAsync(app.Services);
 
     app.Run();
 }
