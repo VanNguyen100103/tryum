@@ -32,6 +32,54 @@ public static class CustomerEndpoints
             return Results.Ok(new { items, total, page = currentPage, pageSize = size });
         }).WithSummary("Tìm khách hàng trong cửa hàng đang đăng nhập");
 
+        group.MapGet("/{customerId:guid}/history", async (
+            Guid customerId,
+            int? page,
+            int? pageSize,
+            ApplicationDbContext db,
+            CancellationToken ct) =>
+        {
+            var customer = await db.Customers.AsNoTracking()
+                .FirstOrDefaultAsync(row => row.Id == customerId, ct);
+            if (customer is null)
+                return Results.NotFound(new { message = "Không tìm thấy khách hàng." });
+
+            var currentPage = Math.Max(1, page ?? 1);
+            var size = Math.Clamp(pageSize ?? 10, 1, 100);
+            var query = db.Orders.AsNoTracking().Where(order => order.CustomerId == customerId);
+            var orderCount = await query.CountAsync(ct);
+            var totalSales = await query
+                .Where(order => order.Status != Tryum.Domain.Sales.OrderStatus.Cancelled)
+                .SumAsync(order => (decimal?)order.Total, ct) ?? 0;
+            var orders = await query
+                .OrderByDescending(order => order.CreatedAt)
+                .Skip((currentPage - 1) * size)
+                .Take(size)
+                .Select(order => new
+                {
+                    id = order.Id,
+                    code = order.Code,
+                    createdAt = order.CreatedAt,
+                    soldByName = order.SoldByName,
+                    total = order.Total,
+                    paidAmount = order.PaidAmount,
+                    status = order.Status.ToString(),
+                })
+                .ToListAsync(ct);
+
+            return Results.Ok(new
+            {
+                customer = ToResponse(customer),
+                orders,
+                total = orderCount,
+                page = currentPage,
+                pageSize = size,
+                totalSales,
+            });
+        })
+        .WithSummary("Lịch sử bán hàng và dư nợ của khách hàng")
+        .Produces(StatusCodes.Status200OK);
+
         group.MapPost("", async (CreateCustomerRequest request, ApplicationDbContext db, CancellationToken ct) =>
         {
             var name = request.Name?.Trim();
@@ -74,7 +122,7 @@ public static class CustomerEndpoints
         customer.Id, customer.Code, customer.Name, customer.Phone, customer.Email, customer.Address,
         customer.Region, customer.Ward, customer.GroupName, customer.BirthDate, customer.Gender,
         customer.Facebook, customer.AssignedTo, customer.Note, customer.CompanyName,
-        customer.TaxCode, customer.InvoiceAddress);
+        customer.TaxCode, customer.InvoiceAddress, customer.Points, customer.DebtAmount);
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
@@ -87,5 +135,5 @@ public static class CustomerEndpoints
         Guid Id, string Code, string Name, string? Phone, string? Email, string? Address,
         string? Region, string? Ward, string? GroupName, DateOnly? BirthDate, string? Gender,
         string? Facebook, string? AssignedTo, string? Note, string? CompanyName,
-        string? TaxCode, string? InvoiceAddress);
+        string? TaxCode, string? InvoiceAddress, int Points, decimal DebtAmount);
 }

@@ -19,6 +19,15 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(product => product.SalePrice).HasPrecision(18, 2);
         builder.Property(product => product.CostPrice).HasPrecision(18, 2);
         builder.Property(product => product.Stock).HasPrecision(18, 3);
+        builder.Property(product => product.MinStock).HasPrecision(18, 3);
+        builder.Property(product => product.MaxStock).HasPrecision(18, 3);
+        builder.Property(product => product.Weight).HasPrecision(18, 3);
+        builder.Property(product => product.Position).HasMaxLength(200);
+        builder.Property(product => product.Description).HasMaxLength(4000);
+        builder.Property(product => product.IsDirectSale).HasDefaultValue(true);
+        builder.Property(product => product.UnitsJson).HasColumnType("jsonb").IsRequired();
+        builder.Property(product => product.AttributesJson).HasColumnType("jsonb").IsRequired();
+        builder.Property(product => product.VariantsJson).HasColumnType("jsonb").IsRequired();
         builder.Property(product => product.SourceImageUrlsJson).HasColumnType("jsonb").IsRequired();
         builder.Property(product => product.R2ObjectKeysJson).HasColumnType("jsonb").IsRequired();
         builder.Property(product => product.SourceDataJson).HasColumnType("jsonb").IsRequired();

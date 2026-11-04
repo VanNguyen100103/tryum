@@ -34,6 +34,16 @@ public class Tenant : AuditableEntity
     /// </summary>
     public string? Address { get; set; }
 
+    /// <summary>Goship pickup address codes (city/district/ward) used for shipping quotes and bookings.</summary>
+    public string? GoshipCityId { get; set; }
+    public string? GoshipDistrictId { get; set; }
+    public string? GoshipWardId { get; set; }
+
+    /// <summary>Fanpage Facebook đã kết nối để đăng bài từ Tryum.</summary>
+    public string? FacebookPageId { get; set; }
+    public string? FacebookPageName { get; set; }
+    public string? FacebookPageAccessToken { get; set; }
+
     /// <summary>
     /// Tenant có đang hoạt động không (soft delete / suspend).
     /// </summary>

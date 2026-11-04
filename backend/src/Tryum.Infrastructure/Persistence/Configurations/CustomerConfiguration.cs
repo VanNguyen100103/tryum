@@ -25,6 +25,8 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(customer => customer.CompanyName).HasMaxLength(250);
         builder.Property(customer => customer.TaxCode).HasMaxLength(80);
         builder.Property(customer => customer.InvoiceAddress).HasMaxLength(500);
+        builder.Property(customer => customer.Points).HasDefaultValue(0);
+        builder.Property(customer => customer.DebtAmount).HasPrecision(18, 2).HasDefaultValue(0m);
         builder.HasIndex(customer => new { customer.TenantId, customer.Code }).IsUnique();
         builder.HasIndex(customer => new { customer.TenantId, customer.Phone });
         builder.HasIndex(customer => new { customer.TenantId, customer.Name });

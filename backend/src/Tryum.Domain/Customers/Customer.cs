@@ -21,4 +21,10 @@ public sealed class Customer : AuditableEntity, ITenantOwned
     public string? CompanyName { get; set; }
     public string? TaxCode { get; set; }
     public string? InvoiceAddress { get; set; }
+
+    /// <summary>Điểm tích lũy hiện có (1 điểm = 1.000đ khi đổi).</summary>
+    public int Points { get; set; }
+
+    /// <summary>Công nợ: dương = khách còn nợ cửa hàng, âm = cửa hàng còn nợ khách (tiền thừa gửi).</summary>
+    public decimal DebtAmount { get; set; }
 }

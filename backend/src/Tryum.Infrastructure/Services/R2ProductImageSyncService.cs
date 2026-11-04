@@ -16,7 +16,8 @@ public sealed class R2ProductImageSyncService(
     IOptions<R2Options> options,
     ILogger<R2ProductImageSyncService> logger) : BackgroundService
 {
-    private const int BatchSize = 8;
+    private const int BatchSize = 60;
+    private const int MaxParallelDownloads = 12;
     private const long MaxImageBytes = 8 * 1024 * 1024;
     private static readonly HashSet<string> AllowedImageHosts = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -41,13 +42,13 @@ public sealed class R2ProductImageSyncService(
                 var batch = await LoadPendingAsync(stoppingToken);
                 if (batch.Count == 0)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
                     continue;
                 }
 
                 await Parallel.ForEachAsync(batch, new ParallelOptions
                 {
-                    MaxDegreeOfParallelism = 4,
+                    MaxDegreeOfParallelism = MaxParallelDownloads,
                     CancellationToken = stoppingToken,
                 }, SyncOneAsync);
             }
@@ -58,7 +59,7 @@ public sealed class R2ProductImageSyncService(
             catch (Exception exception)
             {
                 logger.LogError(exception, "Lỗi khi đồng bộ ảnh sản phẩm lên R2.");
-                await Task.Delay(TimeSpan.FromSeconds(20), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
     }

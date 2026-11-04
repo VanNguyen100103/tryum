@@ -35,6 +35,15 @@ public static class DependencyInjection
             sp.GetRequiredService<ApplicationDbContext>());
 
         services.AddOptions<R2Options>().Bind(configuration.GetSection(R2Options.SectionName));
+
+        // ── SePay: webhook thanh toán + tài khoản nhận tiền cho VietQR (đều tùy chọn) ──
+        services.AddOptions<SePayOptions>()
+            .Bind(configuration.GetSection(SePayOptions.SectionName))
+            .Validate(o => o.TimestampToleranceSeconds > 0,
+                "SePay:TimestampToleranceSeconds phải > 0.")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.VietQrTemplate),
+                "SePay:VietQrTemplate không được rỗng.")
+            .ValidateOnStart();
         services.AddHttpClient<CloudflareR2ObjectStorage>();
         services.AddScoped<IObjectStorage>(sp => sp.GetRequiredService<CloudflareR2ObjectStorage>());
         services.AddHttpClient("product-images", client => client.Timeout = TimeSpan.FromSeconds(30))

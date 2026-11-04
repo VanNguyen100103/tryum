@@ -27,6 +27,16 @@ services:
       retries: 10
     networks: [internal]
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.164.0
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      GRAFANA_AUTH: ${GRAFANA_AUTH:-}
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    networks: [internal]
+
   api:
     build:
       context: ..
@@ -81,6 +91,50 @@ services:
       R2__SecretAccessKey: ${R2_SECRET_ACCESS_KEY:-}
       R2__BucketName: ${R2_BUCKET_NAME:-tryum}
       R2__PublicBaseUrl: ${R2_PUBLIC_BASE_URL:-}
+      # ── SePay: webhook xác nhận chuyển khoản + VietQR (xem deploy/.env.example) ──
+      SePay__WebhookSecret: ${SEPAY_WEBHOOK_SECRET:-}
+      SePay__ApiKey: ${SEPAY_API_KEY:-}
+      SePay__BankBin: ${SEPAY_BANK_BIN:-}
+      SePay__BankName: ${SEPAY_BANK_NAME:-}
+      SePay__AccountNumber: ${SEPAY_ACCOUNT_NUMBER:-}
+      SePay__AccountName: ${SEPAY_ACCOUNT_NAME:-}
+      SePay__VietQrTemplate: ${SEPAY_VIETQR_TEMPLATE:-compact2}
+      SePay__PublicApiUrl: ${API_PUBLIC_URL:-https://localhost:7080}
+      # ── Goship: bảng giá + tạo vận đơn cho Bán giao hàng ────────────────────
+      Goship__BaseUrl: ${GOSHIP_BASE_URL:-https://sandbox.goship.io/api/v2}
+      Goship__AccessToken: ${GOSHIP_ACCESS_TOKEN:-}
+      Goship__ClientId: ${GOSHIP_CLIENT_ID:-}
+      Goship__ClientSecret: ${GOSHIP_CLIENT_SECRET:-}
+      # ── Chatbot AI: Groq chính, Gemini dự phòng ─────────────────────────────
+      AI__GroqApiKey: ${GROQ_API_KEY:-}
+      AI__GroqModel: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      AI__GeminiApiKey: ${GEMINI_API_KEY:-}
+      AI__GeminiModel: ${GEMINI_MODEL:-gemini-3.6-flash}
+      # ── Redis cache dùng chung Upstash (prefix tryum:) ───────────────────────
+      Redis__Host: ${REDIS_HOST:-}
+      Redis__Port: ${REDIS_PORT:-6379}
+      Redis__Password: ${REDIS_PASSWORD:-}
+      Redis__Ssl: ${REDIS_SSL:-true}
+      Redis__Prefix: ${REDIS_PREFIX:-tryum:}
+      # ── RabbitMQ / LavinMQ CloudAMQP ────────────────────────────────────────
+      RabbitMq__Host: ${RABBITMQ_HOST:-}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5671}
+      RabbitMq__Username: ${RABBITMQ_USER:-}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMq__Ssl: ${RABBITMQ_SSL:-true}
+      RabbitMq__Exchange: ${RABBITMQ_EXCHANGE:-tryum.events}
+      # ── OpenTelemetry → Grafana Cloud ───────────────────────────────────────
+      OpenTelemetry__Endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OpenTelemetry__Headers: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OpenTelemetry__ServiceName: ${OTEL_SERVICE_NAME:-tryum-api}
+      OpenTelemetry__ServiceNamespace: ${OTEL_SERVICE_NAMESPACE:-tryum}
+      OpenTelemetry__Environment: ${OTEL_ENVIRONMENT:-production}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-tryum-api}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-service.namespace=tryum,deployment.environment=production}
     networks: [internal]
     # Không expose port: chỉ Caddy gọi nội bộ qua network "internal".
 

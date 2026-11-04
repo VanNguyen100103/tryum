@@ -6,6 +6,7 @@ using Tryum.Domain.Tenants;
 using Tryum.Domain.Users;
 using Tryum.Domain.Products;
 using Tryum.Domain.Customers;
+using Tryum.Domain.Sales;
 
 namespace Tryum.Infrastructure.Persistence;
 
@@ -32,9 +33,25 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderLine> OrderLines => Set<OrderLine>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
+    public DbSet<PosQrSession> PosQrSessions => Set<PosQrSession>();
+
+    /// <summary>
+    /// Tenant hiện tại dùng trong global query filter.
+    /// PHẢI là property của DbContext (không tham chiếu trực tiếp class static):
+    /// EF Core chỉ parameter hoá giá trị đọc từ instance context; nếu tham chiếu static
+    /// nó sẽ coi là hằng số và cache cứng tenant của lần compile đầu tiên – rò rỉ dữ liệu.
+    /// </summary>
+    private Guid? CurrentTenantId => TenantContext.Current;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Sequence sinh mã hóa đơn tăng dần (HD000001) – tránh trùng khi nhiều thu ngân cùng lúc.
+        modelBuilder.HasSequence<long>("order_code_seq");
+
         // Tự động áp dụng tất cả IEntityTypeConfiguration trong assembly này
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
@@ -47,17 +64,17 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                 && typeof(ITenantOwned).IsAssignableFrom(entityType.ClrType))
             {
                 var method = typeof(ApplicationDbContext)
-                    .GetMethod(nameof(ApplyTenantFilter), BindingFlags.NonPublic | BindingFlags.Static)!
+                    .GetMethod(nameof(ApplyTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!
                     .MakeGenericMethod(entityType.ClrType);
 
-                method.Invoke(null, [modelBuilder]);
+                method.Invoke(this, [modelBuilder]);
             }
         }
 
         base.OnModelCreating(modelBuilder);
     }
 
-    private static void ApplyTenantFilter<T>(ModelBuilder modelBuilder)
+    private void ApplyTenantFilter<T>(ModelBuilder modelBuilder)
         where T : class, ITenantOwned
     {
         // Luôn lọc theo tenant hiện tại. Khi chưa đăng nhập (TenantContext.Current == null)
@@ -65,7 +82,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         // Code cần đọc/ghi ngoài phạm vi tenant (đăng nhập, kiểm tra email trùng, refresh token)
         // phải gọi IgnoreQueryFilters() một cách tường minh.
         modelBuilder.Entity<T>()
-            .HasQueryFilter(e => e.TenantId == TenantContext.Current);
+            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -100,7 +117,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
-            if (entry.State == EntityState.Added)
+            if (entry.State == EntityState.Added && entry.Entity.CreatedAt == default)
                 entry.Entity.CreatedAt = now;
 
             if (entry.State is EntityState.Added or EntityState.Modified)

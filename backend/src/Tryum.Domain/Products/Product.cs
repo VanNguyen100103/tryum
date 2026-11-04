@@ -14,6 +14,15 @@ public sealed class Product : AuditableEntity, ITenantOwned
     public decimal? SalePrice { get; set; }
     public decimal? CostPrice { get; set; }
     public decimal? Stock { get; set; }
+    public decimal? MinStock { get; set; }
+    public decimal? MaxStock { get; set; }
+    public string? Position { get; set; }
+    public decimal? Weight { get; set; }
+    public string? Description { get; set; }
+    public bool IsDirectSale { get; set; } = true;
+    public string UnitsJson { get; set; } = "[]";
+    public string AttributesJson { get; set; } = "[]";
+    public string VariantsJson { get; set; } = "[]";
     public string SourceImageUrlsJson { get; set; } = "[]";
     public string R2ObjectKeysJson { get; set; } = "[]";
     public string SourceDataJson { get; set; } = "{}";
