@@ -11,6 +11,9 @@ name: tryum
 services:
   postgres:
     image: postgres:17-alpine
+    # DB production đã chuyển sang Supabase/Neon. Local Postgres chỉ dùng để rollback:
+    #   docker compose --profile local-db up -d postgres
+    profiles: ["local-db"]
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tryum_db}
@@ -33,6 +36,7 @@ services:
     command: ["--config=/etc/otelcol/config.yaml"]
     environment:
       GRAFANA_AUTH: ${GRAFANA_AUTH:-}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
     volumes:
       - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
     networks: [internal]
@@ -45,9 +49,6 @@ services:
     # Oracle Ampere A1 = arm64; máy local có thể đặt TARGET_PLATFORM=linux/amd64 trong .env
     platform: ${TARGET_PLATFORM:-linux/arm64}
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URL: http://+:8080

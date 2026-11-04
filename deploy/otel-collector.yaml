@@ -5,6 +5,17 @@ receivers:
         endpoint: 0.0.0.0:4318
       grpc:
         endpoint: 0.0.0.0:4317
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: tryum-api
+          scrape_interval: 15s
+          metrics_path: /metrics
+          authorization:
+            type: Bearer
+            credentials: ${env:METRICS_TOKEN}
+          static_configs:
+            - targets: ["api:8080"]
 
 processors:
   memory_limiter:
@@ -34,6 +45,6 @@ service:
       processors: [memory_limiter, batch]
       exporters: [otlphttp]
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, prometheus]
       processors: [memory_limiter, batch]
       exporters: [otlphttp]
