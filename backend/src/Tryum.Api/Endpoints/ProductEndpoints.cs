@@ -84,7 +84,8 @@ public static class ProductEndpoints
 
             var job = jobs.Create(tenantId, file.FileName);
             job.ImageStorageConfigured = r2.Value.IsConfigured;
-            _ = Task.Run(() => ProcessImportJobAsync(job, workbook, scopeFactory));
+            await jobs.SaveAsync(job);
+            _ = Task.Run(() => ProcessImportJobAsync(job, workbook, scopeFactory, jobs));
 
             return Results.Accepted($"/api/v1/products/import/{job.Id}", new
             {
@@ -99,9 +100,9 @@ public static class ProductEndpoints
         .Produces(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest);
 
-        group.MapGet("/import/{jobId:guid}", (Guid jobId, ProductImportJobStore jobs) =>
+        group.MapGet("/import/{jobId:guid}", async (Guid jobId, ProductImportJobStore jobs) =>
         {
-            var job = jobs.Get(jobId);
+            var job = await jobs.GetAsync(jobId);
             if (job is null || job.TenantId != TenantContext.RequireCurrent())
                 return Results.NotFound(new { message = "Không tìm thấy tiến trình import." });
             return Results.Ok(job.Snapshot());
@@ -451,7 +452,8 @@ public static class ProductEndpoints
     private static async Task ProcessImportJobAsync(
         ProductImportJob job,
         byte[] workbook,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        ProductImportJobStore jobs)
     {
         using var tenantScope = TenantContext.Use(job.TenantId);
         await using var scope = scopeFactory.CreateAsyncScope();
@@ -468,6 +470,7 @@ public static class ProductEndpoints
 
             job.Total = data.Count;
             job.Status = "Preparing";
+            await jobs.SaveAsync(job);
 
             var invalidRow = data.FirstOrDefault(row =>
                 string.IsNullOrWhiteSpace(Get(row, "Mã hàng")) || string.IsNullOrWhiteSpace(Get(row, "Tên hàng")));
@@ -570,6 +573,7 @@ public static class ProductEndpoints
                 .ToDictionaryAsync(product => product.Sku, StringComparer.OrdinalIgnoreCase, CancellationToken.None);
 
             job.Status = "Importing";
+            await jobs.SaveAsync(job);
             await using var transaction = await db.Database.BeginTransactionAsync(CancellationToken.None);
 
             // Các dòng là đơn vị/biến thể của sản phẩm cha (Mã ĐVT cơ bản) không còn là sản phẩm riêng.
@@ -651,6 +655,7 @@ public static class ProductEndpoints
                 {
                     await db.SaveChangesAsync(CancellationToken.None);
                     productsInBatch = 0;
+                    await jobs.SaveAsync(job);
                 }
             }
 
@@ -665,6 +670,7 @@ public static class ProductEndpoints
             job.Status = "Completed";
             job.FinishedAt = DateTimeOffset.UtcNow;
             job.ElapsedMs = (long)(job.FinishedAt.Value - job.StartedAt).TotalMilliseconds;
+            await jobs.SaveAsync(job);
             logger.LogInformation(
                 "Import xong {Created} mới, {Updated} cập nhật, {Images} ảnh trong {Elapsed}ms.",
                 created, updated, imageCount, job.ElapsedMs);
@@ -675,6 +681,7 @@ public static class ProductEndpoints
             job.Error = exception.Message;
             job.FinishedAt = DateTimeOffset.UtcNow;
             job.ElapsedMs = (long)(job.FinishedAt.Value - job.StartedAt).TotalMilliseconds;
+            await jobs.SaveAsync(job);
             logger.LogError(exception, "Import sản phẩm thất bại.");
         }
     }

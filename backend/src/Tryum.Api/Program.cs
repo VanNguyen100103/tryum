@@ -17,7 +17,6 @@ using Tryum.Api.Common;
 using Tryum.Api.Assistant;
 using Tryum.Api.Endpoints;
 using Tryum.Api.Messaging;
-using Tryum.Api.Redis;
 using Tryum.Api.Shipping;
 using Tryum.Application;
 using Tryum.Application.Common.Security;
@@ -51,7 +50,8 @@ try
         .AddInfrastructure(builder.Configuration);
 
     builder.Services.AddTryumAuthorization();
-    builder.Services.AddSingleton<ProductImportJobStore>();
+    builder.Services.AddSingleton<ProductImportJobStore>(sp =>
+        new ProductImportJobStore(sp.GetRequiredService<Tryum.Application.Common.Interfaces.IRedisStore>()));
     builder.Services.Configure<GoshipOptions>(builder.Configuration.GetSection(GoshipOptions.SectionName));
     builder.Services.AddHttpClient<GoshipClient>();
 
@@ -109,8 +109,6 @@ try
     builder.Services.Configure<AiChatOptions>(builder.Configuration.GetSection(AiChatOptions.SectionName));
     builder.Services.AddHttpClient("ai", client => client.Timeout = TimeSpan.FromSeconds(25));
     builder.Services.AddHttpClient("social", client => client.Timeout = TimeSpan.FromSeconds(30));
-    builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection(RedisOptions.SectionName));
-    builder.Services.AddSingleton<RedisCache>();
     builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
     builder.Services.AddSingleton<RabbitMqPublisher>();
     builder.Services.AddExceptionHandler<AppExceptionHandler>();

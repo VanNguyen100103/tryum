@@ -36,6 +36,10 @@ public static class DependencyInjection
 
         services.AddOptions<R2Options>().Bind(configuration.GetSection(R2Options.SectionName));
 
+        // ── Redis dùng chung (Upstash): 1 kết nối cho cache + OTP + Captcha + import job ──
+        services.AddOptions<RedisOptions>().Bind(configuration.GetSection(RedisOptions.SectionName));
+        services.AddSingleton<IRedisStore, RedisStore>();
+
         // ── SePay: webhook thanh toán + tài khoản nhận tiền cho VietQR (đều tùy chọn) ──
         services.AddOptions<SePayOptions>()
             .Bind(configuration.GetSection(SePayOptions.SectionName))
@@ -86,11 +90,14 @@ public static class DependencyInjection
             new OtpService(
                 sp.GetRequiredService<ISmsSender>(),
                 sp.GetService<ILogger<OtpService>>(),
-                sp.GetRequiredService<IOptions<OtpOptions>>().Value));
+                sp.GetRequiredService<IOptions<OtpOptions>>().Value,
+                sp.GetRequiredService<IRedisStore>()));
 
         // Captcha singleton: store dùng chung cho cả sinh ảnh và kiểm mã.
         services.AddSingleton<ICaptchaService>(sp =>
-            new CaptchaService(sp.GetRequiredService<IOptions<CaptchaOptions>>().Value));
+            new CaptchaService(
+                sp.GetRequiredService<IOptions<CaptchaOptions>>().Value,
+                sp.GetRequiredService<IRedisStore>()));
         services.AddScoped<ITokenService>(sp =>
             new TokenService(
                 sp.GetRequiredService<IApplicationDbContext>(),

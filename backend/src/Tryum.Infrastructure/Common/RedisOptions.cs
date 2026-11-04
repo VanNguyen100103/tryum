@@ -1,4 +1,4 @@
-namespace Tryum.Api.Redis;
+namespace Tryum.Infrastructure.Common;
 
 public sealed class RedisOptions
 {

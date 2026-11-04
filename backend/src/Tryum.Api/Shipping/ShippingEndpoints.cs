@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore;
-using Tryum.Api.Redis;
+using Tryum.Application.Common.Interfaces;
 using Tryum.Application.Common.Security;
 using Tryum.Domain.Sales;
 using Tryum.Infrastructure.Persistence;
@@ -34,7 +34,7 @@ public static class ShippingEndpoints
             return Results.Ok(PickupResponse(tenant));
         }).WithSummary("Lưu điểm lấy hàng Goship của cửa hàng");
 
-        group.MapGet("/cities", async (GoshipClient client, RedisCache cache, CancellationToken ct) =>
+        group.MapGet("/cities", async (GoshipClient client, IRedisStore cache, CancellationToken ct) =>
             await ProxyAsync(async () => Results.Ok(new
             {
                 cities = await cache.GetOrSetAsync(
@@ -43,7 +43,7 @@ public static class ShippingEndpoints
                     () => client.CitiesAsync(ct)),
             })));
 
-        group.MapGet("/districts", async (string cityId, GoshipClient client, RedisCache cache, CancellationToken ct) =>
+        group.MapGet("/districts", async (string cityId, GoshipClient client, IRedisStore cache, CancellationToken ct) =>
             await ProxyAsync(async () => Results.Ok(new
             {
                 districts = await cache.GetOrSetAsync(
@@ -52,7 +52,7 @@ public static class ShippingEndpoints
                     () => client.DistrictsAsync(cityId, ct)),
             })));
 
-        group.MapGet("/wards", async (string districtId, GoshipClient client, RedisCache cache, CancellationToken ct) =>
+        group.MapGet("/wards", async (string districtId, GoshipClient client, IRedisStore cache, CancellationToken ct) =>
             await ProxyAsync(async () => Results.Ok(new
             {
                 wards = await cache.GetOrSetAsync(

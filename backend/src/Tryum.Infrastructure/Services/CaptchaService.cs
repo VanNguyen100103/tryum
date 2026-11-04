@@ -7,23 +7,26 @@ using Tryum.Infrastructure.Common;
 namespace Tryum.Infrastructure.Services;
 
 /// <summary>
-/// Captcha sinh ở SERVER (SVG trả về dạng data-uri, không cần thư viện xử lý ảnh).
-/// Vì sao cần: nếu captcha sinh ở client như hiện trước đây, bot chỉ cần gọi thẳng
-/// <c>POST /auth/otp/send</c> là đốt hết quota SMS của gateway.
-/// Mỗi mã dùng đúng một lần và tự hết hạn sau <see cref="CaptchaOptions.TtlSeconds"/> giây.
+/// Captcha sinh ở SERVER (SVG data-uri). Mỗi mã dùng đúng một lần và tự hết hạn.
+/// Store ưu tiên Redis dùng chung để nhiều instance API chia sẻ; khi Redis chưa cấu hình
+/// thì fallback in-memory (dev/test 1 instance).
 /// </summary>
-public sealed class CaptchaService(CaptchaOptions? options = null) : ICaptchaService
+public sealed class CaptchaService(CaptchaOptions? options = null, IRedisStore? redisStore = null) : ICaptchaService
 {
-    // Loại bỏ ký tự dễ nhầm (0/O, 1/I/L) để người dùng không bị bắt nhầm.
     private const string Alphabet = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
     private const int Length = 4;
 
     private readonly CaptchaOptions _options = options ?? new CaptchaOptions();
+    private readonly IRedisStore? _redis = redisStore is { IsConfigured: true } ? redisStore : null;
     private readonly ConcurrentDictionary<string, CaptchaEntry> _store = new();
 
     public CaptchaChallenge Create()
     {
         var now = DateTimeOffset.UtcNow;
+
+        if (_redis is not null)
+            return CreateViaRedis(now);
+
         PurgeExpired(now);
 
         var id = Guid.NewGuid().ToString("N");
@@ -39,16 +42,41 @@ public sealed class CaptchaService(CaptchaOptions? options = null) : ICaptchaSer
         if (string.IsNullOrWhiteSpace(captchaId) || string.IsNullOrWhiteSpace(code))
             return false;
 
-        // Xoá trước khi kiểm tra => mã chỉ dùng được 1 lần, kể cả khi người dùng nhập sai.
+        if (_redis is not null)
+            return ValidateViaRedis(captchaId, code);
+
         if (!_store.TryRemove(captchaId, out var entry))
             return false;
 
         if (entry.IsExpired(DateTimeOffset.UtcNow))
             return false;
 
-        // Người dùng có thể gõ chữ thường => so khớp không phân biệt hoa/thường.
         return FixedTimeEquals(entry.CodeHash, Hash(code.Trim().ToUpperInvariant()));
     }
+
+    // ── Redis path ────────────────────────────────────────────────────────────
+
+    private CaptchaChallenge CreateViaRedis(DateTimeOffset now)
+    {
+        var id = Guid.NewGuid().ToString("N");
+        var code = NewCode();
+
+        _redis!.SetAsync($"captcha:{id}", new CaptchaEntry(Hash(code), now.AddSeconds(_options.TtlSeconds)),
+            TimeSpan.FromSeconds(_options.TtlSeconds)).GetAwaiter().GetResult();
+
+        return new CaptchaChallenge(id, BuildSvgDataUrl(code));
+    }
+
+    private bool ValidateViaRedis(string captchaId, string code)
+    {
+        var entry = _redis!.GetAndRemoveAsync<CaptchaEntry>($"captcha:{captchaId}").GetAwaiter().GetResult();
+        if (entry is null || entry.IsExpired(DateTimeOffset.UtcNow))
+            return false;
+
+        return FixedTimeEquals(entry.CodeHash, Hash(code.Trim().ToUpperInvariant()));
+    }
+
+    // ── Dùng chung ────────────────────────────────────────────────────────────
 
     private static string NewCode()
     {
@@ -66,17 +94,12 @@ public sealed class CaptchaService(CaptchaOptions? options = null) : ICaptchaSer
         return new string(chars);
     }
 
-    /// <summary>
-    /// Vẽ mã thành SVG: chữ nghiêng, xoay nhẹ, có nét nhiễu để bot khó đọc.
-    /// Trả về data-uri để frontend gán thẳng vào <c>&lt;img src&gt;</c>.
-    /// </summary>
     private static string BuildSvgDataUrl(string code)
     {
         var builder = new StringBuilder();
         builder.Append("<svg xmlns='http://www.w3.org/2000/svg' width='120' height='46' viewBox='0 0 120 46'>");
         builder.Append("<rect width='120' height='46' fill='#f4f7fb'/>");
 
-        // Nét nhiễu.
         for (var i = 0; i < 4; i++)
         {
             var y1 = RandomNumberGenerator.GetInt32(6, 40);
@@ -124,9 +147,19 @@ public sealed class CaptchaService(CaptchaOptions? options = null) : ICaptchaSer
             Encoding.UTF8.GetBytes(a),
             Encoding.UTF8.GetBytes(b));
 
-    /// <summary>Entry lưu hash mã + thời điểm hết hạn (tính sẵn lúc sinh).</summary>
-    private sealed record CaptchaEntry(string CodeHash, DateTimeOffset ExpiresAtUtc)
+    private sealed class CaptchaEntry
     {
+        public string CodeHash { get; set; } = string.Empty;
+        public DateTimeOffset ExpiresAtUtc { get; set; }
+
+        public CaptchaEntry() { }
+
+        public CaptchaEntry(string codeHash, DateTimeOffset expiresAtUtc)
+        {
+            CodeHash = codeHash;
+            ExpiresAtUtc = expiresAtUtc;
+        }
+
         public bool IsExpired(DateTimeOffset now) => now > ExpiresAtUtc;
     }
 }
