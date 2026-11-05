@@ -6,10 +6,8 @@ set -uo pipefail
 ENV=/home/ubuntu/tryum/deploy/.env
 TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' "$ENV" | cut -d= -f2- || true)
 CHAT=$(grep '^TELEGRAM_CHAT_ID=' "$ENV" | cut -d= -f2- || true)
-MT=$(grep '^METRICS_TOKEN=' "$ENV" | cut -d= -f2- || true)
 API=https://tryum-api.duckdns.org
 STATE=/home/ubuntu/.tryum-alert.state
-PREV5XX=/home/ubuntu/.tryum-alert.5xx
 
 if [ -z "$TOKEN" ] || [ -z "$CHAT" ]; then
   echo "Thiếu TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID trong .env"
@@ -25,16 +23,17 @@ send() {
 
 problems=()
 
-HEALTH=$(curl -s -m 15 -o /dev/null -w '%{http_code}' "$API/health" 2>/dev/null || echo 000)
-[ "$HEALTH" != "200" ] && problems+=("/health = $HEALTH")
+# /health: thử 3 lần trước khi báo (tránh 503 thoáng qua do DB health check chậm).
+HEALTH=000
+for i in 1 2 3; do
+  HEALTH=$(curl -s -m 10 -o /dev/null -w '%{http_code}' "$API/health" 2>/dev/null || echo 000)
+  [ "$HEALTH" = "200" ] && break
+  sleep 3
+done
+[ "$HEALTH" != "200" ] && problems+=("/health = $HEALTH (sau 3 lần thử)")
 
-MC=$(curl -s -m 10 -H "Authorization: Bearer $MT" "$API/metrics" 2>/dev/null || true)
-CUR5XX=$(printf '%s\n' "$MC" | grep '^http_requests_received_total{code="5xx"' | awk '{s+=$2} END {printf "%d", s+0}')
-PREV=$(cat "$PREV5XX" 2>/dev/null || echo "$CUR5XX")
-DELTA=$(( CUR5XX - PREV ))
-echo "$CUR5XX" > "$PREV5XX"
-[ "$DELTA" -gt 20 ] && problems+=("5xx mới: $DELTA trong 5 phút")
-
+# RAM/disk. (Không check 5xx ở đây: /metrics qua LB trả counter của instance khác nhau
+# mỗi lần nên delta không đáng tin — 5xx theo dõi trên Grafana bằng rate().)
 RAM=$(free | awk '/Mem:/ {printf "%d", $3/$2*100}')
 [ "$RAM" -gt 90 ] && problems+=("RAM ${RAM}%")
 
