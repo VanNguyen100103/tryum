@@ -118,3 +118,65 @@ Tổng hợp mọi lỗi đã gặp và cách sửa. Cột: **Triệu chứng �
 | **Ảnh sản phẩm** tải chậm | Ảnh gốc lớn từ R2, chưa resize/CDN | Resize ảnh khi import, dùng CDN/public URL |
 | `/health` thỉnh thoảng 503 (8–16s) | Health check probe DB chậm/timeout | Tăng timeout check, dùng check nhẹ hơn |
 | Điểm cuối lẻ bị 429 | Rate-limit auth 20/phút/IP | Kiểm tra IP có bị chặn; nới hạn mức nếu cần |
+
+## 13. Lệnh đo hiệu năng (tự đo)
+
+### 13.1 Trình duyệt (dễ nhất, đúng thứ khách thấy)
+
+```text
+1. Mở web → F12 → tab Network
+2. Check "Disable cache"
+3. Reload (F5)
+4. Nhìn cột Time + Waterfall
+5. Bấm 1 request → tab Timing:
+   - Waiting (TTFB)     = chờ server trả (cao → backend/DB chậm)
+   - Content Download   = tải dữ liệu về (cao → mạng/ảnh nặng)
+```
+
+Ngưỡng đọc: `Waiting < 300ms` nhanh · `500ms–2s` chậm (nghi DB) · `> 2s` rất chậm.
+
+### 13.2 curl từ Windows (PowerShell — phải dùng `curl.exe`, không phải `curl`)
+
+```powershell
+# 1 endpoint
+curl.exe -s -o NUL -w "HTTP %{http_code} | tong %{time_total}s | TTFB %{time_starttransfer}s" https://tryum-api.duckdns.org/api/v1/auth/stores/banh-xeo-a-van
+
+# lặp 5 lần (thấy cold vs warm)
+1..5 | ForEach-Object { curl.exe -s -o NUL -w "%{time_total}s`n" https://tryum-api.duckdns.org/api/v1/auth/stores/banh-xeo-a-van }
+```
+
+### 13.3 curl từ VM (SSH)
+
+```bash
+curl -s -o /dev/null -w "total: %{time_total}s  http: %{http_code}\n" https://tryum-api.duckdns.org/api/v1/auth/stores/banh-xeo-a-van
+
+for i in 1 2 3 4 5; do curl -s -o /dev/null -w "%{time_total}s\n" https://tryum-api.duckdns.org/api/v1/auth/stores/banh-xeo-a-van; done
+```
+
+### 13.4 Đo DB trực tiếp (xem Supabase có chậm không)
+
+```bash
+time docker run --rm -e PGPASSWORD="<pass>" postgres:17-alpine \
+  psql -h aws-0-ap-south-1.pooler.supabase.com -p 5432 \
+  -U postgres.hbxjhmhkbpcgxgyeezqu -d postgres -tAc "select 1"
+```
+
+`real 0.3s` = DB ổn · `real 3s+` = DB chậm.
+
+### 13.5 Các endpoint dùng để đo
+
+```text
+/health                             → DB check
+/api/v1/auth/stores/banh-xeo-a-van  → DB đọc (trang login)
+/api/v1/auth/me                     → DB + auth (cần token)
+/api/v1/products                    → list sản phẩm (cần token)
+```
+
+### 13.6 Cách đọc kết quả (tìm thủ phạm)
+
+| Kết quả | Kết luận | Hướng sửa |
+|---|---|---|
+| `/health` nhanh (<300ms) nhưng API > 2s | DB chậm | Cache Redis / chuyển Supabase Singapore |
+| Waiting cao + Content Download cao | Ảnh/bundle nặng | Nén/resize ảnh, lazy-load |
+| Lần 1 chậm, lần 2-3 nhanh | Cold start (Supabase pause) | Keepalive + warm |
+
