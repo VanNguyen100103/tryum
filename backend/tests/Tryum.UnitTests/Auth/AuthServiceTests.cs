@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Tryum.Application.Auth;
 using Tryum.Application.Common.Exceptions;
 using Tryum.Application.Common.Interfaces;
@@ -39,7 +41,10 @@ public class AuthServiceTests : IDisposable
 
         var tokenService = new TokenService(_context, _jwt);
 
-        _authService = new AuthService(_context, new PasswordHasher(), tokenService, _otpService);
+        // RedisStore chưa cấu hình (Host rỗng) → mọi thao tác là no-op, test chạy như cũ.
+        var redis = new RedisStore(Options.Create(new RedisOptions()), NullLogger<RedisStore>.Instance);
+
+        _authService = new AuthService(_context, new PasswordHasher(), tokenService, _otpService, redis);
     }
 
     public void Dispose()
