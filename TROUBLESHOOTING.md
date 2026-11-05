@@ -103,3 +103,18 @@ Tổng hợp mọi lỗi đã gặp và cách sửa. Cột: **Triệu chứng �
 | VM1→VM2:8080 trả 000 | Security list chưa mở private | Thêm ingress `10.0.0.0/16 TCP 8080` |
 | VM1 tự curl private IP của chính nó (10.0.0.232) fail | Hairpin/routing | Test từ VM2 thay vì từ VM1 |
 | Recreate API phải recreate Caddy | IP container đổi, Caddy cache | Luôn recreate Caddy sau API |
+
+## 12. Web chậm (hiệu năng)
+
+Đo nhanh: `curl -w '%{time_total}' -o /dev/null https://tryum-api.duckdns.org/api/v1/...`
+
+| Triệu chứng | Nguyên nhân | Cách sửa / đo |
+|---|---|---|
+| Web **tải lần đầu** chậm (màn trắng lâu) | Angular bundle lớn (main/chunk > 1MB) | Mở DevTools → Network → xem `main-*.js`; lazy-load route, code-split |
+| **Mọi API** đều chậm (~200–500ms) | Supabase Mumbai xa VM Osaka (RTT 120–150ms) | Chuyển Supabase sang **Singapore**; đo `curl -w '%{time_total}'` |
+| Chậm **chỉ sau khi idle lâu** | Supabase pause / container cold start | Đã có cron keepalive 5 phút; thêm warm cho DB |
+| **Login** chậm (~1s) | bcrypt + query user/role/tenant qua DB | Đã cache user (Redis 5 phút); giảm bcrypt cost 12→10 |
+| **Danh sách sản phẩm/khách** chậm, lặp lại mỗi lần vào | Query không cache + thiếu index | Cache Redis; thêm index cột lọc (`TenantId`, `Name`, `Sku`) |
+| **Ảnh sản phẩm** tải chậm | Ảnh gốc lớn từ R2, chưa resize/CDN | Resize ảnh khi import, dùng CDN/public URL |
+| `/health` thỉnh thoảng 503 (8–16s) | Health check probe DB chậm/timeout | Tăng timeout check, dùng check nhẹ hơn |
+| Điểm cuối lẻ bị 429 | Rate-limit auth 20/phút/IP | Kiểm tra IP có bị chặn; nới hạn mức nếu cần |
