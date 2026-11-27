@@ -1,0 +1,53 @@
+name: nightly-check
+
+on:
+  schedule:
+    # 02:00 giờ Việt Nam (UTC+7) = 19:00 UTC
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Unit tests (.NET + Angular)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore
+        run: dotnet restore backend/Tryum.slnx
+
+      - name: Build
+        run: dotnet build backend/Tryum.slnx --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test backend/Tryum.slnx --no-build --configuration Release
+
+  smoke-production:
+    name: Smoke test production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run smoke test
+        env:
+          API_BASE_URL: https://tryum-api.duckdns.org
+          SMOKE_SLUG: banh-xeo-a-van
+          SMOKE_MAX_MS: "3000"
+        run: python3 deploy/smoke_test.py
+
+      - name: Notify Telegram on failure
+        if: failure()
+        run: |
+          MESSAGE="🚨 <b>Tryum nightly-check FAILED</b>%0AJob: ${{ github.job }}%0ARun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -m 15 "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=$MESSAGE" > /dev/null || true
