@@ -1,0 +1,118 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 01:00 giờ Việt Nam = 18:00 UTC
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ── L0: Dependency có CVE ──────────────────────────────────────────────
+  vulnerable-packages:
+    name: L0 — NuGet CVE
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore
+        run: dotnet restore backend/Tryum.slnx
+
+      - name: Scan vulnerable packages
+        run: |
+          OUT=$(dotnet list backend/Tryum.slnx package --vulnerable --include-transitive 2>&1)
+          echo "$OUT"
+          if echo "$OUT" | grep -qi "has the following vulnerable packages"; then
+            echo "::error::Có NuGet package chứa CVE — xem log phía trên."
+            exit 1
+          fi
+          echo "Không có package vulnerable."
+
+  # ── L1: SAST ───────────────────────────────────────────────────────────
+  semgrep:
+    name: L1 — SAST (Semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Semgrep
+        run: pip install --quiet semgrep
+
+      - name: Scan
+        run: |
+          semgrep scan \
+            --config p/csharp \
+            --config p/security-audit \
+            --severity ERROR \
+            --error \
+            backend/src
+
+  # ── L2: Secret lộ ──────────────────────────────────────────────────────
+  gitleaks:
+    name: L2 — Secret (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan secrets
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest \
+            detect --source=/repo --no-git --redact -v
+
+  # ── L0b: Trivy (dependency + config) ───────────────────────────────────
+  trivy:
+    name: L0b — Trivy (deps/config)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy fs scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,config
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+  # ── Tổng hợp + báo Telegram ────────────────────────────────────────────
+  report:
+    name: Report
+    needs: [vulnerable-packages, semgrep, gitleaks, trivy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ghi summary
+        run: |
+          {
+            echo "## Security scan"
+            echo ""
+            echo "| Lớp | Kết quả |"
+            echo "|---|---|"
+            echo "| L0 NuGet CVE | ${{ needs.vulnerable-packages.result }} |"
+            echo "| L1 SAST | ${{ needs.semgrep.result }} |"
+            echo "| L2 Secret | ${{ needs.gitleaks.result }} |"
+            echo "| L0b Trivy | ${{ needs.trivy.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Báo Telegram nếu có lỗi
+        if: contains(needs.*.result, 'failure')
+        run: |
+          curl -s -m 15 "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --data-urlencode "text=🔒 security scan FAILED — xem: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            > /dev/null || true
