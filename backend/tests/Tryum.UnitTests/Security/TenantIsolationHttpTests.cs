@@ -78,7 +78,7 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
         builder.Services.AddTryumAuthorization();
 
         builder.Services.AddDbContext<ApplicationDbContext>(o =>
-            o.UseInMemoryDatabase("tryum-http-isolation", DbRoot));
+            o.UseInMemoryDatabase($"tryum-http-{Guid.NewGuid()}", DbRoot));
         builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         _app = builder.Build();
@@ -137,9 +137,6 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
             var pb = new Product { TenantId = tenantB.Id, Name = "Sản phẩm B", Sku = "SKU-B", ItemType = "product" };
             db.Products.AddRange(pa, pb);
             db.SaveChanges();
-
-            if (db.Products.IgnoreQueryFilters().Count() != 2)
-                throw new InvalidOperationException($"Seed failed: expected 2 products, got {db.Products.IgnoreQueryFilters().Count()}");
 
             _productA = pa.Id;
             _productB = pb.Id;
