@@ -49,7 +49,7 @@ jobs:
           --results-directory backend/tests/TestResults
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: backend/tests/TestResults/**/coverage.cobertura.xml
           fail_ci_if_error: false
