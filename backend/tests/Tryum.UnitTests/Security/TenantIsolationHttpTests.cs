@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -33,6 +34,8 @@ namespace Tryum.UnitTests.Security;
 public sealed class TenantIsolationHttpTests : IAsyncLifetime
 {
     private const string Secret = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; // 32 byte zero, chỉ cho test
+
+    private static readonly InMemoryDatabaseRoot DbRoot = new();
 
     private WebApplication _app = null!;
     private HttpClient _clientA = null!;
@@ -75,7 +78,7 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
         builder.Services.AddTryumAuthorization();
 
         builder.Services.AddDbContext<ApplicationDbContext>(o =>
-            o.UseInMemoryDatabase($"http-isolation-{Guid.NewGuid()}"));
+            o.UseInMemoryDatabase("tryum-http-isolation", DbRoot));
         builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         _app = builder.Build();
@@ -134,6 +137,9 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
             var pb = new Product { TenantId = tenantB.Id, Name = "Sản phẩm B", Sku = "SKU-B", ItemType = "product" };
             db.Products.AddRange(pa, pb);
             db.SaveChanges();
+
+            if (db.Products.IgnoreQueryFilters().Count() != 2)
+                throw new InvalidOperationException($"Seed failed: expected 2 products, got {db.Products.IgnoreQueryFilters().Count()}");
 
             _productA = pa.Id;
             _productB = pb.Id;
