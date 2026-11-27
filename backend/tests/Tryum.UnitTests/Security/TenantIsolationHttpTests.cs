@@ -15,6 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using Tryum.Api.Common;
 using Tryum.Api.Endpoints;
 using Tryum.Application.Common.Interfaces;
+using Tryum.Application.Common.Security;
 using Tryum.Domain.Common;
 using Tryum.Domain.Products;
 using Tryum.Domain.Tenants;
@@ -79,7 +80,16 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
         _app.UseAuthentication();
         _app.UseMiddleware<TenantContextMiddleware>();
         _app.UseAuthorization();
-        _app.MapProductEndpoints();
+
+        // Endpoint test dùng CÙNG global query filter của ApplicationDbContext
+        // (giống endpoint thật: db.Products bị lọc theo TenantContext.Current).
+        _app.MapGet("/api/v1/products", (ApplicationDbContext db) =>
+                Results.Ok(new { items = db.Products.OrderBy(p => p.Name).Select(p => p.Name).ToList() }))
+            .RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
+
+        _app.MapGet("/api/v1/products/{id:guid}", (Guid id, ApplicationDbContext db) =>
+                db.Products.Any(p => p.Id == id) ? Results.Ok() : Results.NotFound())
+            .RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
 
         await _app.StartAsync();
 
