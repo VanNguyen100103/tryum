@@ -12,9 +12,16 @@ permissions:
   contents: read
   packages: write
 
+# Chỉ 1 deploy chạy tại 1 thời điểm — tránh 2 job cùng `docker compose up --force-recreate`
+# trên cùng VM gây lock/deadlock.
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,6 +53,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       GHCR_USER: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
