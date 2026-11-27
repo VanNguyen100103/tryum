@@ -101,6 +101,7 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
             return Results.Ok(new
             {
                 items = names,
+                total = db.Products.IgnoreQueryFilters().Count(),
                 tenant = tid?.ToString(),
                 claim = ctx.User.FindFirst("tenant_id")?.Value,
             });
@@ -152,10 +153,12 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
 
         var tenant = body.GetProperty("tenant").GetString();
         var claim = body.GetProperty("claim").GetString();
+        var total = body.GetProperty("total").GetInt32();
         var names = body.GetProperty("items").EnumerateArray()
             .Select(p => p.GetString())
             .ToList();
 
+        Assert.Equal(2, total);                    // DB có đủ 2 sản phẩm
         Assert.Equal(_tenantA.ToString(), claim);   // token có tenant_id
         Assert.Equal(_tenantA.ToString(), tenant);  // middleware đã gán TenantContext
         Assert.Contains("Sản phẩm A", names);
