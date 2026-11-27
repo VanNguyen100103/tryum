@@ -37,6 +37,7 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
     private WebApplication _app = null!;
     private HttpClient _clientA = null!;
     private HttpClient _clientB = null!;
+    private Guid _tenantA;
     private Guid _productA;
     private Guid _productB;
 
@@ -84,8 +85,13 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
 
         // Endpoint test dùng CÙNG global query filter của ApplicationDbContext
         // (giống endpoint thật: db.Products bị lọc theo TenantContext.Current).
-        _app.MapGet("/api/v1/products", (ApplicationDbContext db) =>
-                Results.Ok(new { items = db.Products.OrderBy(p => p.Name).Select(p => p.Name).ToList() }))
+        _app.MapGet("/api/v1/products", (ApplicationDbContext db, HttpContext ctx) =>
+                Results.Ok(new
+                {
+                    items = db.Products.OrderBy(p => p.Name).Select(p => p.Name).ToList(),
+                    tenant = TenantContext.Current?.ToString(),
+                    claim = ctx.User.FindFirst("tenant_id")?.Value,
+                }))
             .RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
 
         _app.MapGet("/api/v1/products/{id:guid}", (Guid id, ApplicationDbContext db) =>
@@ -110,6 +116,7 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
 
             _productA = pa.Id;
             _productB = pb.Id;
+            _tenantA = tenantA.Id;
 
             _clientA = MakeClient(tenantA.Id);
             _clientB = MakeClient(tenantB.Id);
@@ -123,10 +130,14 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
     {
         var body = await _clientA.GetFromJsonAsync<JsonElement>("/api/v1/products");
 
+        var tenant = body.GetProperty("tenant").GetString();
+        var claim = body.GetProperty("claim").GetString();
         var names = body.GetProperty("items").EnumerateArray()
-            .Select(p => p.GetProperty("name").GetString())
+            .Select(p => p.GetString())
             .ToList();
 
+        Assert.Equal(_tenantA.ToString(), claim);   // token có tenant_id
+        Assert.Equal(_tenantA.ToString(), tenant);  // middleware đã gán TenantContext
         Assert.Contains("Sản phẩm A", names);
         Assert.DoesNotContain("Sản phẩm B", names);
     }
