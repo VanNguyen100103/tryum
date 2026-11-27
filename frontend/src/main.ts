@@ -3,6 +3,11 @@ import { appConfig } from './app/app.config';
 import { App } from './app/app';
 import { isDevMode } from '@angular/core';
 
+// PWA: đăng ký service worker (production) để cài được lên điện thoại.
+if ('serviceWorker' in navigator && !isDevMode()) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 bootstrapApplication(App, appConfig)
   .then(() => {
     // Stagewise toolbar – chỉ chạy khi dev, không ảnh hưởng production

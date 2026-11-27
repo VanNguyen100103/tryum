@@ -19,6 +19,13 @@ export const routes: Routes = [
     title: 'Tryum – Phần mềm quản lý bán hàng',
   },
 
+  // ── Tài liệu màn hình (public) ─────────────────────────────────────────────
+  {
+    path: 'docs',
+    loadComponent: () => import('./docs/docs.component').then((c) => c.DocsComponent),
+    title: 'Tài liệu màn hình - Tryum',
+  },
+
   // ── Auth (full-page) ──────────────────────────────────────────────────────
   {
     path: 'auth',
