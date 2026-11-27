@@ -31,6 +31,8 @@ jobs:
         run: node scan.mjs
         env:
           TRYUM_WEB_URL: https://tryum-web.nganhvan1609.workers.dev
+          # Baseline đã sạch (0 critical/serious) → bật enforce để chặn tái phạm
+          FAIL_ON_VIOLATIONS: "true"
 
       - name: Upload report
         if: always()
