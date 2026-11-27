@@ -1,0 +1,78 @@
+name: dast
+
+# L3 — Dynamic Application Security Testing.
+# Dựng staging THROWAWAY (Postgres + API) ngay trong CI, rồi quét bằng
+# OWASP ZAP (baseline) + Nuclei. KHÔNG đụng production.
+#
+# Kết quả: artifact `dast-reports` (report_md.md + nuclei-report.txt).
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Chủ nhật 01:00 giờ Việt Nam = 18:00 UTC
+    - cron: "0 18 * * 0"
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  scan:
+    name: DAST (ZAP + Nuclei)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login GHCR (pull image API)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Start staging (postgres + api)
+        run: |
+          docker compose -f deploy/docker-compose.dast.yml up -d
+          code=000
+          for i in $(seq 1 40); do
+            code=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://localhost:8080/health || echo 000)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          echo "API /health = $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::API staging không lên — dump log:"
+            docker compose -f deploy/docker-compose.dast.yml logs api || true
+            exit 1
+          fi
+
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: http://localhost:8080
+          # Baseline trước = chỉ báo cáo, không fail. Sau khi rà findings sẽ chuyển true.
+          fail_action: false
+
+      - name: Nuclei scan
+        run: |
+          docker run --rm --network host ghcr.io/projectdiscovery/nuclei:latest \
+            -u http://localhost:8080 \
+            -severity low,medium,high,critical \
+            -timeout 8 \
+            -retries 1 \
+            -no-interactsh \
+            -o nuclei-report.txt 2>&1 | tail -50
+          echo "--- nuclei-report.txt ---"
+          cat nuclei-report.txt 2>/dev/null || echo "(không có finding)"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-reports
+          path: |
+            report_md.md
+            report_json.json
+            nuclei-report.txt
+          if-no-files-found: ignore
+
+      - name: Stop staging
+        if: always()
+        run: docker compose -f deploy/docker-compose.dast.yml down -v
