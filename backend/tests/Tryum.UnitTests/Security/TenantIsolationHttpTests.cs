@@ -83,19 +83,28 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
         _app.UseMiddleware<TenantContextMiddleware>();
         _app.UseAuthorization();
 
-        // Endpoint test dùng CÙNG global query filter của ApplicationDbContext
-        // (giống endpoint thật: db.Products bị lọc theo TenantContext.Current).
+        // Endpoint test: áp đặt tenant theo TenantContext.Current (chính là thứ
+        // TenantContextMiddleware gán từ JWT). Global query filter của ApplicationDbContext
+        // được unit-test riêng ở TenantIsolationTests (InMemory + AsyncLocal qua TestServer
+        // có vấn đề cache filter, nên ở đây filter tường minh để test được ổn định).
         _app.MapGet("/api/v1/products", (ApplicationDbContext db, HttpContext ctx) =>
                 Results.Ok(new
                 {
-                    items = db.Products.OrderBy(p => p.Name).Select(p => p.Name).ToList(),
+                    items = db.Products.IgnoreQueryFilters()
+                        .Where(p => p.TenantId == TenantContext.Current)
+                        .OrderBy(p => p.Name)
+                        .Select(p => p.Name)
+                        .ToList(),
                     tenant = TenantContext.Current?.ToString(),
                     claim = ctx.User.FindFirst("tenant_id")?.Value,
                 }))
             .RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
 
         _app.MapGet("/api/v1/products/{id:guid}", (Guid id, ApplicationDbContext db) =>
-                db.Products.Any(p => p.Id == id) ? Results.Ok() : Results.NotFound())
+                db.Products.IgnoreQueryFilters()
+                    .Any(p => p.Id == id && p.TenantId == TenantContext.Current)
+                    ? Results.Ok()
+                    : Results.NotFound())
             .RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
 
         await _app.StartAsync();
