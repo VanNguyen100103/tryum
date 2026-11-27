@@ -33,6 +33,11 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.164.0
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
     command: ["--config=/etc/otelcol/config.yaml"]
     environment:
       GRAFANA_AUTH: ${GRAFANA_AUTH:-}
@@ -49,6 +54,11 @@ services:
     # Oracle Ampere A1 = arm64; máy local có thể đặt TARGET_PLATFORM=linux/amd64 trong .env
     platform: ${TARGET_PLATFORM:-linux/arm64}
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URL: http://+:8080
@@ -152,6 +162,11 @@ services:
     image: ${WEB_IMAGE:-tryum-web:latest}
     platform: ${TARGET_PLATFORM:-linux/arm64}
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
     environment:
       API_URL: ${API_PUBLIC_URL:-https://localhost:7080}
     expose:
@@ -161,6 +176,11 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
     depends_on: [api]
     environment:
       # Tên miền phục vụ (bỏ port để Caddy bind 443 trong container).

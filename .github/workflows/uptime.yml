@@ -1,0 +1,107 @@
+name: uptime
+
+# L6 — Uptime monitor chạy BÊN NGOÀI VM (GitHub Actions), 5 phút/lần.
+# Khác với deploy/tryum-alert.sh (chạy trên VM1): nếu VM1 chết hoàn toàn thì
+# cron trên VM1 không báo được — workflow này vẫn báo.
+#
+# Trạng thái "đang lỗi" lưu bằng GitHub Issue có label `uptime-alert`:
+#   - DOWN lần đầu  → tạo issue + Telegram
+#   - vẫn DOWN      → không tạo thêm (tránh spam)
+#   - RECOVERED     → đóng issue + Telegram
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check API /health
+        id: api
+        run: |
+          code=000
+          for i in 1 2 3; do
+            code=$(curl -s -m 10 -o /dev/null -w '%{http_code}' https://tryum-api.duckdns.org/health || echo 000)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "200" ]; then echo "status=up" >> "$GITHUB_OUTPUT"; else echo "status=down" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Check DB (endpoint đọc bảng tenants)
+        id: db
+        run: |
+          code=$(curl -s -m 20 -o /dev/null -w '%{http_code}' https://tryum-api.duckdns.org/api/v1/auth/stores/banh-xeo-a-van || echo 000)
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "200" ]; then echo "status=up" >> "$GITHUB_OUTPUT"; else echo "status=down" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Check web (Cloudflare Workers)
+        id: web
+        run: |
+          code=$(curl -s -m 15 -o /dev/null -w '%{http_code}' https://tryum-web.nganhvan1609.workers.dev/ || echo 000)
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "200" ]; then echo "status=up" >> "$GITHUB_OUTPUT"; else echo "status=down" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Tổng hợp + báo Telegram (chống spam bằng GitHub Issue)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_CODE: ${{ steps.api.outputs.code }}
+          API_STATUS: ${{ steps.api.outputs.status }}
+          DB_CODE: ${{ steps.db.outputs.code }}
+          DB_STATUS: ${{ steps.db.outputs.status }}
+          WEB_CODE: ${{ steps.web.outputs.code }}
+          WEB_STATUS: ${{ steps.web.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+
+          problems=""
+          [ "$API_STATUS" = "down" ] && problems="${problems}\n• API /health = ${API_CODE}"
+          [ "$DB_STATUS"  = "down" ] && problems="${problems}\n• DB check = ${DB_CODE}"
+          [ "$WEB_STATUS" = "down" ] && problems="${problems}\n• Web = ${WEB_CODE}"
+
+          gh label create uptime-alert --color B60205 --description "Uptime monitor đang báo lỗi" --force >/dev/null 2>&1 || true
+
+          open_issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --label uptime-alert --state open \
+            --json number --jq '.[0].number // empty' 2>/dev/null || true)
+
+          send_tg() {
+            [ -z "${TG_TOKEN:-}" ] && return 0
+            curl -s -m 15 "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TG_CHAT}" \
+              --data-urlencode "parse_mode=HTML" \
+              --data-urlencode "text=$1" >/dev/null 2>&1 || true
+          }
+
+          if [ -n "$problems" ]; then
+            if [ -z "$open_issue" ]; then
+              body=$(printf "Uptime check thất bại lúc %s\n\n%s\n\nRun: %s" "$(date -u '+%F %T UTC')" "$(printf "%b" "$problems")" "$RUN_URL")
+              gh issue create --repo "$GITHUB_REPOSITORY" \
+                --title "uptime: DOWN $(date -u '+%F %T UTC')" \
+                --label uptime-alert \
+                --body "$body" >/dev/null || true
+              send_tg "🚨 <b>Tryum DOWN</b>$(printf "%b" "$problems")
+          $(date -u '+%F %T UTC')"
+              echo "Đã tạo issue + gửi Telegram."
+            else
+              echo "Vẫn đang DOWN (issue #${open_issue}) — không spam thêm."
+            fi
+          else
+            if [ -n "$open_issue" ]; then
+              gh issue close "$open_issue" --repo "$GITHUB_REPOSITORY" --comment "Đã phục hồi lúc $(date -u '+%F %T UTC')." >/dev/null || true
+              send_tg "✅ <b>Tryum RECOVERED</b>
+          $(date -u '+%F %T UTC')"
+              echo "Đã đóng issue #${open_issue} + gửi Telegram."
+            else
+              echo "Tất cả OK."
+            fi
+          fi
