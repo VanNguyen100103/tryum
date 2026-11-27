@@ -2,92 +2,108 @@
   <div class="reg__form-wrap">
     <!-- ══════ BƯỚC 1: THÔNG TIN ══════ -->
     @if (step() === 'form') {
-    <form class="reg__form" (ngSubmit)="sendOtpCode()">
-      <h1>Tạo tài khoản dùng thử</h1>
-      <p class="reg__sub">Dùng thử miễn phí trọn bộ tính năng.</p>
+      <form class="reg__form" (ngSubmit)="sendOtpCode()">
+        <h1>Tạo tài khoản dùng thử</h1>
+        <p class="reg__sub">Dùng thử miễn phí trọn bộ tính năng.</p>
 
-      <input
-        id="ownerName"
-        [(ngModel)]="ownerName"
-        name="ownerName"
-        autocomplete="name"
-        placeholder="Họ tên"
-      />
-
-      <input
-        id="shopName"
-        [(ngModel)]="shopName"
-        name="shopName"
-        placeholder="Tên cửa hàng (VD: Phở Thảo)"
-      />
-
-      <input
-        id="email"
-        type="email"
-        [(ngModel)]="email"
-        name="email"
-        autocomplete="username"
-        placeholder="Email (tên đăng nhập)"
-      />
-
-      <div class="reg__phone">
-        <span class="reg__country"><span class="reg__flag">🇻🇳</span> +84</span>
         <input
-          id="phone"
-          [(ngModel)]="phone"
-          name="phone"
-          autocomplete="tel"
-          placeholder="Số điện thoại (nhận mã OTP)"
+          id="ownerName"
+          [(ngModel)]="ownerName"
+          name="ownerName"
+          autocomplete="name"
+          placeholder="Họ tên"
         />
-      </div>
 
-      <input
-        class="reg__pwd"
-        inputId="reg-password"
-        [(ngModel)]="password"
-        name="password"
-        autocomplete="new-password"
-        type="password"
-        placeholder="Mật khẩu"
-      />
+        <input
+          id="shopName"
+          [(ngModel)]="shopName"
+          name="shopName"
+          placeholder="Tên cửa hàng (VD: Phở Thảo)"
+        />
 
-      <div class="reg__captcha">
-        <div class="reg__captcha-img">
-          @if (captchaImage()) {
-            <img [src]="captchaImage()" alt="Mã xác thực" />
-          } @else {
-            <span class="reg__captcha-hint">Đang tải…</span>
-          }
+        <input
+          id="email"
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          autocomplete="username"
+          placeholder="Email (tên đăng nhập)"
+        />
+
+        <div class="reg__phone">
+          <span class="reg__country"><span class="reg__flag">🇻🇳</span> +84</span>
+          <input
+            id="phone"
+            [(ngModel)]="phone"
+            name="phone"
+            autocomplete="tel"
+            placeholder="Số điện thoại (nhận mã OTP)"
+          />
         </div>
-        <button class="reg__captcha-refresh" type="button" (click)="refreshCaptcha()" aria-label="Lấy mã mới">
-          <i class="pi pi-refresh"></i>
-        </button>
+
         <input
-          id="captcha"
-          [(ngModel)]="captchaInput"
-          name="captcha"
-          autocomplete="off"
-          maxlength="4"
-          placeholder="Mã xác thực"
+          class="reg__pwd"
+          inputId="reg-password"
+          [(ngModel)]="password"
+          name="password"
+          autocomplete="new-password"
+          type="password"
+          placeholder="Mật khẩu"
         />
-      </div>
 
-      <label class="reg__tos">
-        <input type="checkbox" class="reg__tos-box" [(ngModel)]="agreeTos" name="tos" />
-        <span>
-          Tôi đã đọc và đồng ý <a class="reg__link" href="#" (click)="$event.preventDefault()">Điều khoản sử dụng dịch vụ &amp; Chính sách bảo mật</a> của Tryum.
-        </span>
-      </label>
+        <div class="reg__captcha">
+          <div class="reg__captcha-img">
+            @if (captchaImage()) {
+              <img [src]="captchaImage()" alt="Mã xác thực" />
+            } @else {
+              <span class="reg__captcha-hint">Đang tải…</span>
+            }
+          </div>
+          <button
+            class="reg__captcha-refresh"
+            type="button"
+            (click)="refreshCaptcha()"
+            aria-label="Lấy mã mới"
+          >
+            <i class="pi pi-refresh"></i>
+          </button>
+          <input
+            id="captcha"
+            [(ngModel)]="captchaInput"
+            name="captcha"
+            autocomplete="off"
+            maxlength="4"
+            placeholder="Mã xác thực"
+          />
+        </div>
 
-      <button class="reg__submit" type="submit" [disabled]="sendingOtp()">
-        @if (sendingOtp()) { <i class="pi pi-spin pi-spinner"></i> Đang gửi mã... } @else { Gửi mã OTP }
-      </button>
+        <label class="reg__tos">
+          <input type="checkbox" class="reg__tos-box" [(ngModel)]="agreeTos" name="tos" />
+          <span>
+            Tôi đã đọc và đồng ý
+            <a class="reg__link" href="#" (click)="$event.preventDefault()"
+              >Điều khoản sử dụng dịch vụ &amp; Chính sách bảo mật</a
+            >
+            của Tryum.
+          </span>
+        </label>
 
-      <p class="reg__support">
-        Hỗ trợ đăng ký <a class="reg__phone-link" href="tel:19006868"><i class="pi pi-phone"></i> 1900 6868</a>
-      </p>
-      <small class="reg__hint">Đã có tài khoản? <a class="reg__link" routerLink="/auth/login">Đăng nhập ngay</a></small>
-    </form>
+        <button class="reg__submit" type="submit" [disabled]="sendingOtp()">
+          @if (sendingOtp()) {
+            <i class="pi pi-spin pi-spinner"></i> Đang gửi mã...
+          } @else {
+            Gửi mã OTP
+          }
+        </button>
+
+        <p class="reg__support">
+          Hỗ trợ đăng ký
+          <a class="reg__phone-link" href="tel:19006868"><i class="pi pi-phone"></i> 1900 6868</a>
+        </p>
+        <small class="reg__hint"
+          >Đã có tài khoản? <a class="reg__link" routerLink="/auth/login">Đăng nhập ngay</a></small
+        >
+      </form>
     }
 
     <!-- ══════ BƯỚC 2: XÁC NHẬN OTP ══════ -->
@@ -95,12 +111,15 @@
       <div class="reg__form reg__otp">
         <h1>Xác nhận số điện thoại</h1>
         <p class="reg__sub">
-          Mã OTP 6 số đã được gửi tới <strong>{{ sentPhone() }}</strong>. Mã có hiệu lực trong {{ otpTtlMinutes() }} phút.
+          Mã OTP 6 số đã được gửi tới <strong>{{ sentPhone() }}</strong
+          >. Mã có hiệu lực trong {{ otpTtlMinutes() }} phút.
         </p>
 
         @if (demoOtp()) {
           <div class="otp-demo">
-            <span class="otp-demo__label"><i class="pi pi-info-circle"></i> Chế độ demo (chưa nối SMS)</span>
+            <span class="otp-demo__label"
+              ><i class="pi pi-info-circle"></i> Chế độ demo (chưa nối SMS)</span
+            >
             <strong class="otp-demo__code">{{ demoOtp() }}</strong>
           </div>
         }
@@ -123,7 +142,12 @@
           }
         </div>
 
-        <button class="otp-resend" type="button" [disabled]="resendIn() > 0 || sendingOtp()" (click)="resendOtp()">
+        <button
+          class="otp-resend"
+          type="button"
+          [disabled]="resendIn() > 0 || sendingOtp()"
+          (click)="resendOtp()"
+        >
           @if (sendingOtp()) {
             <i class="pi pi-spin pi-spinner"></i> Đang gửi lại...
           } @else if (resendIn() > 0) {
@@ -134,7 +158,9 @@
         </button>
 
         <div class="otp-actions">
-          <button class="reg__submit reg__submit--ghost" type="button" (click)="step.set('form')">Hủy</button>
+          <button class="reg__submit reg__submit--ghost" type="button" (click)="step.set('form')">
+            Hủy
+          </button>
           <button
             id="otp-submit"
             class="reg__submit"
@@ -142,7 +168,11 @@
             [disabled]="loading() || !isOtpComplete()"
             (click)="register()"
           >
-            @if (loading()) { <i class="pi pi-spin pi-spinner"></i> Đang tạo tài khoản... } @else { Xác nhận &amp; tạo tài khoản }
+            @if (loading()) {
+              <i class="pi pi-spin pi-spinner"></i> Đang tạo tài khoản...
+            } @else {
+              Xác nhận &amp; tạo tài khoản
+            }
           </button>
         </div>
       </div>
@@ -156,8 +186,12 @@
           <div class="promo-phone__screen">
             <div class="promo-phone__top"><i class="pi pi-arrow-left"></i> Chuyển tiền qua QR</div>
             <div class="promo-phone__amount">235.000đ</div>
-            <div class="promo-phone__row"><small>Người nhận</small><strong>TRẦN HOÀNG PHONG</strong></div>
-            <div class="promo-phone__row"><small>Số tài khoản</small><strong>007108...032741</strong></div>
+            <div class="promo-phone__row">
+              <small>Người nhận</small><strong>TRẦN HOÀNG PHONG</strong>
+            </div>
+            <div class="promo-phone__row">
+              <small>Số tài khoản</small><strong>007108...032741</strong>
+            </div>
             <div class="promo-phone__qr"></div>
             <div class="promo-phone__cta">Tiếp tục</div>
           </div>
@@ -167,7 +201,12 @@
           <p>Hơn 10.000 nhà kinh doanh tin dùng Tryum</p>
         </div>
       </div>
-      <button class="reg__promo-close" type="button" (click)="showPromo.set(false)" aria-label="Đóng">
+      <button
+        class="reg__promo-close"
+        type="button"
+        (click)="showPromo.set(false)"
+        aria-label="Đóng"
+      >
         <i class="pi pi-times"></i>
       </button>
     </aside>

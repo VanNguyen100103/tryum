@@ -24,7 +24,7 @@ export class AppLayoutComponent {
   }
 
   protected toggleMenu(name: string): void {
-    this.openMenu.update((current) => current === name ? '' : name);
+    this.openMenu.update((current) => (current === name ? '' : name));
   }
 
   protected closeMenu(): void {

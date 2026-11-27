@@ -12,6 +12,9 @@ export class DashboardComponent {
   protected readonly auth = inject(AuthService);
   protected readonly user = this.auth.user;
   protected readonly today = new Intl.DateTimeFormat('vi-VN', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   }).format(new Date());
 }

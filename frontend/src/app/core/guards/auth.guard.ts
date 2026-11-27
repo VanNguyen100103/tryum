@@ -7,9 +7,11 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  return auth.isAuthenticated() ? true : router.createUrlTree(['/auth/login'], {
-    queryParams: { returnUrl: state.url },
-  });
+  return auth.isAuthenticated()
+    ? true
+    : router.createUrlTree(['/auth/login'], {
+        queryParams: { returnUrl: state.url },
+      });
 };
 
 /** Chặn trang login/register khi đã đăng nhập rồi => về `/app`. */

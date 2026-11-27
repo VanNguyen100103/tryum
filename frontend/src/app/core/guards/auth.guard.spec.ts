@@ -1,9 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  ActivatedRouteSnapshot,
-  RouterStateSnapshot,
-  provideRouter,
-} from '@angular/router';
+import { ActivatedRouteSnapshot, RouterStateSnapshot, provideRouter } from '@angular/router';
 import type { UserInfo } from '../models/auth.models';
 import { AuthService } from '../services/auth.service';
 import { authGuard, guestGuard } from './auth.guard';

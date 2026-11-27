@@ -25,8 +25,14 @@ export class SocialService {
     return this.http.get<FacebookConnection>(this.baseUrl);
   }
 
-  connect(pageId: string, accessToken: string): Observable<{ connected: boolean; pageId: string; pageName: string }> {
-    return this.http.put<{ connected: boolean; pageId: string; pageName: string }>(this.baseUrl, { pageId, accessToken });
+  connect(
+    pageId: string,
+    accessToken: string,
+  ): Observable<{ connected: boolean; pageId: string; pageName: string }> {
+    return this.http.put<{ connected: boolean; pageId: string; pageName: string }>(this.baseUrl, {
+      pageId,
+      accessToken,
+    });
   }
 
   disconnect(): Observable<{ connected: boolean }> {
@@ -34,7 +40,10 @@ export class SocialService {
   }
 
   publish(message: string, link: string | null): Observable<{ id: string; message: string }> {
-    return this.http.post<{ id: string; message: string }>(`${this.baseUrl}/posts`, { message, link });
+    return this.http.post<{ id: string; message: string }>(`${this.baseUrl}/posts`, {
+      message,
+      link,
+    });
   }
 
   generate(topic: string): Observable<GeneratedPost> {

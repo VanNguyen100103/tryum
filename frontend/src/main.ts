@@ -9,7 +9,7 @@ bootstrapApplication(App, appConfig)
     if (isDevMode()) {
       import('@stagewise/toolbar').then(({ initToolbar }) => {
         initToolbar({
-          plugins: [],   // thêm plugin sau nếu cần (e.g. custom context)
+          plugins: [], // thêm plugin sau nếu cần (e.g. custom context)
         });
       });
     }

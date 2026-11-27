@@ -181,14 +181,16 @@ export class SalesService {
     return this.http.get<SalesOrder>(`${this.baseUrl}/orders/${orderId}`);
   }
 
-  listOrders(options: {
-    page?: number;
-    pageSize?: number;
-    search?: string;
-    status?: OrderStatus;
-    from?: string;
-    to?: string;
-  } = {}): Observable<{ items: OrderSummary[]; total: number }> {
+  listOrders(
+    options: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      status?: OrderStatus;
+      from?: string;
+      to?: string;
+    } = {},
+  ): Observable<{ items: OrderSummary[]; total: number }> {
     let params = new HttpParams();
     if (options.page) params = params.set('page', options.page);
     if (options.pageSize) params = params.set('pageSize', options.pageSize);
@@ -196,7 +198,9 @@ export class SalesService {
     if (options.status) params = params.set('status', options.status);
     if (options.from) params = params.set('from', options.from);
     if (options.to) params = params.set('to', options.to);
-    return this.http.get<{ items: OrderSummary[]; total: number }>(`${this.baseUrl}/orders`, { params });
+    return this.http.get<{ items: OrderSummary[]; total: number }>(`${this.baseUrl}/orders`, {
+      params,
+    });
   }
 
   addPayment(
@@ -240,7 +244,10 @@ export class SalesService {
     return this.http.get<SePaySettings>(`${this.baseUrl}/payments/sepay/settings`);
   }
 
-  simulateTransfer(orderCode: string, amount?: number): Observable<{
+  simulateTransfer(
+    orderCode: string,
+    amount?: number,
+  ): Observable<{
     success: boolean;
     outcome: string;
     message: string;

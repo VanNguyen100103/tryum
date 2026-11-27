@@ -1,4 +1,12 @@
-import { Component, DestroyRef, ElementRef, inject, signal, ViewChildren, QueryList } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  ViewChildren,
+  QueryList,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -130,7 +138,7 @@ export class RegisterComponent {
     }
 
     // Captcha được kiểm ở SERVER (xem /auth/otp/send). Ở đây chỉ kiểm "đã nhập chưa"
-// để không gửi request vô ích; sai mã thì API trả captcha_invalid và ta tải ảnh mới.
+    // để không gửi request vô ích; sai mã thì API trả captcha_invalid và ta tải ảnh mới.
     if (this.captchaInput.trim().length !== 4) {
       this.messageService.add({
         severity: 'warn',
@@ -162,41 +170,43 @@ export class RegisterComponent {
 
     this.sendingOtp.set(true);
 
-    this.auth.sendOtp({
-      phone: this.phone,
-      captchaId: this.captchaId(),
-      captchaCode: this.captchaInput.trim(),
-    }).subscribe({
-      next: (res) => {
-        this.sendingOtp.set(false);
-        this.sentPhone.set(this.formatPhone(this.phone));
-        this.demoOtp.set(res.demoOtp ?? '');
-        this.otpTtlMinutes.set(Math.max(1, Math.round(res.expiresInSeconds / 60)));
-        this.otpDigits.set(Array(6).fill(''));
-        this.step.set('otp');
-        this.startResendTimer(res.resendAfterSeconds);
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Đã gửi mã OTP',
-          detail: res.demoOtp
-            ? `Chế độ demo: mã OTP của bạn là ${res.demoOtp} (production sẽ nhận qua SMS).`
-            : 'Vui lòng kiểm tra tin nhắn SMS.',
-        });
-        setTimeout(() => this.focusBox(0), 60);
-      },
-      error: (error: unknown) => {
-        this.sendingOtp.set(false);
+    this.auth
+      .sendOtp({
+        phone: this.phone,
+        captchaId: this.captchaId(),
+        captchaCode: this.captchaInput.trim(),
+      })
+      .subscribe({
+        next: (res) => {
+          this.sendingOtp.set(false);
+          this.sentPhone.set(this.formatPhone(this.phone));
+          this.demoOtp.set(res.demoOtp ?? '');
+          this.otpTtlMinutes.set(Math.max(1, Math.round(res.expiresInSeconds / 60)));
+          this.otpDigits.set(Array(6).fill(''));
+          this.step.set('otp');
+          this.startResendTimer(res.resendAfterSeconds);
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Đã gửi mã OTP',
+            detail: res.demoOtp
+              ? `Chế độ demo: mã OTP của bạn là ${res.demoOtp} (production sẽ nhận qua SMS).`
+              : 'Vui lòng kiểm tra tin nhắn SMS.',
+          });
+          setTimeout(() => this.focusBox(0), 60);
+        },
+        error: (error: unknown) => {
+          this.sendingOtp.set(false);
 
-        // Mỗi captcha chỉ dùng 1 lần nên luôn tải ảnh mới cho lần nhập sau.
-        this.refreshCaptcha();
+          // Mỗi captcha chỉ dùng 1 lần nên luôn tải ảnh mới cho lần nhập sau.
+          this.refreshCaptcha();
 
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Không gửi được mã OTP',
-          detail: AuthService.problemMessage(error),
-        });
-      },
-    });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Không gửi được mã OTP',
+            detail: AuthService.problemMessage(error),
+          });
+        },
+      });
   }
 
   /**
@@ -212,26 +222,24 @@ export class RegisterComponent {
 
     this.sendingOtp.set(true);
 
-    this.auth
-      .sendOtp({ phone: this.phone, isResend: true })
-      .subscribe({
-        next: (res) => {
-          this.sendingOtp.set(false);
-          this.demoOtp.set(res.demoOtp ?? '');
-          this.otpTtlMinutes.set(Math.max(1, Math.round(res.expiresInSeconds / 60)));
-          this.otpDigits.set(Array(6).fill(''));
-          this.startResendTimer(res.resendAfterSeconds);
-          setTimeout(() => this.focusBox(0), 60);
-        },
-        error: (error: unknown) => {
-          this.sendingOtp.set(false);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Không gửi lại được',
-            detail: AuthService.problemMessage(error),
-          });
-        },
-      });
+    this.auth.sendOtp({ phone: this.phone, isResend: true }).subscribe({
+      next: (res) => {
+        this.sendingOtp.set(false);
+        this.demoOtp.set(res.demoOtp ?? '');
+        this.otpTtlMinutes.set(Math.max(1, Math.round(res.expiresInSeconds / 60)));
+        this.otpDigits.set(Array(6).fill(''));
+        this.startResendTimer(res.resendAfterSeconds);
+        setTimeout(() => this.focusBox(0), 60);
+      },
+      error: (error: unknown) => {
+        this.sendingOtp.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Không gửi lại được',
+          detail: AuthService.problemMessage(error),
+        });
+      },
+    });
   }
 
   /** Bước 2: xác nhận OTP + tạo tài khoản. */

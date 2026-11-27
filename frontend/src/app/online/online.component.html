@@ -59,9 +59,9 @@
       </div>
       <div class="hint">
         <i class="pi pi-info-circle"></i>
-        Lấy Page ID và Page Access Token trong Meta for Developers → Graph API Explorer,
-        chọn quyền <b>pages_manage_posts</b> và <b>pages_read_engagement</b>.
-        Token được lưu phía server, không trả về trình duyệt.
+        Lấy Page ID và Page Access Token trong Meta for Developers → Graph API Explorer, chọn quyền
+        <b>pages_manage_posts</b> và <b>pages_read_engagement</b>. Token được lưu phía server, không
+        trả về trình duyệt.
       </div>
     }
   </section>
@@ -86,7 +86,12 @@
           />
         </label>
         <button type="button" class="btn ai" [disabled]="generating()" (click)="generateAi()">
-          <i class="pi" [class.pi-sparkles]="!generating()" [class.pi-spin]="generating()" [class.pi-spinner]="generating()"></i>
+          <i
+            class="pi"
+            [class.pi-sparkles]="!generating()"
+            [class.pi-spin]="generating()"
+            [class.pi-spinner]="generating()"
+          ></i>
           {{ generating() ? 'AI đang viết…' : 'AI tạo bài + ảnh' }}
         </button>
       </div>
@@ -144,7 +149,12 @@
         </div>
       }
 
-      <button type="button" class="btn primary publish" [disabled]="publishing() || !message().trim()" (click)="publish()">
+      <button
+        type="button"
+        class="btn primary publish"
+        [disabled]="publishing() || !message().trim()"
+        (click)="publish()"
+      >
         <i class="pi pi-send"></i>
         {{ publishing() ? 'Đang đăng…' : 'Đăng lên fanpage' }}
       </button>
@@ -166,7 +176,9 @@
           </div>
         </div>
         <p class="fb-preview__text">
-          @if (title()) { <strong class="fb-preview__title">{{ title() }}</strong> }
+          @if (title()) {
+            <strong class="fb-preview__title">{{ title() }}</strong>
+          }
           {{ message() || 'Nội dung bài đăng sẽ hiện ở đây…' }}
         </p>
         @if (imageUrl()) {

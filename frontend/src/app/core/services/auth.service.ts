@@ -54,9 +54,9 @@ export class AuthService {
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/login`, request).pipe(
-      tap((res) => this.applySession(res)),
-    );
+    return this.http
+      .post<AuthResponse>(`${this.baseUrl}/login`, request)
+      .pipe(tap((res) => this.applySession(res)));
   }
 
   resolveStore(slug: string): Observable<StoreLookupResponse> {
@@ -78,9 +78,9 @@ export class AuthService {
   }
 
   register(request: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/register`, request).pipe(
-      tap((res) => this.applySession(res)),
-    );
+    return this.http
+      .post<AuthResponse>(`${this.baseUrl}/register`, request)
+      .pipe(tap((res) => this.applySession(res)));
   }
 
   /** Đổi refresh token lấy access token mới (token cũ bị revoke – rotation). */

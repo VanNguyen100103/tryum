@@ -6,7 +6,9 @@
   --kv-mut: #9aa4b2;
 }
 
-:host { display: block; }
+:host {
+  display: block;
+}
 
 .reg {
   min-height: 100vh;
@@ -25,8 +27,14 @@
   justify-content: center;
 }
 
-.reg__form-wrap { display: flex; align-items: center; }
-.reg__form { width: 100%; max-width: 464px; }
+.reg__form-wrap {
+  display: flex;
+  align-items: center;
+}
+.reg__form {
+  width: 100%;
+  max-width: 464px;
+}
 
 .reg__form h1 {
   margin: 0;
@@ -36,9 +44,15 @@
   letter-spacing: -0.02em;
   color: var(--kv-ink);
 }
-.reg__sub { margin: 12px 0 30px; font-size: 16.5px; color: var(--kv-sub); }
+.reg__sub {
+  margin: 12px 0 30px;
+  font-size: 16.5px;
+  color: var(--kv-sub);
+}
 
-.reg__form > * + * { margin-top: 16px; }
+.reg__form > * + * {
+  margin-top: 16px;
+}
 
 input.p-inputtext,
 input.reg__pwd {
@@ -50,10 +64,14 @@ input.reg__pwd {
   font-size: 16px;
   color: var(--kv-ink);
   background: #fff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 input.p-inputtext::placeholder,
-input.reg__pwd::placeholder { color: var(--kv-mut); }
+input.reg__pwd::placeholder {
+  color: var(--kv-mut);
+}
 input.p-inputtext:focus,
 input.reg__pwd:focus {
   outline: none;
@@ -62,7 +80,9 @@ input.reg__pwd:focus {
 }
 
 // Phone input with +84 prefix
-.reg__phone { display: flex; }
+.reg__phone {
+  display: flex;
+}
 .reg__country {
   flex: none;
   display: flex;
@@ -78,12 +98,21 @@ input.reg__pwd:focus {
   font-size: 15.5px;
   color: var(--kv-ink);
 }
-.reg__flag { font-size: 17px; line-height: 1; }
+.reg__flag {
+  font-size: 17px;
+  line-height: 1;
+}
 .reg__phone .reg__input,
-.reg__phone input.p-inputtext { border-radius: 0 12px 12px 0; }
+.reg__phone input.p-inputtext {
+  border-radius: 0 12px 12px 0;
+}
 
 // Password (PrimeNG wrapper)
-.p-password { position: relative; width: 100%; display: block; }
+.p-password {
+  position: relative;
+  width: 100%;
+  display: block;
+}
 .p-password .p-password-toggle-mask {
   position: absolute;
   right: 14px;
@@ -92,7 +121,12 @@ input.reg__pwd:focus {
 }
 
 // Captcha row (ảnh do server sinh, trả về dạng SVG data-uri)
-.reg__captcha { display: grid; grid-template-columns: 108px 42px 1fr; gap: 10px; align-items: stretch; }
+.reg__captcha {
+  display: grid;
+  grid-template-columns: 108px 42px 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
 .reg__captcha-img {
   position: relative;
   height: 56px;
@@ -133,8 +167,14 @@ input.reg__pwd:focus {
   background: #8fa3c8;
   opacity: 0.45;
 }
-.reg__captcha-img::before { top: 32%; transform: rotate(-4deg); }
-.reg__captcha-img::after { top: 64%; transform: rotate(3deg); }
+.reg__captcha-img::before {
+  top: 32%;
+  transform: rotate(-4deg);
+}
+.reg__captcha-img::after {
+  top: 64%;
+  transform: rotate(3deg);
+}
 .reg__captcha-refresh {
   width: 42px;
   height: 56px;
@@ -146,7 +186,10 @@ input.reg__pwd:focus {
   cursor: pointer;
   transition: all 0.15s;
 }
-.reg__captcha-refresh:hover { color: var(--kv-blue); border-color: var(--kv-blue); }
+.reg__captcha-refresh:hover {
+  color: var(--kv-blue);
+  border-color: var(--kv-blue);
+}
 
 // Terms
 .reg__tos {
@@ -158,9 +201,22 @@ input.reg__pwd:focus {
   color: #3a4353;
   cursor: pointer;
 }
-.reg__tos-box { width: 17px; height: 17px; margin-top: 3px; flex: none; accent-color: var(--kv-blue); cursor: pointer; }
-.reg__link { color: var(--kv-blue); font-weight: 600; text-decoration: none; }
-.reg__link:hover { text-decoration: underline; }
+.reg__tos-box {
+  width: 17px;
+  height: 17px;
+  margin-top: 3px;
+  flex: none;
+  accent-color: var(--kv-blue);
+  cursor: pointer;
+}
+.reg__link {
+  color: var(--kv-blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+.reg__link:hover {
+  text-decoration: underline;
+}
 
 // Submit
 .reg__submit {
@@ -177,10 +233,18 @@ input.reg__pwd:focus {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
 }
-.reg__submit:hover:not(:disabled) { background: #0d48d0; transform: translateY(-1px); }
-.reg__submit:disabled { opacity: 0.7; cursor: default; }
+.reg__submit:hover:not(:disabled) {
+  background: #0d48d0;
+  transform: translateY(-1px);
+}
+.reg__submit:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
 
 .reg__support {
   margin: 4px 0 0;
@@ -197,7 +261,9 @@ input.reg__pwd:focus {
   text-decoration: none;
   margin-left: 8px;
 }
-.reg__phone-link i { font-size: 15px; }
+.reg__phone-link i {
+  font-size: 15px;
+}
 .reg__hint {
   display: block;
   margin-top: 18px;
@@ -207,7 +273,9 @@ input.reg__pwd:focus {
 }
 
 // ---------- OTP step ----------
-.reg__otp h1 { font-size: 34px; }
+.reg__otp h1 {
+  font-size: 34px;
+}
 
 .otp-demo {
   display: flex;
@@ -250,14 +318,19 @@ input.reg__pwd:focus {
   font-weight: 800;
   color: var(--kv-ink);
   caret-color: var(--kv-blue);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .otp-box:focus {
   outline: none;
   border-color: var(--kv-blue);
   box-shadow: 0 0 0 3px rgba(18, 89, 245, 0.12);
 }
-.otp-box--filled { border-color: #b9c6da; background: #fafcff; }
+.otp-box--filled {
+  border-color: #b9c6da;
+  background: #fafcff;
+}
 
 .otp-resend {
   display: inline-flex;
@@ -272,8 +345,13 @@ input.reg__pwd:focus {
   cursor: pointer;
   padding: 0;
 }
-.otp-resend:hover:not(:disabled) { text-decoration: underline; }
-.otp-resend:disabled { color: var(--kv-mut); cursor: default; }
+.otp-resend:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.otp-resend:disabled {
+  color: var(--kv-mut);
+  cursor: default;
+}
 
 .otp-actions {
   display: grid;
@@ -286,10 +364,17 @@ input.reg__pwd:focus {
   color: var(--kv-ink);
   border: 1.5px solid var(--kv-line);
 }
-.reg__submit--ghost:hover:not(:disabled) { background: #f5f7fa; }
+.reg__submit--ghost:hover:not(:disabled) {
+  background: #f5f7fa;
+}
 
 // ---------- Promo panel (right) ----------
-.reg__promo { position: sticky; top: 40px; height: calc(100vh - 80px); min-height: 560px; }
+.reg__promo {
+  position: sticky;
+  top: 40px;
+  height: calc(100vh - 80px);
+  min-height: 560px;
+}
 .promo-bg {
   position: relative;
   height: 100%;
@@ -311,8 +396,19 @@ input.reg__pwd:focus {
   filter: blur(2px);
   background: rgba(255, 255, 255, 0.1);
 }
-.promo-bg::before { width: 190px; height: 190px; top: 12%; left: 8%; }
-.promo-bg::after { width: 130px; height: 130px; bottom: 16%; right: 10%; background: rgba(170, 255, 205, 0.12); }
+.promo-bg::before {
+  width: 190px;
+  height: 190px;
+  top: 12%;
+  left: 8%;
+}
+.promo-bg::after {
+  width: 130px;
+  height: 130px;
+  bottom: 16%;
+  right: 10%;
+  background: rgba(170, 255, 205, 0.12);
+}
 
 .promo-phone {
   position: relative;
@@ -352,8 +448,14 @@ input.reg__pwd:focus {
   margin-bottom: 9px;
   font-size: 10.5px;
 }
-.promo-phone__row small { color: #8a93a3; }
-.promo-phone__row strong { color: #3a4353; font-weight: 600; text-align: right; }
+.promo-phone__row small {
+  color: #8a93a3;
+}
+.promo-phone__row strong {
+  color: #3a4353;
+  font-weight: 600;
+  text-align: right;
+}
 .promo-phone__qr {
   height: 118px;
   margin: 16px 0;
@@ -371,8 +473,7 @@ input.reg__pwd:focus {
   border-radius: 6px;
   background:
     radial-gradient(circle at 30% 30%, #fff 0 22%, transparent 24%),
-    radial-gradient(circle at 72% 68%, #fff 0 20%, transparent 22%),
-    transparent;
+    radial-gradient(circle at 72% 68%, #fff 0 20%, transparent 22%), transparent;
 }
 .promo-phone__cta {
   height: 44px;
@@ -427,17 +528,35 @@ input.reg__pwd:focus {
   backdrop-filter: blur(4px);
   transition: background 0.15s;
 }
-.reg__promo-close:hover { background: rgba(255, 255, 255, 0.32); }
+.reg__promo-close:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
 
 // ---------- Responsive ----------
 @media (max-width: 1100px) {
-  .reg { grid-template-columns: 1fr; gap: 30px; padding: 32px 24px; }
-  .reg__form { margin: 0 auto; }
-  .reg__promo { position: static; height: 460px; min-height: 460px; }
+  .reg {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 32px 24px;
+  }
+  .reg__form {
+    margin: 0 auto;
+  }
+  .reg__promo {
+    position: static;
+    height: 460px;
+    min-height: 460px;
+  }
 }
 
 @media (max-width: 560px) {
-  .reg__form h1 { font-size: 32px; }
-  .promo-copy h2 { font-size: 32px; }
-  .promo-phone { width: 260px; }
+  .reg__form h1 {
+    font-size: 32px;
+  }
+  .promo-copy h2 {
+    font-size: 32px;
+  }
+  .promo-phone {
+    width: 260px;
+  }
 }

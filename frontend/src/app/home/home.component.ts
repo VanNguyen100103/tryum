@@ -178,7 +178,13 @@ export class HomeComponent {
   protected readonly industryMenu: IndustryCol[] = [
     {
       title: 'Bán buôn, bán lẻ',
-      items: ['Tạp hóa & Siêu thị', 'Thời trang', 'Điện tử & Điện máy', 'Nhà thuốc', 'Xem tất cả →'],
+      items: [
+        'Tạp hóa & Siêu thị',
+        'Thời trang',
+        'Điện tử & Điện máy',
+        'Nhà thuốc',
+        'Xem tất cả →',
+      ],
     },
     {
       title: 'Ăn uống, giải trí',
@@ -218,21 +224,36 @@ export class HomeComponent {
       icon: 'pi pi-shopping-cart',
       title: 'Bán hàng siêu tốc',
       desc: 'Màn hình POS trực quan, quét mã vạch, nhiều hóa đơn song song. Thu ngân xử lý đơn hàng chỉ trong vài giây.',
-      bullets: ['Quét mã vạch / nhập nhanh', 'Nhiều hóa đơn song song', 'Phím tắt chuyên nghiệp', 'In hóa đơn K80'],
+      bullets: [
+        'Quét mã vạch / nhập nhanh',
+        'Nhiều hóa đơn song song',
+        'Phím tắt chuyên nghiệp',
+        'In hóa đơn K80',
+      ],
     },
     {
       label: 'Quản kho',
       icon: 'pi pi-box',
       title: 'Kiểm soát kho chính xác',
       desc: 'Tự động cập nhật tồn kho mỗi khi bán hàng, nhập hàng. Cảnh báo sắp hết, chặn âm kho, lịch sử mọi biến động.',
-      bullets: ['Nhập xuất kho tự động', 'Cảnh báo sắp hết hàng', 'Chặn âm kho', 'Sổ nhật ký kho chi tiết'],
+      bullets: [
+        'Nhập xuất kho tự động',
+        'Cảnh báo sắp hết hàng',
+        'Chặn âm kho',
+        'Sổ nhật ký kho chi tiết',
+      ],
     },
     {
       label: 'Báo cáo',
       icon: 'pi pi-chart-bar',
       title: 'Báo cáo thông minh',
       desc: 'Dashboard realtime, doanh thu theo ngày/tháng, top sản phẩm bán chạy. Lãi gộp, chi phí, công nợ — mọi con số trong tầm tay.',
-      bullets: ['Dashboard realtime', 'Doanh thu theo ngày/tháng', 'Top sản phẩm bán chạy', 'Biểu đồ lãi gộp'],
+      bullets: [
+        'Dashboard realtime',
+        'Doanh thu theo ngày/tháng',
+        'Top sản phẩm bán chạy',
+        'Biểu đồ lãi gộp',
+      ],
     },
     {
       label: 'Khách hàng',
@@ -360,7 +381,11 @@ export class HomeComponent {
       icon: 'pi pi-gift',
       title: 'Bảng hoa hồng',
       desc: 'Thiết lập chính sách hoa hồng đa dạng theo doanh số, sản phẩm. Tự động tính và báo cáo minh bạch.',
-      bullets: ['Chính sách theo doanh số', 'Hoa hồng theo sản phẩm', 'Báo cáo chi tiết từng nhân viên'],
+      bullets: [
+        'Chính sách theo doanh số',
+        'Hoa hồng theo sản phẩm',
+        'Báo cáo chi tiết từng nhân viên',
+      ],
     },
   ];
 
@@ -389,15 +414,37 @@ export class HomeComponent {
     },
     {
       title: 'Ăn uống, giải trí',
-      items: ['Quán ăn', 'Cafe, Trà sữa', 'Karaoke, Bida', 'Bar, Pub & Club', 'Căng tin & Trạm dừng nghỉ', 'Nhà hàng'],
+      items: [
+        'Quán ăn',
+        'Cafe, Trà sữa',
+        'Karaoke, Bida',
+        'Bar, Pub & Club',
+        'Căng tin & Trạm dừng nghỉ',
+        'Nhà hàng',
+      ],
     },
     {
       title: 'Sức khỏe, làm đẹp',
-      items: ['Thẩm mỹ viện', 'Hair Salon', 'Nail & Mi', 'Phòng khám', 'Spa & Massage', 'Gym, Yoga & Pilates'],
+      items: [
+        'Thẩm mỹ viện',
+        'Hair Salon',
+        'Nail & Mi',
+        'Phòng khám',
+        'Spa & Massage',
+        'Gym, Yoga & Pilates',
+      ],
     },
     {
       title: 'Khách sạn, nhà nghỉ',
-      items: ['Khách sạn', 'Homestay', 'Nhà nghỉ', 'Nhà trọ', 'Villa', 'Resort', 'Camping & Glamping'],
+      items: [
+        'Khách sạn',
+        'Homestay',
+        'Nhà nghỉ',
+        'Nhà trọ',
+        'Villa',
+        'Resort',
+        'Camping & Glamping',
+      ],
     },
   ];
 
@@ -421,32 +468,52 @@ export class HomeComponent {
       role: 'Chủ cửa hàng tạp hóa',
     },
     {
-      quote: 'Phần mềm thân thiện với người dùng và tự động hóa mọi thứ. Nhân viên đánh giá rất cao.',
+      quote:
+        'Phần mềm thân thiện với người dùng và tự động hóa mọi thứ. Nhân viên đánh giá rất cao.',
       name: 'Linh Phạm',
       role: 'Chủ shop thời trang công sở',
     },
     {
-      quote: 'Dễ dùng, mọi quy trình đều được tự động hóa. Quản lý cửa hàng nhàn hơn hẳn trước đây.',
+      quote:
+        'Dễ dùng, mọi quy trình đều được tự động hóa. Quản lý cửa hàng nhàn hơn hẳn trước đây.',
       name: 'Chị Hoa',
       role: 'Chủ cửa hàng thời trang',
     },
     {
-      quote: 'Báo cáo doanh thu nhanh, theo dõi nguyên liệu và ca kíp rất tiện. Tiết kiệm cả tiếng đồng hồ mỗi tối chốt sổ.',
+      quote:
+        'Báo cáo doanh thu nhanh, theo dõi nguyên liệu và ca kíp rất tiện. Tiết kiệm cả tiếng đồng hồ mỗi tối chốt sổ.',
       name: 'Anh Tuấn',
       role: 'Chủ chuỗi 5 cửa hàng F&B',
     },
     {
-      quote: 'Lịch hẹn, hồ sơ khách và tính lương nhân viên đều trong một ứng dụng. Rất đáng đồng tiền bát gạo.',
+      quote:
+        'Lịch hẹn, hồ sơ khách và tính lương nhân viên đều trong một ứng dụng. Rất đáng đồng tiền bát gạo.',
       name: 'Chị Mai',
       role: 'Spa & làm đẹp',
     },
   ];
 
   protected readonly devices: Device[] = [
-    { icon: 'pi pi-desktop', name: 'Trên máy tính', desc: 'Trình duyệt Chrome, Edge, Safari — mở là chạy.' },
-    { icon: 'pi pi-tablet', name: 'Trên iPad & tablet', desc: 'Giao diện POS tối ưu cho màn hình cảm ứng.' },
-    { icon: 'pi pi-mobile', name: 'Trên Android', desc: 'Quản cửa hàng mọi lúc, nhận thông báo đơn mới.' },
-    { icon: 'pi pi-mobile', name: 'Trên iPhone', desc: 'Cùng hệ sinh thái, đồng bộ dữ liệu tức thì.' },
+    {
+      icon: 'pi pi-desktop',
+      name: 'Trên máy tính',
+      desc: 'Trình duyệt Chrome, Edge, Safari — mở là chạy.',
+    },
+    {
+      icon: 'pi pi-tablet',
+      name: 'Trên iPad & tablet',
+      desc: 'Giao diện POS tối ưu cho màn hình cảm ứng.',
+    },
+    {
+      icon: 'pi pi-mobile',
+      name: 'Trên Android',
+      desc: 'Quản cửa hàng mọi lúc, nhận thông báo đơn mới.',
+    },
+    {
+      icon: 'pi pi-mobile',
+      name: 'Trên iPhone',
+      desc: 'Cùng hệ sinh thái, đồng bộ dữ liệu tức thì.',
+    },
   ];
 
   protected readonly news: NewsItem[] = [
@@ -477,7 +544,14 @@ export class HomeComponent {
       period: 'mãi mãi',
       highlight: false,
       desc: 'Phù hợp để khám phá và thử nghiệm hệ thống.',
-      features: ['1 cửa hàng', '2 nhân viên', 'Bán hàng POS cơ bản', 'Quản kho cơ bản', 'Báo cáo theo ngày', 'Hỗ trợ qua email'],
+      features: [
+        '1 cửa hàng',
+        '2 nhân viên',
+        'Bán hàng POS cơ bản',
+        'Quản kho cơ bản',
+        'Báo cáo theo ngày',
+        'Hỗ trợ qua email',
+      ],
       cta: 'Dùng thử ngay',
     },
     {

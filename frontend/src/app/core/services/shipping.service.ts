@@ -75,7 +75,11 @@ export class ShippingService {
     return this.http.get<PickupAddress>(`${this.baseUrl}/pickup`);
   }
 
-  savePickup(request: { cityId: string; districtId: string; wardId: string }): Observable<PickupAddress> {
+  savePickup(request: {
+    cityId: string;
+    districtId: string;
+    wardId: string;
+  }): Observable<PickupAddress> {
     return this.http.put<PickupAddress>(`${this.baseUrl}/pickup`, request);
   }
 
@@ -99,7 +103,12 @@ export class ShippingService {
     return this.http.post<{ rates: ShippingRate[] }>(`${this.baseUrl}/rates`, request);
   }
 
-  createShipment(request: CreateShipmentRequest): Observable<{ message: string; shipment: unknown }> {
-    return this.http.post<{ message: string; shipment: unknown }>(`${this.baseUrl}/shipments`, request);
+  createShipment(
+    request: CreateShipmentRequest,
+  ): Observable<{ message: string; shipment: unknown }> {
+    return this.http.post<{ message: string; shipment: unknown }>(
+      `${this.baseUrl}/shipments`,
+      request,
+    );
   }
 }

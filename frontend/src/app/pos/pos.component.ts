@@ -28,11 +28,7 @@ import {
 } from '../core/services/sales.service';
 import { readMoneyInWords } from '../shared/utils/vnd-words';
 import { ToastService } from '../core/services/toast.service';
-import {
-  LocationOption,
-  ShippingRate,
-  ShippingService,
-} from '../core/services/shipping.service';
+import { LocationOption, ShippingRate, ShippingService } from '../core/services/shipping.service';
 
 type PosMode = 'Quick' | 'Regular' | 'Delivery';
 
@@ -265,8 +261,13 @@ export class PosComponent implements OnInit, OnDestroy {
   });
   readonly pointsDiscount = computed(() => this.pointsRedeemed() * 1_000);
   readonly total = computed(() =>
-    Math.max(0, this.subtotal() - this.discountAmount() - this.pointsDiscount()
-      + (this.activeTicket()?.channel === 'Delivery' ? this.shippingFee() : 0)),
+    Math.max(
+      0,
+      this.subtotal() -
+        this.discountAmount() -
+        this.pointsDiscount() +
+        (this.activeTicket()?.channel === 'Delivery' ? this.shippingFee() : 0),
+    ),
   );
 
   // ── Giao hàng Goship ────────────────────────────────────────────────────
@@ -308,7 +309,11 @@ export class PosComponent implements OnInit, OnDestroy {
     for (const product of this.products()) {
       const value = product.categoryPath?.trim();
       if (!value) continue;
-      const label = value.split(/>>|>|\//).pop()?.trim() || value;
+      const label =
+        value
+          .split(/>>|>|\//)
+          .pop()
+          ?.trim() || value;
       categories.set(value, label);
     }
     return [...categories.entries()]
@@ -316,7 +321,9 @@ export class PosComponent implements OnInit, OnDestroy {
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'))
       .slice(0, 18);
   });
-  readonly quickEmpty = computed(() => this.activeTicket()?.channel === 'Quick' && this.cart().length === 0);
+  readonly quickEmpty = computed(
+    () => this.activeTicket()?.channel === 'Quick' && this.cart().length === 0,
+  );
   readonly filteredProducts = computed(() =>
     this.selectedCategory()
       ? this.products().filter((product) => product.categoryPath === this.selectedCategory())
@@ -505,7 +512,9 @@ export class PosComponent implements OnInit, OnDestroy {
 
   private patchTicket(patch: Partial<Ticket>): void {
     const index = this.activeIndex();
-    this.tickets.set(this.tickets().map((ticket, i) => (i === index ? { ...ticket, ...patch } : ticket)));
+    this.tickets.set(
+      this.tickets().map((ticket, i) => (i === index ? { ...ticket, ...patch } : ticket)),
+    );
   }
 
   setChannel(channel: PosMode): void {
@@ -534,39 +543,37 @@ export class PosComponent implements OnInit, OnDestroy {
     const term = this.search().trim();
     if (term) params['search'] = term;
 
-    this.http
-      .get<ProductPage>(`${environment.apiUrl}/api/v1/products`, { params })
-      .subscribe({
-        next: (result) => {
-          for (const url of Object.values(this.images())) URL.revokeObjectURL(url);
-          this.images.set({});
-          this.products.set(result.items);
-          this.productTotal.set(result.total);
-          this.productsLoading.set(false);
-          for (const product of result.items) {
-            if (!product.imageId || product.imageId === '00000000-0000-0000-0000-000000000000') continue;
-            this.http
-              .get(
-                `${environment.apiUrl}/api/v1/products/${product.id}/images/${product.imageId}`,
-                { responseType: 'blob' },
-              )
-              .subscribe({
-                next: (blob) => {
-                  this.images.update((current) => ({
-                    ...current,
-                    [product.id]: URL.createObjectURL(blob),
-                  }));
-                },
-              });
-          }
-        },
-        error: () => {
-          this.products.set([]);
-          this.productTotal.set(0);
-          this.productsLoading.set(false);
-          this.productsError.set('Không tải được hàng hóa. Kiểm tra kết nối rồi thử lại.');
-        },
-      });
+    this.http.get<ProductPage>(`${environment.apiUrl}/api/v1/products`, { params }).subscribe({
+      next: (result) => {
+        for (const url of Object.values(this.images())) URL.revokeObjectURL(url);
+        this.images.set({});
+        this.products.set(result.items);
+        this.productTotal.set(result.total);
+        this.productsLoading.set(false);
+        for (const product of result.items) {
+          if (!product.imageId || product.imageId === '00000000-0000-0000-0000-000000000000')
+            continue;
+          this.http
+            .get(`${environment.apiUrl}/api/v1/products/${product.id}/images/${product.imageId}`, {
+              responseType: 'blob',
+            })
+            .subscribe({
+              next: (blob) => {
+                this.images.update((current) => ({
+                  ...current,
+                  [product.id]: URL.createObjectURL(blob),
+                }));
+              },
+            });
+        }
+      },
+      error: () => {
+        this.products.set([]);
+        this.productTotal.set(0);
+        this.productsLoading.set(false);
+        this.productsError.set('Không tải được hàng hóa. Kiểm tra kết nối rồi thử lại.');
+      },
+    });
   }
 
   onSearchChanged(value: string): void {
@@ -632,9 +639,10 @@ export class PosComponent implements OnInit, OnDestroy {
   patchProductDraft(field: keyof ProductDraft, value: unknown): void {
     this.productDraft.update((draft) => ({
       ...draft,
-      [field]: field === 'sku' || field === 'name' || field === 'barcode'
-        ? String(value ?? '')
-        : Math.max(0, this.toNumber(value)),
+      [field]:
+        field === 'sku' || field === 'name' || field === 'barcode'
+          ? String(value ?? '')
+          : Math.max(0, this.toNumber(value)),
     }));
   }
 
@@ -902,25 +910,27 @@ export class PosComponent implements OnInit, OnDestroy {
     this.shippingRates.set([]);
     this.selectedShippingRate.set(null);
     this.shippingFee.set(0);
-    this.shipping.rates({
-      toCityId: this.deliveryCityId(),
-      toDistrictId: this.deliveryDistrictId(),
-      weightGrams: Math.max(1, this.shippingWeight()),
-      lengthCm: this.shippingLength(),
-      widthCm: this.shippingWidth(),
-      heightCm: this.shippingHeight(),
-      codAmount: Math.max(0, this.total() - this.shippingFee()),
-    }).subscribe({
-      next: (response) => {
-        this.shippingLoading.set(false);
-        this.shippingRates.set(response.rates);
-        if (!response.rates.length) this.shippingError.set('Không có hãng nào nhận tuyến này.');
-      },
-      error: (error: unknown) => {
-        this.shippingLoading.set(false);
-        this.shippingError.set(this.messageOf(error, 'Không lấy được bảng giá vận chuyển.'));
-      },
-    });
+    this.shipping
+      .rates({
+        toCityId: this.deliveryCityId(),
+        toDistrictId: this.deliveryDistrictId(),
+        weightGrams: Math.max(1, this.shippingWeight()),
+        lengthCm: this.shippingLength(),
+        widthCm: this.shippingWidth(),
+        heightCm: this.shippingHeight(),
+        codAmount: Math.max(0, this.total() - this.shippingFee()),
+      })
+      .subscribe({
+        next: (response) => {
+          this.shippingLoading.set(false);
+          this.shippingRates.set(response.rates);
+          if (!response.rates.length) this.shippingError.set('Không có hãng nào nhận tuyến này.');
+        },
+        error: (error: unknown) => {
+          this.shippingLoading.set(false);
+          this.shippingError.set(this.messageOf(error, 'Không lấy được bảng giá vận chuyển.'));
+        },
+      });
   }
 
   selectShippingRate(rate: ShippingRate): void {
@@ -982,57 +992,62 @@ export class PosComponent implements OnInit, OnDestroy {
       return;
     }
     this.pickupSaving.set(true);
-    this.shipping.savePickup({
-      cityId: this.pickupCityId(),
-      districtId: this.pickupDistrictId(),
-      wardId: this.pickupWardId(),
-    }).subscribe({
-      next: () => {
-        this.pickupSaving.set(false);
-        this.pickupConfigured.set(true);
-        this.pickupOpen.set(false);
-        this.toast.add({ severity: 'success', summary: 'Đã lưu điểm lấy hàng' });
-      },
-      error: (error: unknown) => {
-        this.pickupSaving.set(false);
-        this.shippingError.set(this.messageOf(error, 'Không lưu được điểm lấy hàng.'));
-      },
-    });
+    this.shipping
+      .savePickup({
+        cityId: this.pickupCityId(),
+        districtId: this.pickupDistrictId(),
+        wardId: this.pickupWardId(),
+      })
+      .subscribe({
+        next: () => {
+          this.pickupSaving.set(false);
+          this.pickupConfigured.set(true);
+          this.pickupOpen.set(false);
+          this.toast.add({ severity: 'success', summary: 'Đã lưu điểm lấy hàng' });
+        },
+        error: (error: unknown) => {
+          this.pickupSaving.set(false);
+          this.shippingError.set(this.messageOf(error, 'Không lưu được điểm lấy hàng.'));
+        },
+      });
   }
 
   private bookShipment(order: SalesOrder, ticket: Ticket): void {
     const rate = this.selectedShippingRate();
     if (ticket.channel !== 'Delivery' || !rate) return;
-    this.shipping.createShipment({
-      orderId: order.id,
-      rateId: rate.id,
-      toName: ticket.customer?.name ?? 'Khách lẻ',
-      toPhone: ticket.customer?.phone ?? '',
-      toAddress: ticket.deliveryAddress,
-      toCityId: this.deliveryCityId(),
-      toCityName: this.deliveryCityName(),
-      toDistrictId: this.deliveryDistrictId(),
-      toDistrictName: this.deliveryDistrictName(),
-      toWardId: this.deliveryWardId(),
-      toWardName: this.deliveryWardName(),
-      weightGrams: Math.max(1, this.shippingWeight()),
-      lengthCm: this.shippingLength(),
-      widthCm: this.shippingWidth(),
-      heightCm: this.shippingHeight(),
-      codAmount: Math.max(0, order.remaining),
-      declaredAmount: this.insuranceEnabled() ? Math.max(0, order.total) : 0,
-      senderPaysShipping: this.senderPaysShipping(),
-      service: rate.service,
-      expected: rate.expected,
-      note: ticket.note || null,
-    }).subscribe({
-      next: () => this.toast.add({ severity: 'success', summary: 'Đã tạo vận đơn Goship' }),
-      error: (error: unknown) => this.toast.add({
-        severity: 'warn',
-        summary: 'Hóa đơn đã lưu nhưng chưa tạo được vận đơn',
-        detail: this.messageOf(error, 'Kiểm tra lại điểm lấy hàng Goship.'),
-      }),
-    });
+    this.shipping
+      .createShipment({
+        orderId: order.id,
+        rateId: rate.id,
+        toName: ticket.customer?.name ?? 'Khách lẻ',
+        toPhone: ticket.customer?.phone ?? '',
+        toAddress: ticket.deliveryAddress,
+        toCityId: this.deliveryCityId(),
+        toCityName: this.deliveryCityName(),
+        toDistrictId: this.deliveryDistrictId(),
+        toDistrictName: this.deliveryDistrictName(),
+        toWardId: this.deliveryWardId(),
+        toWardName: this.deliveryWardName(),
+        weightGrams: Math.max(1, this.shippingWeight()),
+        lengthCm: this.shippingLength(),
+        widthCm: this.shippingWidth(),
+        heightCm: this.shippingHeight(),
+        codAmount: Math.max(0, order.remaining),
+        declaredAmount: this.insuranceEnabled() ? Math.max(0, order.total) : 0,
+        senderPaysShipping: this.senderPaysShipping(),
+        service: rate.service,
+        expected: rate.expected,
+        note: ticket.note || null,
+      })
+      .subscribe({
+        next: () => this.toast.add({ severity: 'success', summary: 'Đã tạo vận đơn Goship' }),
+        error: (error: unknown) =>
+          this.toast.add({
+            severity: 'warn',
+            summary: 'Hóa đơn đã lưu nhưng chưa tạo được vận đơn',
+            detail: this.messageOf(error, 'Kiểm tra lại điểm lấy hàng Goship.'),
+          }),
+      });
   }
 
   lineTotal(line: CartLine): number {
@@ -1081,22 +1096,20 @@ export class PosComponent implements OnInit, OnDestroy {
     if (term) params['search'] = term;
     const requestId = ++this.customerRequestId;
 
-    this.http
-      .get<CustomerPage>(`${environment.apiUrl}/api/v1/customers`, { params })
-      .subscribe({
-        next: (result) => {
-          if (requestId !== this.customerRequestId) return;
-          this.customerCache.set(term, result.items);
-          this.customerResults.set(result.items);
-          this.customerLoading.set(false);
-        },
-        error: () => {
-          if (requestId !== this.customerRequestId) return;
-          this.customerResults.set([]);
-          this.customerLoading.set(false);
-          this.customerError.set('Không tải được khách hàng.');
-        },
-      });
+    this.http.get<CustomerPage>(`${environment.apiUrl}/api/v1/customers`, { params }).subscribe({
+      next: (result) => {
+        if (requestId !== this.customerRequestId) return;
+        this.customerCache.set(term, result.items);
+        this.customerResults.set(result.items);
+        this.customerLoading.set(false);
+      },
+      error: () => {
+        if (requestId !== this.customerRequestId) return;
+        this.customerResults.set([]);
+        this.customerLoading.set(false);
+        this.customerError.set('Không tải được khách hàng.');
+      },
+    });
   }
 
   selectCustomer(customer: CustomerRow): void {
@@ -1195,25 +1208,23 @@ export class PosComponent implements OnInit, OnDestroy {
     const payload = Object.fromEntries(
       Object.entries(draft).map(([key, value]) => [key, value.trim() || null]),
     );
-    this.http
-      .post<CustomerRow>(`${environment.apiUrl}/api/v1/customers`, payload)
-      .subscribe({
-        next: (created) => {
-          this.customerSaveLoading.set(false);
-          this.customerDialogOpen.set(false);
-          this.customerCache.clear();
-          this.selectCustomer(created);
-          this.toast.add({
-            severity: 'success',
-            summary: 'Đã thêm khách hàng',
-            detail: `${created.name} đã được lưu.`,
-          });
-        },
-        error: (error: unknown) => {
-          this.customerSaveLoading.set(false);
-          this.customerError.set(this.messageOf(error, 'Không lưu được khách hàng.'));
-        },
-      });
+    this.http.post<CustomerRow>(`${environment.apiUrl}/api/v1/customers`, payload).subscribe({
+      next: (created) => {
+        this.customerSaveLoading.set(false);
+        this.customerDialogOpen.set(false);
+        this.customerCache.clear();
+        this.selectCustomer(created);
+        this.toast.add({
+          severity: 'success',
+          summary: 'Đã thêm khách hàng',
+          detail: `${created.name} đã được lưu.`,
+        });
+      },
+      error: (error: unknown) => {
+        this.customerSaveLoading.set(false);
+        this.customerError.set(this.messageOf(error, 'Không lưu được khách hàng.'));
+      },
+    });
   }
 
   // ── Thanh toán ──────────────────────────────────────────────────────────
@@ -1398,10 +1409,7 @@ export class PosComponent implements OnInit, OnDestroy {
     if (this.handledQrSessions.has(session.id)) return;
     this.handledQrSessions.add(session.id);
 
-    const received = Math.min(
-      session.transferredAmount ?? session.amount,
-      this.draftRemaining(),
-    );
+    const received = Math.min(session.transferredAmount ?? session.amount, this.draftRemaining());
     if (received <= 0) {
       this.stopQr(true);
       return;
@@ -1462,7 +1470,8 @@ export class PosComponent implements OnInit, OnDestroy {
   }
 
   private startTransferQr(amount: number): void {
-    this.stopTransferQrTimers();    this.transferQrAmount = amount;
+    this.stopTransferQrTimers();
+    this.transferQrAmount = amount;
     this.transferQr.set(null);
     this.transferQrError.set('');
     this.transferQrLoading.set(true);
@@ -1559,7 +1568,10 @@ export class PosComponent implements OnInit, OnDestroy {
         return;
       }
       if (this.deliveryPartnerTab() === 'Goship' && !this.selectedShippingRate()) {
-        this.toast.add({ severity: 'warn', summary: 'Chọn hãng vận chuyển Goship trước khi thanh toán' });
+        this.toast.add({
+          severity: 'warn',
+          summary: 'Chọn hãng vận chuyển Goship trước khi thanh toán',
+        });
         return;
       }
     }
@@ -1574,17 +1586,21 @@ export class PosComponent implements OnInit, OnDestroy {
     } else {
       const method = this.paymentMethod();
       const amount =
-        method === 'Cash' ? Math.max(this.receivedOverride() ?? total, 0) : Math.min(this.paid(), total);
+        method === 'Cash'
+          ? Math.max(this.receivedOverride() ?? total, 0)
+          : Math.min(this.paid(), total);
       if (amount <= 0) {
         this.toast.add({ severity: 'warn', summary: 'Số tiền thanh toán phải lớn hơn 0' });
         return;
       }
       const transfer = this.transferQr();
-      payments = [{
-        method,
-        amount,
-        reference: method === 'Transfer' && transfer ? transfer.reference : null,
-      }];
+      payments = [
+        {
+          method,
+          amount,
+          reference: method === 'Transfer' && transfer ? transfer.reference : null,
+        },
+      ];
     }
 
     this.busy.set(true);
@@ -1975,7 +1991,11 @@ export class PosComponent implements OnInit, OnDestroy {
   private openPrintWindow(html: string): void {
     const win = window.open('', '_blank', 'width=420,height=680');
     if (!win) {
-      this.toast.add({ severity: 'warn', summary: 'Trình duyệt chặn cửa sổ in', detail: 'Cho phép popup rồi thử lại.' });
+      this.toast.add({
+        severity: 'warn',
+        summary: 'Trình duyệt chặn cửa sổ in',
+        detail: 'Cho phép popup rồi thử lại.',
+      });
       return;
     }
     win.document.write(html);

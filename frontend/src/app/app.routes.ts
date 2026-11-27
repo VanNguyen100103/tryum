@@ -26,8 +26,7 @@ export const routes: Routes = [
       {
         path: 'login',
         canActivate: [guestGuard],
-        loadComponent: () =>
-          import('./auth/login/login.component').then((c) => c.LoginComponent),
+        loadComponent: () => import('./auth/login/login.component').then((c) => c.LoginComponent),
         title: 'Đăng nhập - Tryum',
       },
       {
@@ -62,7 +61,7 @@ export const routes: Routes = [
         path: 'products',
         loadComponent: () =>
           import('./products/product-list/product-list.component').then(
-            (c) => c.ProductListComponent
+            (c) => c.ProductListComponent,
           ),
         title: 'Hàng hóa - Tryum',
       },
@@ -85,7 +84,7 @@ export const routes: Routes = [
         path: 'customers',
         loadComponent: () =>
           import('./customers/customer-list/customer-list.component').then(
-            (c) => c.CustomerListComponent
+            (c) => c.CustomerListComponent,
           ),
         title: 'Khách hàng - Tryum',
       },
@@ -93,34 +92,41 @@ export const routes: Routes = [
       {
         path: 'employees',
         loadComponent: () =>
-          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+          import('./shared/feature-placeholder.component').then(
+            (c) => c.FeaturePlaceholderComponent,
+          ),
         data: { featureTitle: 'Nhân viên' },
         title: 'Nhân viên - Tryum',
       },
       {
         path: 'purchases',
         loadComponent: () =>
-          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+          import('./shared/feature-placeholder.component').then(
+            (c) => c.FeaturePlaceholderComponent,
+          ),
         data: { featureTitle: 'Mua hàng' },
         title: 'Mua hàng - Tryum',
       },
       {
         path: 'online',
-        loadComponent: () =>
-          import('./online/online.component').then((c) => c.OnlineComponent),
+        loadComponent: () => import('./online/online.component').then((c) => c.OnlineComponent),
         title: 'Bán online - Tryum',
       },
       {
         path: 'cashbook',
         loadComponent: () =>
-          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+          import('./shared/feature-placeholder.component').then(
+            (c) => c.FeaturePlaceholderComponent,
+          ),
         data: { featureTitle: 'Sổ quỹ' },
         title: 'Sổ quỹ - Tryum',
       },
       {
         path: 'accounting',
         loadComponent: () =>
-          import('./shared/feature-placeholder.component').then((c) => c.FeaturePlaceholderComponent),
+          import('./shared/feature-placeholder.component').then(
+            (c) => c.FeaturePlaceholderComponent,
+          ),
         data: { featureTitle: 'Thuế & Kế toán' },
         title: 'Thuế & Kế toán - Tryum',
       },
@@ -128,8 +134,7 @@ export const routes: Routes = [
       // Phase 6
       {
         path: 'reports',
-        loadComponent: () =>
-          import('./reports/reports.component').then((c) => c.ReportsComponent),
+        loadComponent: () => import('./reports/reports.component').then((c) => c.ReportsComponent),
         title: 'Báo cáo - Tryum',
       },
 

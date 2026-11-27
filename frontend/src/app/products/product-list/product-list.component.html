@@ -11,21 +11,59 @@
         name="productSearch"
       />
       @if (search) {
-        <button type="button" class="search-clear" aria-label="Xóa tìm kiếm" (click)="clearSearch()">
+        <button
+          type="button"
+          class="search-clear"
+          aria-label="Xóa tìm kiếm"
+          (click)="clearSearch()"
+        >
           <i class="pi pi-times"></i>
         </button>
       }
       <i class="pi pi-sliders-h search-filter-icon" aria-hidden="true"></i>
     </label>
     <div class="toolbar-actions">
-      <button type="button" class="action action--primary" (click)="openCreateProduct()" title="Tạo hàng hóa mới">
+      <button
+        type="button"
+        class="action action--primary"
+        (click)="openCreateProduct()"
+        title="Tạo hàng hóa mới"
+      >
         <i class="pi pi-plus"></i> Tạo mới
       </button>
-      <button type="button" class="action" (click)="openImport()"><i class="pi pi-upload"></i> Import file</button>
-      <button type="button" class="action" disabled title="Chưa có API xuất hàng hóa"><i class="pi pi-download"></i> Xuất file</button>
-      <button type="button" class="icon-action" disabled aria-label="Tùy chỉnh cột" title="Chưa khả dụng"><i class="pi pi-list"></i></button>
-      <button type="button" class="icon-action" disabled aria-label="Cài đặt hàng hóa" title="Chưa khả dụng"><i class="pi pi-cog"></i></button>
-      <button type="button" class="icon-action" disabled aria-label="Trợ giúp" title="Chưa khả dụng"><i class="pi pi-question-circle"></i></button>
+      <button type="button" class="action" (click)="openImport()">
+        <i class="pi pi-upload"></i> Import file
+      </button>
+      <button type="button" class="action" disabled title="Chưa có API xuất hàng hóa">
+        <i class="pi pi-download"></i> Xuất file
+      </button>
+      <button
+        type="button"
+        class="icon-action"
+        disabled
+        aria-label="Tùy chỉnh cột"
+        title="Chưa khả dụng"
+      >
+        <i class="pi pi-list"></i>
+      </button>
+      <button
+        type="button"
+        class="icon-action"
+        disabled
+        aria-label="Cài đặt hàng hóa"
+        title="Chưa khả dụng"
+      >
+        <i class="pi pi-cog"></i>
+      </button>
+      <button
+        type="button"
+        class="icon-action"
+        disabled
+        aria-label="Trợ giúp"
+        title="Chưa khả dụng"
+      >
+        <i class="pi pi-question-circle"></i>
+      </button>
     </div>
   </header>
 
@@ -40,69 +78,166 @@
   <div class="catalog-layout">
     <aside class="filters" aria-label="Bộ lọc hàng hóa">
       <section class="filter-group filter-group--category">
-        <div class="filter-title"><strong>Nhóm hàng</strong><button type="button" disabled>Tạo mới</button></div>
-        <button class="select-control" type="button" disabled>Chọn nhóm hàng <i class="pi pi-angle-down"></i></button>
+        <div class="filter-title">
+          <strong>Nhóm hàng</strong><button type="button" disabled>Tạo mới</button>
+        </div>
+        <button class="select-control" type="button" disabled>
+          Chọn nhóm hàng <i class="pi pi-angle-down"></i>
+        </button>
       </section>
 
       <section class="filter-group">
-        <h2>Tồn kho</h2><label class="field-caption">Tình trạng tồn</label>
-        <button class="select-control" type="button" disabled>Tất cả <i class="pi pi-angle-down"></i></button>
+        <h2>Tồn kho</h2>
+        <label class="field-caption">Tình trạng tồn</label>
+        <button class="select-control" type="button" disabled>
+          Tất cả <i class="pi pi-angle-down"></i>
+        </button>
       </section>
 
       <section class="filter-group">
         <h2>Dự kiến hết hàng</h2>
-        <label class="radio-row"><input type="radio" name="expiry" checked disabled /><span>Toàn thời gian</span><i class="pi pi-angle-right"></i></label>
-        <label class="radio-row"><input type="radio" name="expiry" disabled /><span>Tùy chỉnh</span><i class="pi pi-calendar"></i></label>
+        <label class="radio-row"
+          ><input type="radio" name="expiry" checked disabled /><span>Toàn thời gian</span
+          ><i class="pi pi-angle-right"></i
+        ></label>
+        <label class="radio-row"
+          ><input type="radio" name="expiry" disabled /><span>Tùy chỉnh</span
+          ><i class="pi pi-calendar"></i
+        ></label>
       </section>
 
       <section class="filter-group">
         <h2>Thời gian tạo</h2>
-        <label class="radio-row"><input type="radio" name="created" checked disabled /><span>Toàn thời gian</span><i class="pi pi-angle-right"></i></label>
-        <label class="radio-row"><input type="radio" name="created" disabled /><span>Tùy chỉnh</span><i class="pi pi-calendar"></i></label>
+        <label class="radio-row"
+          ><input type="radio" name="created" checked disabled /><span>Toàn thời gian</span
+          ><i class="pi pi-angle-right"></i
+        ></label>
+        <label class="radio-row"
+          ><input type="radio" name="created" disabled /><span>Tùy chỉnh</span
+          ><i class="pi pi-calendar"></i
+        ></label>
       </section>
 
       <section class="filter-group">
-        <h2>Nhà cung cấp</h2><button class="select-control" type="button" disabled>Chọn nhà cung cấp <i class="pi pi-angle-down"></i></button>
+        <h2>Nhà cung cấp</h2>
+        <button class="select-control" type="button" disabled>
+          Chọn nhà cung cấp <i class="pi pi-angle-down"></i>
+        </button>
       </section>
       <section class="filter-group">
-        <h2>Vị trí</h2><button class="select-control" type="button" disabled>Chọn vị trí <i class="pi pi-angle-down"></i></button>
+        <h2>Vị trí</h2>
+        <button class="select-control" type="button" disabled>
+          Chọn vị trí <i class="pi pi-angle-down"></i>
+        </button>
       </section>
       <section class="filter-group">
-        <h2>Loại hàng</h2><button class="select-control" type="button" disabled>Chọn loại hàng <i class="pi pi-angle-down"></i></button>
+        <h2>Loại hàng</h2>
+        <button class="select-control" type="button" disabled>
+          Chọn loại hàng <i class="pi pi-angle-down"></i>
+        </button>
       </section>
       <section class="filter-group">
-        <h2>Bán trực tiếp</h2><div class="choice-pills"><button class="selected" type="button" disabled>Tất cả</button><button type="button" disabled>Có</button><button type="button" disabled>Không</button></div>
+        <h2>Bán trực tiếp</h2>
+        <div class="choice-pills">
+          <button class="selected" type="button" disabled>Tất cả</button
+          ><button type="button" disabled>Có</button><button type="button" disabled>Không</button>
+        </div>
       </section>
       <section class="filter-group">
-        <h2>Liên kết kênh bán</h2><div class="choice-pills"><button class="selected" type="button" disabled>Tất cả</button><button type="button" disabled>Có</button><button type="button" disabled>Không</button></div>
+        <h2>Liên kết kênh bán</h2>
+        <div class="choice-pills">
+          <button class="selected" type="button" disabled>Tất cả</button
+          ><button type="button" disabled>Có</button><button type="button" disabled>Không</button>
+        </div>
       </section>
-      <section class="filter-group"><h2>Trạng thái hàng hóa</h2><button class="select-control" type="button" disabled>Tất cả <i class="pi pi-angle-down"></i></button></section>
+      <section class="filter-group">
+        <h2>Trạng thái hàng hóa</h2>
+        <button class="select-control" type="button" disabled>
+          Tất cả <i class="pi pi-angle-down"></i>
+        </button>
+      </section>
     </aside>
 
     <section class="table-card" aria-label="Danh sách hàng hóa">
       <div class="table-scroll">
         <table>
-          <thead><tr>
-            <th class="check-col"><input type="checkbox" disabled aria-label="Chọn tất cả" /></th><th class="favorite-col"><i class="pi pi-star"></i></th><th class="image-col"></th>
-            <th>Mã hàng</th><th>Tên hàng</th><th>Giá bán</th><th>Giá vốn</th><th>Tồn kho</th><th>Khách đặt</th><th>Thời gian tạo</th><th>Dự kiến hết hàng</th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th class="check-col"><input type="checkbox" disabled aria-label="Chọn tất cả" /></th>
+              <th class="favorite-col"><i class="pi pi-star"></i></th>
+              <th class="image-col"></th>
+              <th>Mã hàng</th>
+              <th>Tên hàng</th>
+              <th>Giá bán</th>
+              <th>Giá vốn</th>
+              <th>Tồn kho</th>
+              <th>Khách đặt</th>
+              <th>Thời gian tạo</th>
+              <th>Dự kiến hết hàng</th>
+            </tr>
+          </thead>
           <tbody>
             @if (productsLoading) {
-              <tr class="empty-row"><td colspan="11"><div class="empty-state"><strong>Đang tải dữ liệu sản phẩm…</strong></div></td></tr>
+              <tr class="empty-row">
+                <td colspan="11">
+                  <div class="empty-state"><strong>Đang tải dữ liệu sản phẩm…</strong></div>
+                </td>
+              </tr>
             } @else if (productsError) {
-              <tr class="empty-row"><td colspan="11"><div class="empty-state"><i class="pi pi-cloud empty-icon"></i><strong>Chưa kết nối được dữ liệu</strong><p>{{ productsError }}</p></div></td></tr>
+              <tr class="empty-row">
+                <td colspan="11">
+                  <div class="empty-state">
+                    <i class="pi pi-cloud empty-icon"></i><strong>Chưa kết nối được dữ liệu</strong>
+                    <p>{{ productsError }}</p>
+                  </div>
+                </td>
+              </tr>
             } @else if (products.length) {
               @for (product of products; track product.id) {
-                <tr class="product-row" [class.is-expanded]="expandedProductId === product.id" (click)="toggleDetail(product)">
-                  <td class="check-col"><input type="checkbox" disabled [attr.aria-label]="'Chọn ' + product.name" /></td>
+                <tr
+                  class="product-row"
+                  [class.is-expanded]="expandedProductId === product.id"
+                  (click)="toggleDetail(product)"
+                >
+                  <td class="check-col">
+                    <input type="checkbox" disabled [attr.aria-label]="'Chọn ' + product.name" />
+                  </td>
                   <td class="favorite-col"><i class="pi pi-star"></i></td>
-                  <td class="image-col"><div class="product-image">@if (imageSources.get(product.id); as imageUrl) { <img [src]="imageUrl" [alt]="product.name" /> } @else { <i class="pi pi-box" [title]="product.imagesPending ? 'Ảnh đang được chuyển lên R2' : 'Chưa có ảnh sẵn sàng'"></i> }</div></td>
-                  <td>{{ product.sku }}</td><td class="name-cell">{{ product.name }}</td>
-                  <td class="numeric-cell">{{ product.salePrice === null ? '—' : product.salePrice.toLocaleString('vi-VN') }}</td>
-                  <td class="numeric-cell">{{ product.costPrice === null ? '—' : product.costPrice.toLocaleString('vi-VN') }}</td>
-                  <td class="numeric-cell">{{ product.stock === null ? '—' : product.stock.toLocaleString('vi-VN') }}</td>
+                  <td class="image-col">
+                    <div class="product-image">
+                      @if (imageSources.get(product.id); as imageUrl) {
+                        <img [src]="imageUrl" [alt]="product.name" />
+                      } @else {
+                        <i
+                          class="pi pi-box"
+                          [title]="
+                            product.imagesPending
+                              ? 'Ảnh đang được chuyển lên R2'
+                              : 'Chưa có ảnh sẵn sàng'
+                          "
+                        ></i>
+                      }
+                    </div>
+                  </td>
+                  <td>{{ product.sku }}</td>
+                  <td class="name-cell">{{ product.name }}</td>
+                  <td class="numeric-cell">
+                    {{
+                      product.salePrice === null ? '—' : product.salePrice.toLocaleString('vi-VN')
+                    }}
+                  </td>
+                  <td class="numeric-cell">
+                    {{
+                      product.costPrice === null ? '—' : product.costPrice.toLocaleString('vi-VN')
+                    }}
+                  </td>
+                  <td class="numeric-cell">
+                    {{ product.stock === null ? '—' : product.stock.toLocaleString('vi-VN') }}
+                  </td>
                   <td class="numeric-cell">—</td>
-                  <td>{{ product.createdAt ? (product.createdAt | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                  <td>
+                    {{ product.createdAt ? (product.createdAt | date: 'dd/MM/yyyy HH:mm') : '—' }}
+                  </td>
                   <td>—</td>
                 </tr>
 
@@ -110,12 +245,26 @@
                   <tr class="detail-row">
                     <td colspan="11">
                       @if (detailLoading || !productDetail || productDetail.id !== product.id) {
-                        <div class="detail-loading"><i class="pi pi-spin pi-spinner"></i> Đang tải chi tiết hàng hóa…</div>
+                        <div class="detail-loading">
+                          <i class="pi pi-spin pi-spinner"></i> Đang tải chi tiết hàng hóa…
+                        </div>
                       } @else {
                         <section class="product-detail">
                           <div class="detail-tabs">
-                            <button type="button" [class.active]="detailTab === 'info'" (click)="detailTab = 'info'; $event.stopPropagation()">Thông tin</button>
-                            <button type="button" [class.active]="detailTab === 'description'" (click)="detailTab = 'description'; $event.stopPropagation()">Mô tả, ghi chú</button>
+                            <button
+                              type="button"
+                              [class.active]="detailTab === 'info'"
+                              (click)="detailTab = 'info'; $event.stopPropagation()"
+                            >
+                              Thông tin
+                            </button>
+                            <button
+                              type="button"
+                              [class.active]="detailTab === 'description'"
+                              (click)="detailTab = 'description'; $event.stopPropagation()"
+                            >
+                              Mô tả, ghi chú
+                            </button>
                           </div>
 
                           @if (detailTab === 'info') {
@@ -131,25 +280,80 @@
                                 <div class="detail-heading">
                                   <div>
                                     <h3>{{ productDetail.name }}</h3>
-                                    <p>{{ productDetail.categoryPath || 'Chưa có nhóm hàng' }} · {{ productDetail.brand || 'Chưa có thương hiệu' }}</p>
+                                    <p>
+                                      {{ productDetail.categoryPath || 'Chưa có nhóm hàng' }} ·
+                                      {{ productDetail.brand || 'Chưa có thương hiệu' }}
+                                    </p>
                                   </div>
                                   <div class="detail-badges">
                                     <span>{{ productDetail.itemType || 'Hàng hóa' }}</span>
-                                    @if (productDetail.isDirectSale) { <span class="badge-green">Bán trực tiếp</span> }
+                                    @if (productDetail.isDirectSale) {
+                                      <span class="badge-green">Bán trực tiếp</span>
+                                    }
                                   </div>
                                 </div>
 
                                 <div class="detail-fields">
-                                  <div><label>Mã hàng</label><strong>{{ productDetail.sku }}</strong></div>
-                                  <div><label>Mã vạch</label><strong>{{ productDetail.barcode || 'Chưa có' }}</strong></div>
-                                  <div><label>Tồn kho</label><strong>{{ productDetail.stock === null ? '—' : productDetail.stock.toLocaleString('vi-VN') }}</strong></div>
-                                  <div><label>Định mức tồn</label><strong>{{ (productDetail.minStock ?? 0).toLocaleString('vi-VN') }} – {{ (productDetail.maxStock ?? 0).toLocaleString('vi-VN') }}</strong></div>
-                                  <div><label>Giá vốn</label><strong>{{ productDetail.costPrice === null ? '—' : productDetail.costPrice.toLocaleString('vi-VN') }}</strong></div>
-                                  <div><label>Giá bán</label><strong>{{ productDetail.salePrice === null ? '—' : productDetail.salePrice.toLocaleString('vi-VN') }}</strong></div>
-                                  <div><label>Thương hiệu</label><strong>{{ productDetail.brand || 'Chưa có' }}</strong></div>
-                                  <div><label>Vị trí</label><strong>{{ productDetail.position || 'Chưa có' }}</strong></div>
-                                  <div><label>Trọng lượng</label><strong>{{ productDetail.weight === null ? 'Chưa có' : productDetail.weight + ' g' }}</strong></div>
-                                  <div><label>Nhóm hàng</label><strong>{{ productDetail.categoryPath || 'Chưa có' }}</strong></div>
+                                  <div>
+                                    <label>Mã hàng</label><strong>{{ productDetail.sku }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Mã vạch</label
+                                    ><strong>{{ productDetail.barcode || 'Chưa có' }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Tồn kho</label
+                                    ><strong>{{
+                                      productDetail.stock === null
+                                        ? '—'
+                                        : productDetail.stock.toLocaleString('vi-VN')
+                                    }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Định mức tồn</label
+                                    ><strong
+                                      >{{ (productDetail.minStock ?? 0).toLocaleString('vi-VN') }} –
+                                      {{
+                                        (productDetail.maxStock ?? 0).toLocaleString('vi-VN')
+                                      }}</strong
+                                    >
+                                  </div>
+                                  <div>
+                                    <label>Giá vốn</label
+                                    ><strong>{{
+                                      productDetail.costPrice === null
+                                        ? '—'
+                                        : productDetail.costPrice.toLocaleString('vi-VN')
+                                    }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Giá bán</label
+                                    ><strong>{{
+                                      productDetail.salePrice === null
+                                        ? '—'
+                                        : productDetail.salePrice.toLocaleString('vi-VN')
+                                    }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Thương hiệu</label
+                                    ><strong>{{ productDetail.brand || 'Chưa có' }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Vị trí</label
+                                    ><strong>{{ productDetail.position || 'Chưa có' }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Trọng lượng</label
+                                    ><strong>{{
+                                      productDetail.weight === null
+                                        ? 'Chưa có'
+                                        : productDetail.weight + ' g'
+                                    }}</strong>
+                                  </div>
+                                  <div>
+                                    <label>Nhóm hàng</label
+                                    ><strong>{{ productDetail.categoryPath || 'Chưa có' }}</strong>
+                                  </div>
                                 </div>
 
                                 @if (detailUnits.length) {
@@ -159,8 +363,12 @@
                                       @for (unit of detailUnits; track $index) {
                                         <span class="detail-chip">
                                           {{ unit.name }}
-                                          @if (unit.conversion) { · x{{ unit.conversion }} }
-                                          @if (unit.salePrice !== null) { · {{ unit.salePrice.toLocaleString('vi-VN') }} đ }
+                                          @if (unit.conversion) {
+                                            · x{{ unit.conversion }}
+                                          }
+                                          @if (unit.salePrice !== null) {
+                                            · {{ unit.salePrice.toLocaleString('vi-VN') }} đ
+                                          }
                                         </span>
                                       }
                                     </div>
@@ -183,18 +391,46 @@
 
                                 @if (detailVariants.length) {
                                   <div class="detail-extra">
-                                    <div class="detail-extra-title">Hàng cùng loại ({{ detailVariants.length }})</div>
+                                    <div class="detail-extra-title">
+                                      Hàng cùng loại ({{ detailVariants.length }})
+                                    </div>
                                     <div class="detail-variant-scroll">
                                       <table class="detail-variant-table">
-                                        <thead><tr><th>Giá trị</th><th>Đơn vị</th><th>Giá vốn</th><th>Giá bán</th><th>Tồn kho</th></tr></thead>
+                                        <thead>
+                                          <tr>
+                                            <th>Giá trị</th>
+                                            <th>Đơn vị</th>
+                                            <th>Giá vốn</th>
+                                            <th>Giá bán</th>
+                                            <th>Tồn kho</th>
+                                          </tr>
+                                        </thead>
                                         <tbody>
                                           @for (variant of detailVariants; track $index) {
                                             <tr>
                                               <td>{{ variant.name }}</td>
                                               <td>{{ variant.unit }}</td>
-                                              <td>{{ variant.costPrice === null ? '—' : variant.costPrice.toLocaleString('vi-VN') }}</td>
-                                              <td>{{ variant.salePrice === null ? '—' : variant.salePrice.toLocaleString('vi-VN') }}</td>
-                                              <td>{{ variant.stock === null ? '—' : variant.stock.toLocaleString('vi-VN') }}</td>
+                                              <td>
+                                                {{
+                                                  variant.costPrice === null
+                                                    ? '—'
+                                                    : variant.costPrice.toLocaleString('vi-VN')
+                                                }}
+                                              </td>
+                                              <td>
+                                                {{
+                                                  variant.salePrice === null
+                                                    ? '—'
+                                                    : variant.salePrice.toLocaleString('vi-VN')
+                                                }}
+                                              </td>
+                                              <td>
+                                                {{
+                                                  variant.stock === null
+                                                    ? '—'
+                                                    : variant.stock.toLocaleString('vi-VN')
+                                                }}
+                                              </td>
                                             </tr>
                                           }
                                         </tbody>
@@ -207,16 +443,50 @@
                           } @else {
                             <div class="detail-description">
                               <h3>Mô tả, ghi chú</h3>
-                              <p>{{ productDetail.description || 'Chưa có mô tả cho hàng hóa này.' }}</p>
+                              <p>
+                                {{ productDetail.description || 'Chưa có mô tả cho hàng hóa này.' }}
+                              </p>
                             </div>
                           }
 
                           <div class="detail-actions">
-                            <button type="button" class="detail-action danger" (click)="deleteFromDetail(); $event.stopPropagation()"><i class="pi pi-trash"></i> Xóa</button>
-                            <button type="button" class="detail-action" (click)="openCopyProduct(); $event.stopPropagation()"><i class="pi pi-copy"></i> Sao chép</button>
-                            <button type="button" class="detail-action primary" (click)="editFromDetail(); $event.stopPropagation()"><i class="pi pi-pencil"></i> Chỉnh sửa</button>
-                            <button type="button" class="detail-action" disabled title="Chưa hỗ trợ in tem"><i class="pi pi-print"></i> In tem mã</button>
-                            <button type="button" class="detail-action" disabled title="Chưa hỗ trợ"><i class="pi pi-plus"></i> Thêm hàng hóa cùng loại</button>
+                            <button
+                              type="button"
+                              class="detail-action danger"
+                              (click)="deleteFromDetail(); $event.stopPropagation()"
+                            >
+                              <i class="pi pi-trash"></i> Xóa
+                            </button>
+                            <button
+                              type="button"
+                              class="detail-action"
+                              (click)="openCopyProduct(); $event.stopPropagation()"
+                            >
+                              <i class="pi pi-copy"></i> Sao chép
+                            </button>
+                            <button
+                              type="button"
+                              class="detail-action primary"
+                              (click)="editFromDetail(); $event.stopPropagation()"
+                            >
+                              <i class="pi pi-pencil"></i> Chỉnh sửa
+                            </button>
+                            <button
+                              type="button"
+                              class="detail-action"
+                              disabled
+                              title="Chưa hỗ trợ in tem"
+                            >
+                              <i class="pi pi-print"></i> In tem mã
+                            </button>
+                            <button
+                              type="button"
+                              class="detail-action"
+                              disabled
+                              title="Chưa hỗ trợ"
+                            >
+                              <i class="pi pi-plus"></i> Thêm hàng hóa cùng loại
+                            </button>
                           </div>
                         </section>
                       }
@@ -225,27 +495,79 @@
                 }
               }
             } @else {
-              <tr class="empty-row"><td colspan="11"><div class="empty-state"><span class="empty-icon"><i class="pi pi-box"></i></span><strong>Chưa có dữ liệu hàng hóa</strong><p>Danh sách sẽ hiển thị tại đây sau khi có dữ liệu sản phẩm được nhập.</p></div></td></tr>
+              <tr class="empty-row">
+                <td colspan="11">
+                  <div class="empty-state">
+                    <span class="empty-icon"><i class="pi pi-box"></i></span
+                    ><strong>Chưa có dữ liệu hàng hóa</strong>
+                    <p>Danh sách sẽ hiển thị tại đây sau khi có dữ liệu sản phẩm được nhập.</p>
+                  </div>
+                </td>
+              </tr>
             }
           </tbody>
         </table>
       </div>
-      <footer class="table-footer"><span>{{ productsLoading ? 'Đang tải…' : pageStart + '–' + pageEnd + ' / ' + totalProducts }}</span><div class="pagination"><span>Dòng mỗi trang: {{ pageSize }}</span><button type="button" [disabled]="currentPage <= 1 || productsLoading" (click)="previousPage()" aria-label="Trang trước"><i class="pi pi-angle-left"></i></button><button type="button" [disabled]="currentPage * pageSize >= totalProducts || productsLoading" (click)="nextPage()" aria-label="Trang sau"><i class="pi pi-angle-right"></i></button></div></footer>
+      <footer class="table-footer">
+        <span>{{
+          productsLoading ? 'Đang tải…' : pageStart + '–' + pageEnd + ' / ' + totalProducts
+        }}</span>
+        <div class="pagination">
+          <span>Dòng mỗi trang: {{ pageSize }}</span
+          ><button
+            type="button"
+            [disabled]="currentPage <= 1 || productsLoading"
+            (click)="previousPage()"
+            aria-label="Trang trước"
+          >
+            <i class="pi pi-angle-left"></i></button
+          ><button
+            type="button"
+            [disabled]="currentPage * pageSize >= totalProducts || productsLoading"
+            (click)="nextPage()"
+            aria-label="Trang sau"
+          >
+            <i class="pi pi-angle-right"></i>
+          </button>
+        </div>
+      </footer>
     </section>
   </div>
 </section>
 
 @if (productDialogOpen) {
   <div class="dialog-backdrop" (click)="closeProductDialog()">
-    <section class="product-dialog" role="dialog" aria-modal="true" aria-labelledby="product-dialog-title" (click)="$event.stopPropagation()">
+    <section
+      class="product-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="product-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
       <header class="dialog-header">
-        <h2 id="product-dialog-title">{{ productDialogMode === 'edit' ? 'Chỉnh sửa hàng hóa' : 'Tạo hàng hóa' }}</h2>
-        <button class="dialog-close" type="button" aria-label="Đóng" (click)="closeProductDialog()"><i class="pi pi-times"></i></button>
+        <h2 id="product-dialog-title">
+          {{ productDialogMode === 'edit' ? 'Chỉnh sửa hàng hóa' : 'Tạo hàng hóa' }}
+        </h2>
+        <button class="dialog-close" type="button" aria-label="Đóng" (click)="closeProductDialog()">
+          <i class="pi pi-times"></i>
+        </button>
       </header>
 
       <div class="product-tabs">
-        <button type="button" [class.active]="productDialogTab === 'info'" (click)="productDialogTab = 'info'">Thông tin</button>
-        <button type="button" [class.active]="productDialogTab === 'description'" (click)="productDialogTab = 'description'">Mô tả</button>
+        <button
+          type="button"
+          [class.active]="productDialogTab === 'info'"
+          (click)="productDialogTab = 'info'"
+        >
+          Thông tin
+        </button>
+        <button
+          type="button"
+          [class.active]="productDialogTab === 'description'"
+          (click)="productDialogTab = 'description'"
+        >
+          Mô tả
+        </button>
       </div>
 
       <div class="product-dialog-body">
@@ -253,20 +575,55 @@
           <section class="product-section product-basic-section">
             <div class="product-basic-fields">
               <div class="product-grid">
-                <label>Mã hàng
-                  <input name="productSku" [ngModel]="productForm.sku" (ngModelChange)="patchProduct('sku', $event)" [placeholder]="productDialogMode === 'edit' ? '' : 'Tự động'" autocomplete="off" />
+                <label
+                  >Mã hàng
+                  <input
+                    name="productSku"
+                    [ngModel]="productForm.sku"
+                    (ngModelChange)="patchProduct('sku', $event)"
+                    [placeholder]="productDialogMode === 'edit' ? '' : 'Tự động'"
+                    autocomplete="off"
+                  />
                 </label>
-                <label>Mã vạch
-                  <input name="productBarcode" [ngModel]="productForm.barcode" (ngModelChange)="patchProduct('barcode', $event)" placeholder="Nhập mã vạch" autocomplete="off" />
+                <label
+                  >Mã vạch
+                  <input
+                    name="productBarcode"
+                    [ngModel]="productForm.barcode"
+                    (ngModelChange)="patchProduct('barcode', $event)"
+                    placeholder="Nhập mã vạch"
+                    autocomplete="off"
+                  />
                 </label>
-                <label class="span-2">Tên hàng <b>*</b>
-                  <input name="productName" [ngModel]="productForm.name" (ngModelChange)="patchProduct('name', $event)" placeholder="Tên hàng hóa" autocomplete="off" />
+                <label class="span-2"
+                  >Tên hàng <b>*</b>
+                  <input
+                    name="productName"
+                    [ngModel]="productForm.name"
+                    (ngModelChange)="patchProduct('name', $event)"
+                    placeholder="Tên hàng hóa"
+                    autocomplete="off"
+                  />
                 </label>
-                <label>Nhóm hàng
-                  <input name="productCategory" [ngModel]="productForm.categoryPath" (ngModelChange)="patchProduct('categoryPath', $event)" placeholder="VD: Bút viết" autocomplete="off" />
+                <label
+                  >Nhóm hàng
+                  <input
+                    name="productCategory"
+                    [ngModel]="productForm.categoryPath"
+                    (ngModelChange)="patchProduct('categoryPath', $event)"
+                    placeholder="VD: Bút viết"
+                    autocomplete="off"
+                  />
                 </label>
-                <label>Thương hiệu
-                  <input name="productBrand" [ngModel]="productForm.brand" (ngModelChange)="patchProduct('brand', $event)" placeholder="Chọn thương hiệu" autocomplete="off" />
+                <label
+                  >Thương hiệu
+                  <input
+                    name="productBrand"
+                    [ngModel]="productForm.brand"
+                    (ngModelChange)="patchProduct('brand', $event)"
+                    placeholder="Chọn thương hiệu"
+                    autocomplete="off"
+                  />
                 </label>
               </div>
             </div>
@@ -292,10 +649,20 @@
                   @for (preview of imagePreviews; track $index) {
                     <div class="image-thumb">
                       <img [src]="preview" alt="" />
-                      <button type="button" aria-label="Bỏ ảnh" (click)="clearSelectedImage($index)">×</button>
+                      <button
+                        type="button"
+                        aria-label="Bỏ ảnh"
+                        (click)="clearSelectedImage($index)"
+                      >
+                        ×
+                      </button>
                     </div>
                   }
-                  <label class="image-thumb image-thumb-add" for="productImageFile" title="Thêm ảnh">
+                  <label
+                    class="image-thumb image-thumb-add"
+                    for="productImageFile"
+                    title="Thêm ảnh"
+                  >
                     <i class="pi pi-plus"></i>
                   </label>
                 </div>
@@ -304,7 +671,9 @@
                 <i class="pi pi-upload"></i> {{ imagePreview ? 'Đổi ảnh' : 'Thêm ảnh' }}
               </label>
               @if (imageFiles.length) {
-                <button type="button" class="image-remove" (click)="clearSelectedImage()">Bỏ ảnh mới</button>
+                <button type="button" class="image-remove" (click)="clearSelectedImage()">
+                  Bỏ ảnh mới
+                </button>
               }
               <small class="image-hint">JPG, PNG, WEBP, GIF<br />tối đa 5 MB</small>
             </div>
@@ -313,11 +682,27 @@
           <section class="product-section">
             <h3>Giá vốn, giá bán</h3>
             <div class="product-grid">
-              <label>Giá vốn
-                <input type="number" min="0" name="productCost" [ngModel]="productForm.costPrice" (ngModelChange)="patchProduct('costPrice', $event)" placeholder="0" />
+              <label
+                >Giá vốn
+                <input
+                  type="number"
+                  min="0"
+                  name="productCost"
+                  [ngModel]="productForm.costPrice"
+                  (ngModelChange)="patchProduct('costPrice', $event)"
+                  placeholder="0"
+                />
               </label>
-              <label>Giá bán
-                <input type="number" min="0" name="productPrice" [ngModel]="productForm.salePrice" (ngModelChange)="patchProduct('salePrice', $event)" placeholder="0" />
+              <label
+                >Giá bán
+                <input
+                  type="number"
+                  min="0"
+                  name="productPrice"
+                  [ngModel]="productForm.salePrice"
+                  (ngModelChange)="patchProduct('salePrice', $event)"
+                  placeholder="0"
+                />
               </label>
             </div>
           </section>
@@ -325,14 +710,38 @@
           <section class="product-section">
             <h3>Tồn kho</h3>
             <div class="product-grid product-grid--3">
-              <label>Tồn kho
-                <input type="number" min="0" name="productStock" [ngModel]="productForm.stock" (ngModelChange)="patchProduct('stock', $event)" placeholder="0" />
+              <label
+                >Tồn kho
+                <input
+                  type="number"
+                  min="0"
+                  name="productStock"
+                  [ngModel]="productForm.stock"
+                  (ngModelChange)="patchProduct('stock', $event)"
+                  placeholder="0"
+                />
               </label>
-              <label>Định mức thấp nhất
-                <input type="number" min="0" name="productMinStock" [ngModel]="productForm.minStock" (ngModelChange)="patchProduct('minStock', $event)" placeholder="0" />
+              <label
+                >Định mức thấp nhất
+                <input
+                  type="number"
+                  min="0"
+                  name="productMinStock"
+                  [ngModel]="productForm.minStock"
+                  (ngModelChange)="patchProduct('minStock', $event)"
+                  placeholder="0"
+                />
               </label>
-              <label>Định mức cao nhất
-                <input type="number" min="0" name="productMaxStock" [ngModel]="productForm.maxStock" (ngModelChange)="patchProduct('maxStock', $event)" placeholder="0" />
+              <label
+                >Định mức cao nhất
+                <input
+                  type="number"
+                  min="0"
+                  name="productMaxStock"
+                  [ngModel]="productForm.maxStock"
+                  (ngModelChange)="patchProduct('maxStock', $event)"
+                  placeholder="0"
+                />
               </label>
             </div>
           </section>
@@ -340,15 +749,35 @@
           <section class="product-section">
             <h3>Vị trí, trọng lượng</h3>
             <div class="product-grid">
-              <label>Vị trí
-                <input name="productPosition" [ngModel]="productForm.position" (ngModelChange)="patchProduct('position', $event)" placeholder="Chọn vị trí" autocomplete="off" />
+              <label
+                >Vị trí
+                <input
+                  name="productPosition"
+                  [ngModel]="productForm.position"
+                  (ngModelChange)="patchProduct('position', $event)"
+                  placeholder="Chọn vị trí"
+                  autocomplete="off"
+                />
               </label>
-              <label>Trọng lượng (g)
-                <input type="number" min="0" name="productWeight" [ngModel]="productForm.weight" (ngModelChange)="patchProduct('weight', $event)" placeholder="0" />
+              <label
+                >Trọng lượng (g)
+                <input
+                  type="number"
+                  min="0"
+                  name="productWeight"
+                  [ngModel]="productForm.weight"
+                  (ngModelChange)="patchProduct('weight', $event)"
+                  placeholder="0"
+                />
               </label>
             </div>
             <label class="product-check">
-              <input type="checkbox" name="productDirectSale" [ngModel]="productForm.isDirectSale" (ngModelChange)="patchProduct('isDirectSale', $event)" />
+              <input
+                type="checkbox"
+                name="productDirectSale"
+                [ngModel]="productForm.isDirectSale"
+                (ngModelChange)="patchProduct('isDirectSale', $event)"
+              />
               <span>Bán trực tiếp</span>
             </label>
           </section>
@@ -357,7 +786,9 @@
             <h3>Quản lý theo đơn vị tính và thuộc tính</h3>
 
             <h4 class="section-subhead">Đơn vị tính</h4>
-            <p class="section-hint">Thêm đơn vị quy đổi như hộp, lốc, thùng… để tính nhanh giá và tồn kho.</p>
+            <p class="section-hint">
+              Thêm đơn vị quy đổi như hộp, lốc, thùng… để tính nhanh giá và tồn kho.
+            </p>
             @for (unit of productForm.units; track $index; let i = $index) {
               <div class="unit-row">
                 <input
@@ -369,19 +800,51 @@
                 />
                 @if (i > 0) {
                   <span class="unit-equals">=</span>
-                  <input class="unit-conversion" type="number" min="1" [name]="'unitConversion' + i" [ngModel]="unit.conversion" (ngModelChange)="patchUnit(i, 'conversion', $event)" />
+                  <input
+                    class="unit-conversion"
+                    type="number"
+                    min="1"
+                    [name]="'unitConversion' + i"
+                    [ngModel]="unit.conversion"
+                    (ngModelChange)="patchUnit(i, 'conversion', $event)"
+                  />
                   <span class="unit-base-name">{{ productForm.units[0].name || 'đơn vị' }}</span>
                 } @else {
                   <span class="unit-base-label">Đơn vị cơ bản</span>
                 }
-                <input class="unit-price" type="number" min="0" [name]="'unitPrice' + i" [ngModel]="unit.salePrice" (ngModelChange)="patchUnit(i, 'salePrice', $event)" placeholder="Giá bán" />
-                <label class="unit-direct"><input type="checkbox" [name]="'unitDirect' + i" [ngModel]="unit.isDirectSale" (ngModelChange)="patchUnit(i, 'isDirectSale', $event)" /> Bán trực tiếp</label>
+                <input
+                  class="unit-price"
+                  type="number"
+                  min="0"
+                  [name]="'unitPrice' + i"
+                  [ngModel]="unit.salePrice"
+                  (ngModelChange)="patchUnit(i, 'salePrice', $event)"
+                  placeholder="Giá bán"
+                />
+                <label class="unit-direct"
+                  ><input
+                    type="checkbox"
+                    [name]="'unitDirect' + i"
+                    [ngModel]="unit.isDirectSale"
+                    (ngModelChange)="patchUnit(i, 'isDirectSale', $event)"
+                  />
+                  Bán trực tiếp</label
+                >
                 @if (i > 0) {
-                  <button type="button" class="row-remove" aria-label="Bỏ đơn vị" (click)="removeUnit(i)"><i class="pi pi-trash"></i></button>
+                  <button
+                    type="button"
+                    class="row-remove"
+                    aria-label="Bỏ đơn vị"
+                    (click)="removeUnit(i)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
                 }
               </div>
             }
-            <button type="button" class="link-button" (click)="addUnit()"><i class="pi pi-plus"></i> Thêm đơn vị</button>
+            <button type="button" class="link-button" (click)="addUnit()">
+              <i class="pi pi-plus"></i> Thêm đơn vị
+            </button>
 
             <h4 class="section-subhead">Thuộc tính</h4>
             <p class="section-hint">Thêm đặc điểm như hương vị, dung tích, màu sắc.</p>
@@ -396,7 +859,16 @@
                 />
                 <div class="attribute-values">
                   @for (value of attribute.values; track value) {
-                    <span class="value-chip">{{ value }}<button type="button" aria-label="Bỏ giá trị" (click)="removeAttributeValue(i, value)">×</button></span>
+                    <span class="value-chip"
+                      >{{ value
+                      }}<button
+                        type="button"
+                        aria-label="Bỏ giá trị"
+                        (click)="removeAttributeValue(i, value)"
+                      >
+                        ×
+                      </button></span
+                    >
                   }
                   <input
                     class="attribute-value-input"
@@ -406,17 +878,35 @@
                     (keydown.enter)="addAttributeValue(i); $event.preventDefault()"
                     placeholder="Thêm giá trị rồi Enter"
                   />
-                  <button type="button" class="value-add" aria-label="Thêm giá trị" (click)="addAttributeValue(i)"><i class="pi pi-plus"></i></button>
+                  <button
+                    type="button"
+                    class="value-add"
+                    aria-label="Thêm giá trị"
+                    (click)="addAttributeValue(i)"
+                  >
+                    <i class="pi pi-plus"></i>
+                  </button>
                 </div>
-                <button type="button" class="row-remove" aria-label="Bỏ thuộc tính" (click)="removeAttribute(i)"><i class="pi pi-trash"></i></button>
+                <button
+                  type="button"
+                  class="row-remove"
+                  aria-label="Bỏ thuộc tính"
+                  (click)="removeAttribute(i)"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
               </div>
             }
-            <button type="button" class="link-button" (click)="addAttribute()"><i class="pi pi-plus"></i> Thêm thuộc tính</button>
+            <button type="button" class="link-button" (click)="addAttribute()">
+              <i class="pi pi-plus"></i> Thêm thuộc tính
+            </button>
 
             <div class="variants-head">
               <h4 class="section-subhead">Hàng cùng loại</h4>
               @if (productForm.attributes.length) {
-                <button type="button" class="link-button" (click)="generateVariants()"><i class="pi pi-sitemap"></i> Tạo biến thể từ thuộc tính</button>
+                <button type="button" class="link-button" (click)="generateVariants()">
+                  <i class="pi pi-sitemap"></i> Tạo biến thể từ thuộc tính
+                </button>
               }
             </div>
             @if (productForm.variants.length) {
@@ -424,21 +914,95 @@
                 <table class="variant-table">
                   <thead>
                     <tr>
-                      <th>Giá trị thuộc tính</th><th>Đơn vị</th><th>Quy đổi</th><th>Mã hàng</th><th>Mã vạch</th><th>Giá vốn</th><th>Giá bán</th><th>Tồn kho</th><th></th>
+                      <th>Giá trị thuộc tính</th>
+                      <th>Đơn vị</th>
+                      <th>Quy đổi</th>
+                      <th>Mã hàng</th>
+                      <th>Mã vạch</th>
+                      <th>Giá vốn</th>
+                      <th>Giá bán</th>
+                      <th>Tồn kho</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     @for (variant of productForm.variants; track $index; let i = $index) {
                       <tr>
-                        <td><input [name]="'variantName' + i" [ngModel]="variant.name" (ngModelChange)="patchVariant(i, 'name', $event)" /></td>
-                        <td><input [name]="'variantUnit' + i" [ngModel]="variant.unit" (ngModelChange)="patchVariant(i, 'unit', $event)" /></td>
-                        <td><input type="number" min="1" [name]="'variantConversion' + i" [ngModel]="variant.conversion" (ngModelChange)="patchVariant(i, 'conversion', $event)" /></td>
-                        <td><input [name]="'variantSku' + i" [ngModel]="variant.sku" (ngModelChange)="patchVariant(i, 'sku', $event)" placeholder="Tự động" /></td>
-                        <td><input [name]="'variantBarcode' + i" [ngModel]="variant.barcode" (ngModelChange)="patchVariant(i, 'barcode', $event)" /></td>
-                        <td><input type="number" min="0" [name]="'variantCost' + i" [ngModel]="variant.costPrice" (ngModelChange)="patchVariant(i, 'costPrice', $event)" /></td>
-                        <td><input type="number" min="0" [name]="'variantPrice' + i" [ngModel]="variant.salePrice" (ngModelChange)="patchVariant(i, 'salePrice', $event)" /></td>
-                        <td><input type="number" min="0" [name]="'variantStock' + i" [ngModel]="variant.stock" (ngModelChange)="patchVariant(i, 'stock', $event)" /></td>
-                        <td><button type="button" class="row-remove" aria-label="Bỏ biến thể" (click)="removeVariant(i)"><i class="pi pi-trash"></i></button></td>
+                        <td>
+                          <input
+                            [name]="'variantName' + i"
+                            [ngModel]="variant.name"
+                            (ngModelChange)="patchVariant(i, 'name', $event)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            [name]="'variantUnit' + i"
+                            [ngModel]="variant.unit"
+                            (ngModelChange)="patchVariant(i, 'unit', $event)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="1"
+                            [name]="'variantConversion' + i"
+                            [ngModel]="variant.conversion"
+                            (ngModelChange)="patchVariant(i, 'conversion', $event)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            [name]="'variantSku' + i"
+                            [ngModel]="variant.sku"
+                            (ngModelChange)="patchVariant(i, 'sku', $event)"
+                            placeholder="Tự động"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            [name]="'variantBarcode' + i"
+                            [ngModel]="variant.barcode"
+                            (ngModelChange)="patchVariant(i, 'barcode', $event)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            [name]="'variantCost' + i"
+                            [ngModel]="variant.costPrice"
+                            (ngModelChange)="patchVariant(i, 'costPrice', $event)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            [name]="'variantPrice' + i"
+                            [ngModel]="variant.salePrice"
+                            (ngModelChange)="patchVariant(i, 'salePrice', $event)"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            [name]="'variantStock' + i"
+                            [ngModel]="variant.stock"
+                            (ngModelChange)="patchVariant(i, 'stock', $event)"
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            class="row-remove"
+                            aria-label="Bỏ biến thể"
+                            (click)="removeVariant(i)"
+                          >
+                            <i class="pi pi-trash"></i>
+                          </button>
+                        </td>
                       </tr>
                     }
                   </tbody>
@@ -461,18 +1025,30 @@
       </div>
 
       @if (productModalError) {
-        <p class="product-modal-error"><i class="pi pi-exclamation-circle"></i> {{ productModalError }}</p>
+        <p class="product-modal-error">
+          <i class="pi pi-exclamation-circle"></i> {{ productModalError }}
+        </p>
       }
 
       <footer class="product-dialog-footer">
         <button type="button" class="product-cancel" (click)="closeProductDialog()">Bỏ qua</button>
         <div class="product-save-actions">
           @if (productDialogMode === 'create') {
-            <button type="button" class="product-save-secondary" [disabled]="productSaving" (click)="saveProduct(true)">
+            <button
+              type="button"
+              class="product-save-secondary"
+              [disabled]="productSaving"
+              (click)="saveProduct(true)"
+            >
               Lưu &amp; Tạo thêm hàng
             </button>
           }
-          <button type="button" class="product-save" [disabled]="productSaving" (click)="saveProduct(false)">
+          <button
+            type="button"
+            class="product-save"
+            [disabled]="productSaving"
+            (click)="saveProduct(false)"
+          >
             {{ productSaving ? 'Đang lưu…' : 'Lưu' }}
           </button>
         </div>
@@ -483,35 +1059,68 @@
 
 @if (importOpen) {
   <div class="dialog-backdrop" (click)="closeImport()">
-    <section class="import-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title" (click)="$event.stopPropagation()">
+    <section
+      class="import-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="import-title"
+      (click)="$event.stopPropagation()"
+    >
       <header class="dialog-header">
         <h2 id="import-title">Nhập hàng hóa từ file dữ liệu</h2>
-        <span class="template-link">Tải file mẫu: <button type="button" (click)="downloadTemplate()">Excel (.xlsx)</button><i class="pi pi-info-circle" title="File mẫu chỉ có tiêu đề cột, không chứa dữ liệu ví dụ"></i></span>
-        <button class="dialog-close" type="button" aria-label="Đóng" (click)="closeImport()"><i class="pi pi-times"></i></button>
+        <span class="template-link"
+          >Tải file mẫu: <button type="button" (click)="downloadTemplate()">Excel (.xlsx)</button
+          ><i
+            class="pi pi-info-circle"
+            title="File mẫu chỉ có tiêu đề cột, không chứa dữ liệu ví dụ"
+          ></i
+        ></span>
+        <button class="dialog-close" type="button" aria-label="Đóng" (click)="closeImport()">
+          <i class="pi pi-times"></i>
+        </button>
       </header>
 
       <div class="dialog-content">
         <section class="import-setting">
           <h3>Xử lý trùng mã hàng/mã vạch, khác tên hàng hóa?</h3>
-          <label><input type="radio" name="duplicate-name" checked /><span>Báo lỗi và dừng import</span></label>
-          <label><input type="radio" name="duplicate-name" /><span>Thay thế tên hàng cũ bằng tên hàng mới</span></label>
+          <label
+            ><input type="radio" name="duplicate-name" checked /><span
+              >Báo lỗi và dừng import</span
+            ></label
+          >
+          <label
+            ><input type="radio" name="duplicate-name" /><span
+              >Thay thế tên hàng cũ bằng tên hàng mới</span
+            ></label
+          >
         </section>
         <section class="import-setting">
           <h3>Xử lý trùng mã vạch, khác mã hàng?</h3>
-          <label><input type="radio" name="duplicate-barcode" checked /><span>Báo lỗi và dừng import</span></label>
-          <label><input type="radio" name="duplicate-barcode" /><span>Thay thế mã hàng cũ bằng mã hàng mới</span></label>
+          <label
+            ><input type="radio" name="duplicate-barcode" checked /><span
+              >Báo lỗi và dừng import</span
+            ></label
+          >
+          <label
+            ><input type="radio" name="duplicate-barcode" /><span
+              >Thay thế mã hàng cũ bằng mã hàng mới</span
+            ></label
+          >
         </section>
         <section class="import-setting import-setting--compact">
           <h3>Cập nhật tồn kho?</h3>
-          <label><input type="radio" name="update-stock" checked /><span>Không</span></label><label><input type="radio" name="update-stock" /><span>Có</span></label>
+          <label><input type="radio" name="update-stock" checked /><span>Không</span></label
+          ><label><input type="radio" name="update-stock" /><span>Có</span></label>
         </section>
         <section class="import-setting import-setting--compact">
           <h3>Cập nhật giá vốn?</h3>
-          <label><input type="radio" name="update-cost" checked /><span>Không</span></label><label><input type="radio" name="update-cost" /><span>Có</span></label>
+          <label><input type="radio" name="update-cost" checked /><span>Không</span></label
+          ><label><input type="radio" name="update-cost" /><span>Có</span></label>
         </section>
         <section class="import-setting import-setting--compact">
           <h3>Cập nhật mô tả?</h3>
-          <label><input type="radio" name="update-description" checked /><span>Không</span></label><label><input type="radio" name="update-description" /><span>Có</span></label>
+          <label><input type="radio" name="update-description" checked /><span>Không</span></label
+          ><label><input type="radio" name="update-description" /><span>Có</span></label>
         </section>
 
         <section
@@ -556,15 +1165,24 @@
         </section>
 
         @if (importReady) {
-          <p class="api-notice"><i class="pi pi-info-circle"></i> File được kiểm tra trước khi gửi. Sản phẩm sẽ lưu trong PostgreSQL; ảnh đồng bộ lên R2 và dialog chỉ xong khi ảnh xong.</p>
+          <p class="api-notice">
+            <i class="pi pi-info-circle"></i> File được kiểm tra trước khi gửi. Sản phẩm sẽ lưu
+            trong PostgreSQL; ảnh đồng bộ lên R2 và dialog chỉ xong khi ảnh xong.
+          </p>
         }
-        @if (importResult) { <p class="api-notice api-notice--success"><i class="pi pi-check-circle"></i>{{ importResult }}</p> }
+        @if (importResult) {
+          <p class="api-notice api-notice--success">
+            <i class="pi pi-check-circle"></i>{{ importResult }}
+          </p>
+        }
         @if (importing) {
           <section class="import-progress" aria-live="polite" aria-label="Tiến độ nhập hàng hóa">
             @if (importPhase === 'upload') {
               <div class="import-progress__heading">
                 <strong>{{ importStage }}</strong>
-                @if (importProgress !== null) { <span>{{ importProgress }}%</span> }
+                @if (importProgress !== null) {
+                  <span>{{ importProgress }}%</span>
+                }
               </div>
               <div
                 class="import-progress__track"
@@ -580,7 +1198,10 @@
               <div class="progress-block">
                 <div class="progress-block__head">
                   <strong><i class="pi pi-box"></i> Sản phẩm</strong>
-                  <span>{{ productProcessed | number:'1.0-0' }} / {{ productTotal ? (productTotal | number:'1.0-0') : '…' }}</span>
+                  <span
+                    >{{ productProcessed | number: '1.0-0' }} /
+                    {{ productTotal ? (productTotal | number: '1.0-0') : '…' }}</span
+                  >
                 </div>
                 <div
                   class="import-progress__track"
@@ -598,7 +1219,10 @@
                 <div class="progress-block">
                   <div class="progress-block__head">
                     <strong><i class="pi pi-image"></i> Hình ảnh</strong>
-                    <span>{{ (imageStored + imageFailed) | number:'1.0-0' }} / {{ imageTotal | number:'1.0-0' }}</span>
+                    <span
+                      >{{ imageStored + imageFailed | number: '1.0-0' }} /
+                      {{ imageTotal | number: '1.0-0' }}</span
+                    >
                   </div>
                   <div
                     class="import-progress__track"
@@ -610,22 +1234,33 @@
                     <span [style.width.%]="imagePercent"></span>
                   </div>
                   <p class="progress-note">
-                    {{ imagePending | number:'1.0-0' }} ảnh đang chờ đồng bộ lên R2
-                    @if (imageFailed > 0) { · {{ imageFailed | number:'1.0-0' }} lỗi }
+                    {{ imagePending | number: '1.0-0' }} ảnh đang chờ đồng bộ lên R2
+                    @if (imageFailed > 0) {
+                      · {{ imageFailed | number: '1.0-0' }} lỗi
+                    }
                   </p>
                 </div>
               }
 
-              @if (importStage) { <p class="progress-note">{{ importStage }}</p> }
+              @if (importStage) {
+                <p class="progress-note">{{ importStage }}</p>
+              }
             }
           </section>
         }
       </div>
 
       <footer class="dialog-footer">
-        <span class="file-hint">Chọn file Excel (.xlsx) để kiểm tra cột và dữ liệu trước khi gửi.</span>
+        <span class="file-hint"
+          >Chọn file Excel (.xlsx) để kiểm tra cột và dữ liệu trước khi gửi.</span
+        >
         <div class="dialog-actions">
-          <button class="import-submit" type="button" [disabled]="!importReady || importing" (click)="importFile()">
+          <button
+            class="import-submit"
+            type="button"
+            [disabled]="!importReady || importing"
+            (click)="importFile()"
+          >
             {{ importing ? 'Đang nhập…' : 'Thực hiện' }}
           </button>
         </div>

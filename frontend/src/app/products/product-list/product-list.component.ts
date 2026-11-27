@@ -88,16 +88,26 @@ export class ProductListComponent implements OnInit, OnDestroy {
   productsLoading = false;
   productsError = '';
   readonly imageSources = new Map<string, string>();
-  get pageStart(): number { return this.totalProducts === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1; }
-  get pageEnd(): number { return Math.min(this.currentPage * this.pageSize, this.totalProducts); }
+  get pageStart(): number {
+    return this.totalProducts === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+  get pageEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.totalProducts);
+  }
   get productPercent(): number {
-    return this.productTotal > 0 ? Math.min(100, Math.round(this.productProcessed / this.productTotal * 100)) : 0;
+    return this.productTotal > 0
+      ? Math.min(100, Math.round((this.productProcessed / this.productTotal) * 100))
+      : 0;
   }
   get imagePercent(): number {
-    return this.imageTotal > 0 ? Math.min(100, Math.round((this.imageStored + this.imageFailed) / this.imageTotal * 100)) : 0;
+    return this.imageTotal > 0
+      ? Math.min(100, Math.round(((this.imageStored + this.imageFailed) / this.imageTotal) * 100))
+      : 0;
   }
 
-  ngOnInit(): void { this.loadProducts(); }
+  ngOnInit(): void {
+    this.loadProducts();
+  }
 
   ngOnDestroy(): void {
     this.stopImportTimers();
@@ -109,35 +119,58 @@ export class ProductListComponent implements OnInit, OnDestroy {
     this.productsLoading = true;
     this.productsError = '';
     this.clearImageSources();
-    this.http.get<ProductPage>(`${environment.apiUrl}/api/v1/products`, {
-      params: { page: this.currentPage, pageSize: this.pageSize, ...(this.search.trim() ? { search: this.search.trim() } : {}) },
-    }).subscribe({
-      next: (result) => {
-        this.products = result.items;
-        this.totalProducts = result.total;
-        this.productsLoading = false;
-        this.cdr.markForCheck();
-        for (const product of result.items) {
-          if (!product.imageId || product.imageId === '00000000-0000-0000-0000-000000000000') continue;
-          this.http.get(`${environment.apiUrl}/api/v1/products/${product.id}/images/${product.imageId}`, { responseType: 'blob' })
-            .subscribe({ next: (blob) => {
-              this.imageSources.set(product.id, URL.createObjectURL(blob));
-              this.cdr.markForCheck();
-            } });
-        }
-      },
-      error: () => {
-        this.products = [];
-        this.totalProducts = 0;
-        this.productsLoading = false;
-        this.productsError = 'Chưa kết nối được API sản phẩm. Dữ liệu chưa được tải.';
-        this.cdr.markForCheck();
-      },
-    });
+    this.http
+      .get<ProductPage>(`${environment.apiUrl}/api/v1/products`, {
+        params: {
+          page: this.currentPage,
+          pageSize: this.pageSize,
+          ...(this.search.trim() ? { search: this.search.trim() } : {}),
+        },
+      })
+      .subscribe({
+        next: (result) => {
+          this.products = result.items;
+          this.totalProducts = result.total;
+          this.productsLoading = false;
+          this.cdr.markForCheck();
+          for (const product of result.items) {
+            if (!product.imageId || product.imageId === '00000000-0000-0000-0000-000000000000')
+              continue;
+            this.http
+              .get(
+                `${environment.apiUrl}/api/v1/products/${product.id}/images/${product.imageId}`,
+                { responseType: 'blob' },
+              )
+              .subscribe({
+                next: (blob) => {
+                  this.imageSources.set(product.id, URL.createObjectURL(blob));
+                  this.cdr.markForCheck();
+                },
+              });
+          }
+        },
+        error: () => {
+          this.products = [];
+          this.totalProducts = 0;
+          this.productsLoading = false;
+          this.productsError = 'Chưa kết nối được API sản phẩm. Dữ liệu chưa được tải.';
+          this.cdr.markForCheck();
+        },
+      });
   }
 
-  previousPage(): void { if (this.currentPage > 1) { this.currentPage -= 1; this.loadProducts(); } }
-  nextPage(): void { if (this.currentPage * this.pageSize < this.totalProducts) { this.currentPage += 1; this.loadProducts(); } }
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+      this.loadProducts();
+    }
+  }
+  nextPage(): void {
+    if (this.currentPage * this.pageSize < this.totalProducts) {
+      this.currentPage += 1;
+      this.loadProducts();
+    }
+  }
 
   onSearch(value: string): void {
     this.search = value;
@@ -204,11 +237,20 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   patchProduct(field: keyof ProductForm, value: unknown): void {
-    const numericFields: (keyof ProductForm)[] = ['salePrice', 'costPrice', 'stock', 'minStock', 'maxStock', 'weight'];
+    const numericFields: (keyof ProductForm)[] = [
+      'salePrice',
+      'costPrice',
+      'stock',
+      'minStock',
+      'maxStock',
+      'weight',
+    ];
     this.productForm = {
       ...this.productForm,
       [field]: numericFields.includes(field)
-        ? (value === '' || value === null || value === undefined ? null : Number(value))
+        ? value === '' || value === null || value === undefined
+          ? null
+          : Number(value)
         : field === 'isDirectSale'
           ? Boolean(value)
           : String(value ?? ''),
@@ -218,13 +260,19 @@ export class ProductListComponent implements OnInit, OnDestroy {
   addUnit(): void {
     this.productForm = {
       ...this.productForm,
-      units: [...this.productForm.units, { name: '', conversion: null, salePrice: null, isDirectSale: true }],
+      units: [
+        ...this.productForm.units,
+        { name: '', conversion: null, salePrice: null, isDirectSale: true },
+      ],
     };
   }
 
   removeUnit(index: number): void {
     if (index === 0) return;
-    this.productForm = { ...this.productForm, units: this.productForm.units.filter((_, i) => i !== index) };
+    this.productForm = {
+      ...this.productForm,
+      units: this.productForm.units.filter((_, i) => i !== index),
+    };
   }
 
   patchUnit(index: number, field: keyof ProductUnit, value: unknown): void {
@@ -277,13 +325,17 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   removeAttributeValue(index: number, value: string): void {
     const attributes = this.productForm.attributes.map((attribute, i) =>
-      i === index ? { ...attribute, values: attribute.values.filter((item) => item !== value) } : attribute,
+      i === index
+        ? { ...attribute, values: attribute.values.filter((item) => item !== value) }
+        : attribute,
     );
     this.productForm = { ...this.productForm, attributes };
   }
 
   generateVariants(): void {
-    const attributes = this.productForm.attributes.filter((attribute) => attribute.name.trim() && attribute.values.length);
+    const attributes = this.productForm.attributes.filter(
+      (attribute) => attribute.name.trim() && attribute.values.length,
+    );
     if (!attributes.length) {
       this.productForm = { ...this.productForm, variants: [] };
       return;
@@ -322,7 +374,10 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   removeVariant(index: number): void {
-    this.productForm = { ...this.productForm, variants: this.productForm.variants.filter((_, i) => i !== index) };
+    this.productForm = {
+      ...this.productForm,
+      variants: this.productForm.variants.filter((_, i) => i !== index),
+    };
   }
 
   onProductImageSelected(event: Event): void {
@@ -333,7 +388,10 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
     for (const file of files) {
       const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-      if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension) && !file.type.startsWith('image/')) {
+      if (
+        !['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension) &&
+        !file.type.startsWith('image/')
+      ) {
         this.productModalError = 'Chỉ nhận ảnh JPG, PNG, WEBP hoặc GIF.';
         continue;
       }
@@ -374,7 +432,10 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   private loadProductImage(imageId: string): void {
-    this.http.get(`${environment.apiUrl}/api/v1/products/${this.editingProductId}/images/${imageId}`, { responseType: 'blob' })
+    this.http
+      .get(`${environment.apiUrl}/api/v1/products/${this.editingProductId}/images/${imageId}`, {
+        responseType: 'blob',
+      })
       .subscribe({
         next: (blob) => {
           this.existingImageUrl = URL.createObjectURL(blob);
@@ -399,13 +460,15 @@ export class ProductListComponent implements OnInit, OnDestroy {
       const form = new FormData();
       form.append('file', files[index], files[index].name);
       const replace = index === 0 && !!this.existingImageUrl;
-      this.http.post(`${environment.apiUrl}/api/v1/products/${productId}/images?replace=${replace}`, form).subscribe({
-        next: () => uploadAt(index + 1),
-        error: () => {
-          this.productNotice = `Đã lưu sản phẩm nhưng chưa tải được ảnh: ${this.lastSavedProduct?.name ?? ''}.`;
-          this.finishProductSave(this.lastSavedProduct!, this.pendingCreateAnother);
-        },
-      });
+      this.http
+        .post(`${environment.apiUrl}/api/v1/products/${productId}/images?replace=${replace}`, form)
+        .subscribe({
+          next: () => uploadAt(index + 1),
+          error: () => {
+            this.productNotice = `Đã lưu sản phẩm nhưng chưa tải được ảnh: ${this.lastSavedProduct?.name ?? ''}.`;
+            this.finishProductSave(this.lastSavedProduct!, this.pendingCreateAnother);
+          },
+        });
     };
     uploadAt(0);
   }
@@ -415,9 +478,10 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   private finishProductSave(saved: ProductDetail, createAnother: boolean): void {
     this.productSaving = false;
-    this.productNotice = this.productDialogMode === 'edit'
-      ? `Đã cập nhật ${saved.name}.`
-      : `Đã tạo ${saved.name} (${saved.sku}).`;
+    this.productNotice =
+      this.productDialogMode === 'edit'
+        ? `Đã cập nhật ${saved.name}.`
+        : `Đã tạo ${saved.name} (${saved.sku}).`;
     this.currentPage = 1;
     this.loadProducts();
 
@@ -447,7 +511,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
     this.productSaving = true;
     this.productModalError = '';
     const body = {
-      sku: this.productDialogMode === 'edit' ? form.sku.trim() : (form.sku.trim() || null),
+      sku: this.productDialogMode === 'edit' ? form.sku.trim() : form.sku.trim() || null,
       barcode: form.barcode.trim() || null,
       name: form.name.trim(),
       itemType: 'Hàng hóa',
@@ -485,9 +549,13 @@ export class ProductListComponent implements OnInit, OnDestroy {
       })),
     };
 
-    const request = this.productDialogMode === 'edit' && this.editingProductId
-      ? this.http.put<ProductDetail>(`${environment.apiUrl}/api/v1/products/${this.editingProductId}`, body)
-      : this.http.post<ProductDetail>(`${environment.apiUrl}/api/v1/products`, body);
+    const request =
+      this.productDialogMode === 'edit' && this.editingProductId
+        ? this.http.put<ProductDetail>(
+            `${environment.apiUrl}/api/v1/products/${this.editingProductId}`,
+            body,
+          )
+        : this.http.post<ProductDetail>(`${environment.apiUrl}/api/v1/products`, body);
 
     request.subscribe({
       next: (saved) => {
@@ -599,11 +667,26 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   downloadTemplate(): void {
     const headers = [
-      'Loại hàng', 'Nhóm hàng (3 cấp)', 'Mã hàng', 'Mã vạch', 'Tên hàng', 'Thương hiệu',
-      'Giá bán', 'Giá vốn', 'Tồn kho', 'Tồn nhỏ nhất', 'Tồn lớn nhất', 'ĐVT', 'Mã ĐVT Cơ bản', 'Quy đổi',
+      'Loại hàng',
+      'Nhóm hàng (3 cấp)',
+      'Mã hàng',
+      'Mã vạch',
+      'Tên hàng',
+      'Thương hiệu',
+      'Giá bán',
+      'Giá vốn',
+      'Tồn kho',
+      'Tồn nhỏ nhất',
+      'Tồn lớn nhất',
+      'ĐVT',
+      'Mã ĐVT Cơ bản',
+      'Quy đổi',
     ];
     const workbook = this.createXlsx(headers);
-    const workbookBuffer = workbook.buffer.slice(workbook.byteOffset, workbook.byteOffset + workbook.byteLength) as ArrayBuffer;
+    const workbookBuffer = workbook.buffer.slice(
+      workbook.byteOffset,
+      workbook.byteOffset + workbook.byteLength,
+    ) as ArrayBuffer;
     const blob = new Blob([workbookBuffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
@@ -704,37 +787,44 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
     const form = new FormData();
     form.append('file', this.selectedFile, this.selectedFile.name);
-    this.http.post<{ jobId: string; startedAt: string; imageStorageConfigured: boolean }>(
-      `${environment.apiUrl}/api/v1/products/import`, form, { observe: 'events', reportProgress: true },
-    ).subscribe({
-      next: (event) => {
-        if (event.type === HttpEventType.UploadProgress) {
-          if (event.total) {
-            this.importProgress = Math.min(100, Math.round(event.loaded / event.total * 100));
-            this.importStage = this.importProgress >= 100
-              ? 'Đã tải file lên. Máy chủ đang đọc dữ liệu…'
-              : `Đang tải file lên máy chủ… ${this.importProgress}%`;
-          } else {
-            this.importProgress = null;
-            this.importStage = 'Đang tải file lên máy chủ…';
+    this.http
+      .post<{ jobId: string; startedAt: string; imageStorageConfigured: boolean }>(
+        `${environment.apiUrl}/api/v1/products/import`,
+        form,
+        { observe: 'events', reportProgress: true },
+      )
+      .subscribe({
+        next: (event) => {
+          if (event.type === HttpEventType.UploadProgress) {
+            if (event.total) {
+              this.importProgress = Math.min(100, Math.round((event.loaded / event.total) * 100));
+              this.importStage =
+                this.importProgress >= 100
+                  ? 'Đã tải file lên. Máy chủ đang đọc dữ liệu…'
+                  : `Đang tải file lên máy chủ… ${this.importProgress}%`;
+            } else {
+              this.importProgress = null;
+              this.importStage = 'Đang tải file lên máy chủ…';
+            }
+            this.cdr.markForCheck();
+            return;
           }
-          this.cdr.markForCheck();
-          return;
-        }
 
-        if (event.type !== HttpEventType.Response || !event.body) return;
-        this.importProgress = 100;
-        this.importPhase = 'products';
-        this.importJobId = event.body.jobId;
-        this.importStartedAt = event.body.startedAt;
-        this.importStage = 'Máy chủ đang đọc file…';
-        this.startJobPolling(event.body.jobId);
-        this.cdr.markForCheck();
-      },
-      error: (error: { error?: { message?: string } }) => {
-        this.failImport(error.error?.message || 'Không kết nối được API production. Dữ liệu chưa được nhập.');
-      },
-    });
+          if (event.type !== HttpEventType.Response || !event.body) return;
+          this.importProgress = 100;
+          this.importPhase = 'products';
+          this.importJobId = event.body.jobId;
+          this.importStartedAt = event.body.startedAt;
+          this.importStage = 'Máy chủ đang đọc file…';
+          this.startJobPolling(event.body.jobId);
+          this.cdr.markForCheck();
+        },
+        error: (error: { error?: { message?: string } }) => {
+          this.failImport(
+            error.error?.message || 'Không kết nối được API production. Dữ liệu chưa được nhập.',
+          );
+        },
+      });
   }
 
   private startJobPolling(jobId: string): void {
@@ -744,37 +834,40 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   private pollJob(jobId: string): void {
-    this.http.get<ImportJobStatus>(`${environment.apiUrl}/api/v1/products/import/${jobId}`).subscribe({
-      next: (job) => {
-        this.productTotal = job.total || this.productTotal;
-        this.productProcessed = job.processed;
-        this.importStartedAt = job.startedAt || this.importStartedAt;
+    this.http
+      .get<ImportJobStatus>(`${environment.apiUrl}/api/v1/products/import/${jobId}`)
+      .subscribe({
+        next: (job) => {
+          this.productTotal = job.total || this.productTotal;
+          this.productProcessed = job.processed;
+          this.importStartedAt = job.startedAt || this.importStartedAt;
 
-        if (job.status === 'Failed') {
-          this.failImport(job.error || 'Import sản phẩm thất bại.');
-          return;
-        }
+          if (job.status === 'Failed') {
+            this.failImport(job.error || 'Import sản phẩm thất bại.');
+            return;
+          }
 
-        if (job.status === 'Completed') {
-          this.productTotal = job.total;
-          this.productProcessed = job.total;
-          this.stopJobPolling();
-          this.startImagePolling(job);
-          return;
-        }
+          if (job.status === 'Completed') {
+            this.productTotal = job.total;
+            this.productProcessed = job.total;
+            this.stopJobPolling();
+            this.startImagePolling(job);
+            return;
+          }
 
-        this.importStage = job.status === 'Reading'
-          ? 'Máy chủ đang đọc file…'
-          : job.status === 'Preparing'
-            ? 'Đang kiểm tra dữ liệu…'
-            : `Đang lưu sản phẩm… ${job.processed.toLocaleString('vi-VN')} / ${job.total.toLocaleString('vi-VN')}`;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.importStage = 'Mất kết nối tạm thời, đang thử lại…';
-        this.cdr.markForCheck();
-      },
-    });
+          this.importStage =
+            job.status === 'Reading'
+              ? 'Máy chủ đang đọc file…'
+              : job.status === 'Preparing'
+                ? 'Đang kiểm tra dữ liệu…'
+                : `Đang lưu sản phẩm… ${job.processed.toLocaleString('vi-VN')} / ${job.total.toLocaleString('vi-VN')}`;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.importStage = 'Mất kết nối tạm thời, đang thử lại…';
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   private startImagePolling(job: ImportJobStatus): void {
@@ -791,27 +884,29 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   private pollImages(job: ImportJobStatus): void {
-    this.http.get<ProductImageSyncStatus>(`${environment.apiUrl}/api/v1/products/images/sync-status`, {
-      params: this.importStartedAt ? { since: this.importStartedAt } : {},
-      observe: 'body',
-      responseType: 'json',
-    }).subscribe({
-      next: (status) => {
-        this.imagePending = status.pending;
-        this.imageStored = status.stored;
-        this.imageFailed = status.failed;
-        this.imageTotal = status.total;
-        if (status.pending === 0) {
-          this.stopImagePolling();
-          this.finishImport(job, status);
-        }
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.importStage = 'Mất kết nối tạm thời khi đồng bộ ảnh, đang thử lại…';
-        this.cdr.markForCheck();
-      },
-    });
+    this.http
+      .get<ProductImageSyncStatus>(`${environment.apiUrl}/api/v1/products/images/sync-status`, {
+        params: this.importStartedAt ? { since: this.importStartedAt } : {},
+        observe: 'body',
+        responseType: 'json',
+      })
+      .subscribe({
+        next: (status) => {
+          this.imagePending = status.pending;
+          this.imageStored = status.stored;
+          this.imageFailed = status.failed;
+          this.imageTotal = status.total;
+          if (status.pending === 0) {
+            this.stopImagePolling();
+            this.finishImport(job, status);
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.importStage = 'Mất kết nối tạm thời khi đồng bộ ảnh, đang thử lại…';
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   private finishImport(job: ImportJobStatus, images: ProductImageSyncStatus | null): void {
@@ -866,7 +961,11 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   private normalizeHeader(value: string): string {
-    return value.trim().toLocaleLowerCase('vi-VN').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return value
+      .trim()
+      .toLocaleLowerCase('vi-VN')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   private async readXlsx(buffer: ArrayBuffer): Promise<string[][]> {
@@ -874,8 +973,15 @@ export class ProductListComponent implements OnInit, OnDestroy {
     const view = new DataView(buffer);
     const decoder = new TextDecoder();
     let eocd = -1;
-    for (let offset = bytes.length - 22; offset >= Math.max(0, bytes.length - 65_557); offset -= 1) {
-      if (view.getUint32(offset, true) === 0x06054b50) { eocd = offset; break; }
+    for (
+      let offset = bytes.length - 22;
+      offset >= Math.max(0, bytes.length - 65_557);
+      offset -= 1
+    ) {
+      if (view.getUint32(offset, true) === 0x06054b50) {
+        eocd = offset;
+        break;
+      }
     }
     if (eocd < 0) throw new Error('Invalid XLSX zip');
 
@@ -903,20 +1009,33 @@ export class ProductListComponent implements OnInit, OnDestroy {
       const start = entry.offset + 30 + nameLength + extraLength;
       const compressed = bytes.subarray(start, start + entry.size);
       if (entry.method === 0) return decoder.decode(compressed);
-      if (entry.method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('Unsupported XLSX compression');
-      const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      if (entry.method !== 8 || typeof DecompressionStream === 'undefined')
+        throw new Error('Unsupported XLSX compression');
+      const stream = new Blob([compressed])
+        .stream()
+        .pipeThrough(new DecompressionStream('deflate-raw'));
       return decoder.decode(await new Response(stream).arrayBuffer());
     };
 
-    const workbookXml = new DOMParser().parseFromString(await readEntry('xl/workbook.xml'), 'application/xml');
-    const relationshipsXml = new DOMParser().parseFromString(await readEntry('xl/_rels/workbook.xml.rels'), 'application/xml');
+    const workbookXml = new DOMParser().parseFromString(
+      await readEntry('xl/workbook.xml'),
+      'application/xml',
+    );
+    const relationshipsXml = new DOMParser().parseFromString(
+      await readEntry('xl/_rels/workbook.xml.rels'),
+      'application/xml',
+    );
     const sheetNode = workbookXml.getElementsByTagName('sheet')[0];
     const relationId = sheetNode?.getAttribute('r:id');
-    const relation = Array.from(relationshipsXml.getElementsByTagName('Relationship')).find((item) => item.getAttribute('Id') === relationId);
+    const relation = Array.from(relationshipsXml.getElementsByTagName('Relationship')).find(
+      (item) => item.getAttribute('Id') === relationId,
+    );
     const target = relation?.getAttribute('Target');
     if (!target) throw new Error('Missing worksheet reference');
     const pathParts: string[] = [];
-    for (const part of (target.startsWith('/') ? target.slice(1) : `xl/${target}`).replace(/\\/g, '/').split('/')) {
+    for (const part of (target.startsWith('/') ? target.slice(1) : `xl/${target}`)
+      .replace(/\\/g, '/')
+      .split('/')) {
       if (part === '..') pathParts.pop();
       else if (part && part !== '.') pathParts.push(part);
     }
@@ -924,9 +1043,16 @@ export class ProductListComponent implements OnInit, OnDestroy {
       readEntry(pathParts.join('/')),
       entries.has('xl/sharedStrings.xml') ? readEntry('xl/sharedStrings.xml') : Promise.resolve(''),
     ]);
-    const sharedDoc = sharedXml ? new DOMParser().parseFromString(sharedXml, 'application/xml') : null;
-    const shared = sharedDoc ? Array.from(sharedDoc.getElementsByTagName('si')).map((item) =>
-      Array.from(item.getElementsByTagName('t')).map((text) => text.textContent ?? '').join('')) : [];
+    const sharedDoc = sharedXml
+      ? new DOMParser().parseFromString(sharedXml, 'application/xml')
+      : null;
+    const shared = sharedDoc
+      ? Array.from(sharedDoc.getElementsByTagName('si')).map((item) =>
+          Array.from(item.getElementsByTagName('t'))
+            .map((text) => text.textContent ?? '')
+            .join(''),
+        )
+      : [];
     const sheet = new DOMParser().parseFromString(sheetXml, 'application/xml');
     return Array.from(sheet.getElementsByTagName('row')).map((row) => {
       const cells: string[] = [];
@@ -936,44 +1062,80 @@ export class ProductListComponent implements OnInit, OnDestroy {
         let column = 0;
         for (const letter of letters) column = column * 26 + letter.charCodeAt(0) - 64;
         const type = cell.getAttribute('t');
-        const value = type === 'inlineStr'
-          ? Array.from(cell.getElementsByTagName('t')).map((text) => text.textContent ?? '').join('')
-          : cell.getElementsByTagName('v')[0]?.textContent ?? '';
-        cells[column - 1] = type === 's' ? shared[Number(value)] ?? '' : value;
+        const value =
+          type === 'inlineStr'
+            ? Array.from(cell.getElementsByTagName('t'))
+                .map((text) => text.textContent ?? '')
+                .join('')
+            : (cell.getElementsByTagName('v')[0]?.textContent ?? '');
+        cells[column - 1] = type === 's' ? (shared[Number(value)] ?? '') : value;
       }
       return cells.map((value) => value ?? '');
     });
   }
 
   private createXlsx(headers: string[]): Uint8Array {
-    const escapeXml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     const columnName = (index: number) => {
       let number = index + 1;
       let result = '';
-      while (number) { const remainder = (number - 1) % 26; result = String.fromCharCode(65 + remainder) + result; number = Math.floor((number - 1) / 26); }
+      while (number) {
+        const remainder = (number - 1) % 26;
+        result = String.fromCharCode(65 + remainder) + result;
+        number = Math.floor((number - 1) / 26);
+      }
       return result;
     };
-    const cells = headers.map((header, index) => `<c r="${columnName(index)}1" s="1" t="inlineStr"><is><t>${escapeXml(header)}</t></is></c>`).join('');
+    const cells = headers
+      .map(
+        (header, index) =>
+          `<c r="${columnName(index)}1" s="1" t="inlineStr"><is><t>${escapeXml(header)}</t></is></c>`,
+      )
+      .join('');
     const widths = [16, 24, 18, 18, 30, 22, 14, 14, 14, 16, 16, 14, 20, 12]
-      .map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`).join('');
+      .map(
+        (width, index) =>
+          `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`,
+      )
+      .join('');
     const files: Record<string, string> = {
-      '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
-      '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
-      'xl/workbook.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="ProductTemplate" sheetId="1" r:id="rId1"/></sheets></workbook>',
-      'xl/_rels/workbook.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
-      'xl/styles.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5B9BD5"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>',
+      '[Content_Types].xml':
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
+      '_rels/.rels':
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+      'xl/workbook.xml':
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="ProductTemplate" sheetId="1" r:id="rId1"/></sheets></workbook>',
+      'xl/_rels/workbook.xml.rels':
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+      'xl/styles.xml':
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5B9BD5"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>',
       'xl/worksheets/sheet1.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths}</cols><sheetData><row r="1" ht="24" customHeight="1">${cells}</row></sheetData><autoFilter ref="A1:N1"/></worksheet>`,
     };
 
     const encoder = new TextEncoder();
     const crcTable = new Uint32Array(256);
-    for (let n = 0; n < 256; n += 1) { let c = n; for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crcTable[n] = c >>> 0; }
-    const crc32 = (data: Uint8Array) => { let crc = 0xffffffff; for (const byte of data) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8); return (crc ^ 0xffffffff) >>> 0; };
+    for (let n = 0; n < 256; n += 1) {
+      let c = n;
+      for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      crcTable[n] = c >>> 0;
+    }
+    const crc32 = (data: Uint8Array) => {
+      let crc = 0xffffffff;
+      for (const byte of data) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+      return (crc ^ 0xffffffff) >>> 0;
+    };
     const localParts: Uint8Array[] = [];
     const centralParts: Uint8Array[] = [];
     let localOffset = 0;
-    const write16 = (view: DataView, offset: number, value: number) => view.setUint16(offset, value, true);
-    const write32 = (view: DataView, offset: number, value: number) => view.setUint32(offset, value, true);
+    const write16 = (view: DataView, offset: number, value: number) =>
+      view.setUint16(offset, value, true);
+    const write32 = (view: DataView, offset: number, value: number) =>
+      view.setUint32(offset, value, true);
 
     for (const [name, content] of Object.entries(files)) {
       const nameBytes = encoder.encode(name);
@@ -981,28 +1143,53 @@ export class ProductListComponent implements OnInit, OnDestroy {
       const crc = crc32(data);
       const local = new Uint8Array(30 + nameBytes.length + data.length);
       const lv = new DataView(local.buffer);
-      write32(lv, 0, 0x04034b50); write16(lv, 4, 20); write16(lv, 6, 0x0800); write16(lv, 8, 0);
-      write32(lv, 14, crc); write32(lv, 18, data.length); write32(lv, 22, data.length); write16(lv, 26, nameBytes.length);
-      local.set(nameBytes, 30); local.set(data, 30 + nameBytes.length);
+      write32(lv, 0, 0x04034b50);
+      write16(lv, 4, 20);
+      write16(lv, 6, 0x0800);
+      write16(lv, 8, 0);
+      write32(lv, 14, crc);
+      write32(lv, 18, data.length);
+      write32(lv, 22, data.length);
+      write16(lv, 26, nameBytes.length);
+      local.set(nameBytes, 30);
+      local.set(data, 30 + nameBytes.length);
       localParts.push(local);
 
       const central = new Uint8Array(46 + nameBytes.length);
       const cv = new DataView(central.buffer);
-      write32(cv, 0, 0x02014b50); write16(cv, 4, 20); write16(cv, 6, 20); write16(cv, 8, 0x0800); write16(cv, 10, 0);
-      write32(cv, 16, crc); write32(cv, 20, data.length); write32(cv, 24, data.length); write16(cv, 28, nameBytes.length); write32(cv, 42, localOffset);
-      central.set(nameBytes, 46); centralParts.push(central);
+      write32(cv, 0, 0x02014b50);
+      write16(cv, 4, 20);
+      write16(cv, 6, 20);
+      write16(cv, 8, 0x0800);
+      write16(cv, 10, 0);
+      write32(cv, 16, crc);
+      write32(cv, 20, data.length);
+      write32(cv, 24, data.length);
+      write16(cv, 28, nameBytes.length);
+      write32(cv, 42, localOffset);
+      central.set(nameBytes, 46);
+      centralParts.push(central);
       localOffset += local.length;
     }
 
     const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
     const end = new Uint8Array(22);
     const ev = new DataView(end.buffer);
-    write32(ev, 0, 0x06054b50); write16(ev, 8, centralParts.length); write16(ev, 10, centralParts.length);
-    write32(ev, 12, centralSize); write32(ev, 16, localOffset);
+    write32(ev, 0, 0x06054b50);
+    write16(ev, 8, centralParts.length);
+    write16(ev, 10, centralParts.length);
+    write32(ev, 12, centralSize);
+    write32(ev, 16, localOffset);
     const result = new Uint8Array(localOffset + centralSize + end.length);
     let offset = 0;
-    for (const part of localParts) { result.set(part, offset); offset += part.length; }
-    for (const part of centralParts) { result.set(part, offset); offset += part.length; }
+    for (const part of localParts) {
+      result.set(part, offset);
+      offset += part.length;
+    }
+    for (const part of centralParts) {
+      result.set(part, offset);
+      offset += part.length;
+    }
     result.set(end, offset);
     return result;
   }
@@ -1137,10 +1324,14 @@ function formFromProduct(product: ProductRow | ProductDetail): ProductForm {
     weight: detail.weight ?? null,
     description: detail.description ?? '',
     isDirectSale: detail.isDirectSale ?? true,
-    units: units.length ? units : [{ name: 'Cái', conversion: null, salePrice: product.salePrice, isDirectSale: true }],
+    units: units.length
+      ? units
+      : [{ name: 'Cái', conversion: null, salePrice: product.salePrice, isDirectSale: true }],
     attributes: parseJsonArray<Record<string, unknown>>(detail.attributesJson).map((attribute) => ({
       name: String(attribute['name'] ?? attribute['Name'] ?? ''),
-      values: ((attribute['values'] ?? attribute['Values'] ?? []) as string[]).map((value) => String(value)),
+      values: ((attribute['values'] ?? attribute['Values'] ?? []) as string[]).map((value) =>
+        String(value),
+      ),
     })),
     variants: parseJsonArray<Record<string, unknown>>(detail.variantsJson).map((variant) => ({
       name: String(variant['name'] ?? variant['Name'] ?? ''),
@@ -1155,4 +1346,9 @@ function formFromProduct(product: ProductRow | ProductDetail): ProductForm {
   };
 }
 
-interface ProductPage { items: ProductRow[]; total: number; page: number; pageSize: number; }
+interface ProductPage {
+  items: ProductRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

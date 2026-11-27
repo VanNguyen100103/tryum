@@ -886,8 +886,7 @@
   justify-content: center;
   gap: 7px;
   padding: 24px;
-  background:
-    repeating-linear-gradient(135deg, #fbfcfe 0 14px, #f7f9fc 14px 28px);
+  background: repeating-linear-gradient(135deg, #fbfcfe 0 14px, #f7f9fc 14px 28px);
   color: #8593a6;
   text-align: center;
 }
@@ -2198,7 +2197,8 @@
   justify-content: center;
   gap: 5px;
   margin: 3px 0 0;
-  color: #7f8da1;  font-size: 11px;
+  color: #7f8da1;
+  font-size: 11px;
 }
 
 .transfer-confirm {

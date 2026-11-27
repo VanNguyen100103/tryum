@@ -26,7 +26,9 @@ export class OnlineComponent implements OnInit {
   protected readonly message = signal('');
   protected readonly title = signal('');
   protected readonly imageUrl = signal('');
-  protected readonly topic = signal('Tryum - phần mềm quản lý bán hàng cho quán ăn và cửa hàng nhỏ');
+  protected readonly topic = signal(
+    'Tryum - phần mềm quản lý bán hàng cho quán ăn và cửa hàng nhỏ',
+  );
   protected readonly generating = signal(false);
   protected readonly link = signal('');
   protected readonly publishing = signal(false);
@@ -117,7 +119,11 @@ Bạn muốn mình hướng dẫn phần nào trước?`,
       },
       error: (error: unknown) => {
         this.generating.set(false);
-        this.toast.add({ severity: 'error', summary: 'AI tạo bài thất bại', detail: this.messageOf(error) });
+        this.toast.add({
+          severity: 'error',
+          summary: 'AI tạo bài thất bại',
+          detail: this.messageOf(error),
+        });
       },
     });
   }
@@ -136,11 +142,19 @@ Bạn muốn mình hướng dẫn phần nào trước?`,
         this.pageName.set(result.pageName);
         this.tokenSet.set(true);
         this.connectToken.set('');
-        this.toast.add({ severity: 'success', summary: 'Đã kết nối fanpage', detail: result.pageName });
+        this.toast.add({
+          severity: 'success',
+          summary: 'Đã kết nối fanpage',
+          detail: result.pageName,
+        });
       },
       error: (error: unknown) => {
         this.connecting.set(false);
-        this.toast.add({ severity: 'error', summary: 'Không kết nối được', detail: this.messageOf(error) });
+        this.toast.add({
+          severity: 'error',
+          summary: 'Không kết nối được',
+          detail: this.messageOf(error),
+        });
       },
     });
   }
@@ -169,20 +183,24 @@ Bạn muốn mình hướng dẫn phần nào trước?`,
     }
 
     this.publishing.set(true);
-    const fullMessage = this.title().trim()
-      ? `${this.title().trim()}\n\n${text}`
-      : text;
-    this.social.publishWithImage(fullMessage, this.link().trim() || null, this.imageUrl().trim() || null).subscribe({
-      next: (result) => {
-        this.publishing.set(false);
-        this.lastPostId.set(result.id);
-        this.toast.add({ severity: 'success', summary: 'Đã đăng bài lên fanpage' });
-      },
-      error: (error: unknown) => {
-        this.publishing.set(false);
-        this.toast.add({ severity: 'error', summary: 'Đăng bài thất bại', detail: this.messageOf(error) });
-      },
-    });
+    const fullMessage = this.title().trim() ? `${this.title().trim()}\n\n${text}` : text;
+    this.social
+      .publishWithImage(fullMessage, this.link().trim() || null, this.imageUrl().trim() || null)
+      .subscribe({
+        next: (result) => {
+          this.publishing.set(false);
+          this.lastPostId.set(result.id);
+          this.toast.add({ severity: 'success', summary: 'Đã đăng bài lên fanpage' });
+        },
+        error: (error: unknown) => {
+          this.publishing.set(false);
+          this.toast.add({
+            severity: 'error',
+            summary: 'Đăng bài thất bại',
+            detail: this.messageOf(error),
+          });
+        },
+      });
   }
 
   private messageOf(error: unknown): string {
