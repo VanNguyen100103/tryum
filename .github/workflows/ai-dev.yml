@@ -1,0 +1,69 @@
+name: ai-dev
+
+on:
+  schedule:
+    # 04:00 giờ Việt Nam = 21:00 UTC
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  ai-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Restore
+        run: dotnet restore backend/Tryum.slnx
+
+      - name: AI sinh unit test (Groq)
+        id: gen
+        continue-on-error: true
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python3 deploy/ai_agent.py
+
+      - name: Gate — build + test
+        id: gate
+        if: steps.gen.outcome == 'success'
+        continue-on-error: true
+        run: |
+          dotnet build backend/Tryum.slnx --no-restore --configuration Release
+          dotnet test backend/Tryum.slnx --no-build --configuration Release
+
+      - name: Commit + dispatch deploy (gate pass)
+        if: steps.gate.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backend/tests/Tryum.UnitTests/AiGenerated
+          git commit -m "test: AI-generated unit tests (nightly)"
+          git push
+          gh workflow run build-api.yml --ref main
+          gh workflow run deploy-web.yml --ref main
+
+      - name: Dọn file nếu gate fail
+        if: steps.gen.outcome == 'success' && steps.gate.outcome == 'failure'
+        run: |
+          rm -rf backend/tests/Tryum.UnitTests/AiGenerated
+          curl -s -m 15 "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --data-urlencode "text=🤖 ai-dev: test AI sinh ra KHÔNG compile/pass → đã xoá, không commit." > /dev/null || true
+
+      - name: Báo Telegram nếu agent lỗi
+        if: steps.gen.outcome == 'failure'
+        run: |
+          curl -s -m 15 "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --data-urlencode "text=🤖 ai-dev: agent không sinh được test hợp lệ (xem log run ${{ github.run_id }})." > /dev/null || true
