@@ -54,7 +54,7 @@ interface ScreenDoc {
       }
       .docs__head p {
         margin: 0 0 24px;
-        color: #66788f;
+        color: #5b6472;
         font-size: 14px;
       }
       .docs__grid {
@@ -82,23 +82,23 @@ interface ScreenDoc {
       .screen__route {
         font-family: ui-monospace, 'Cascadia Code', monospace;
         font-size: 12px;
-        color: #3263b8;
-        background: #f0f5ff;
+        color: #1e40af;
+        background: #e8f1ff;
         padding: 2px 7px;
         border-radius: 5px;
       }
       .screen__badge {
         font-size: 11px;
         font-weight: 600;
-        color: #1a7f37;
-        background: #e6f6ec;
+        color: #15803d;
+        background: #dcfce7;
         padding: 2px 8px;
         border-radius: 999px;
         white-space: nowrap;
       }
       .screen__badge.is-wip {
-        color: #8a6d1a;
-        background: #fbf3d9;
+        color: #713f12;
+        background: #fef3c7;
       }
       .screen__title {
         margin: 12px 0 4px;
@@ -108,7 +108,7 @@ interface ScreenDoc {
       .screen__desc {
         margin: 0;
         font-size: 13px;
-        color: #66788f;
+        color: #5b6472;
         line-height: 1.5;
       }
       @media (max-width: 640px) {
