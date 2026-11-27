@@ -1,63 +1,109 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Tryum.Api.Common;
+using Tryum.Api.Endpoints;
 using Tryum.Application.Common.Interfaces;
 using Tryum.Domain.Common;
 using Tryum.Domain.Products;
 using Tryum.Domain.Tenants;
+using Tryum.Infrastructure.Common;
 using Tryum.Infrastructure.Persistence;
 
 namespace Tryum.UnitTests.Security;
 
 /// <summary>
-/// L4 — kiểm chứng tenant isolation qua HTTP THẬT (không phải unit test DbContext).
-/// Tenant A (JWT hợp lệ) KHÔNG được đọc dữ liệu tenant B, kể cả khi đoán đúng ID.
+/// L4 — kiểm chứng tenant isolation qua HTTP THẬT: JWT → TenantContextMiddleware
+/// → global query filter → endpoint thật. Tenant A KHÔNG đọc được dữ liệu tenant B.
+/// Dùng TestServer + InMemory (không cần WebApplicationFactory/Program đầy đủ).
 /// </summary>
-public sealed class TenantIsolationHttpTests : IClassFixture<TryumApiFactory>
+public sealed class TenantIsolationHttpTests : IAsyncLifetime
 {
-    private const string TestSecret = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; // 32 byte zero, chỉ cho test
+    private const string Secret = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; // 32 byte zero, chỉ cho test
 
-    private readonly TryumApiFactory _factory;
-    private readonly HttpClient _clientA;
-    private readonly HttpClient _clientB;
-    private readonly Guid _productA;
-    private readonly Guid _productB;
+    private WebApplication _app = null!;
+    private HttpClient _clientA = null!;
+    private HttpClient _clientB = null!;
+    private Guid _productA;
+    private Guid _productB;
 
-    public TenantIsolationHttpTests(TryumApiFactory factory)
+    public async Task InitializeAsync()
     {
-        _factory = factory;
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Production" });
+        builder.WebHost.UseTestServer();
 
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Jwt:SecretKey"] = Secret,
+            ["Jwt:Issuer"] = "tryum-test",
+            ["Jwt:Audience"] = "tryum-test-web",
+        });
 
-        var tenantA = new Tenant { Name = "Shop A", Slug = "shop-a" };
-        var tenantB = new Tenant { Name = "Shop B", Slug = "shop-b" };
-        db.Tenants.AddRange(tenantA, tenantB);
-        db.SaveChanges();
+        // JWT — giống hệt Program.cs
+        var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()!;
+        builder.Services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwt.Issuer,
+                    ValidAudience = jwt.Audience,
+                    ClockSkew = TimeSpan.FromSeconds(30),
+                    IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(jwt.SecretKey)),
+                };
+            });
 
-        var pa = new Product { TenantId = tenantA.Id, Name = "Sản phẩm A", Sku = "SKU-A", ItemType = "product" };
-        var pb = new Product { TenantId = tenantB.Id, Name = "Sản phẩm B", Sku = "SKU-B", ItemType = "product" };
-        db.Products.AddRange(pa, pb);
-        db.SaveChanges();
+        builder.Services.AddTryumAuthorization();
 
-        _productA = pa.Id;
-        _productB = pb.Id;
+        builder.Services.AddDbContext<ApplicationDbContext>(o =>
+            o.UseInMemoryDatabase($"http-isolation-{Guid.NewGuid()}"));
+        builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
-        _clientA = factory.CreateClient();
-        _clientA.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", MakeToken(tenantA.Id));
+        _app = builder.Build();
+        _app.UseAuthentication();
+        _app.UseMiddleware<TenantContextMiddleware>();
+        _app.UseAuthorization();
+        _app.MapProductEndpoints();
 
-        _clientB = factory.CreateClient();
-        _clientB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", MakeToken(tenantB.Id));
+        await _app.StartAsync();
+
+        // Seed: 2 tenant + 2 sản phẩm (mỗi tenant 1 sản phẩm).
+        using (var scope = _app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var tenantA = new Tenant { Name = "Shop A", Slug = "shop-a" };
+            var tenantB = new Tenant { Name = "Shop B", Slug = "shop-b" };
+            db.Tenants.AddRange(tenantA, tenantB);
+            db.SaveChanges();
+
+            var pa = new Product { TenantId = tenantA.Id, Name = "Sản phẩm A", Sku = "SKU-A", ItemType = "product" };
+            var pb = new Product { TenantId = tenantB.Id, Name = "Sản phẩm B", Sku = "SKU-B", ItemType = "product" };
+            db.Products.AddRange(pa, pb);
+            db.SaveChanges();
+
+            _productA = pa.Id;
+            _productB = pb.Id;
+
+            _clientA = MakeClient(tenantA.Id);
+            _clientB = MakeClient(tenantB.Id);
+        }
     }
+
+    public async Task DisposeAsync() => await _app.DisposeAsync();
 
     [Fact]
     public async Task DanhSach_ChiTraVeSanPham_CuaChinhTenant()
@@ -91,14 +137,25 @@ public sealed class TenantIsolationHttpTests : IClassFixture<TryumApiFactory>
     [Fact]
     public async Task KhongCoToken_Tra401()
     {
-        var resp = await _factory.CreateClient().GetAsync("/api/v1/products");
+        var server = (TestServer)_app.Services.GetRequiredService<IServer>();
+        using var anon = server.CreateClient();
+
+        var resp = await anon.GetAsync("/api/v1/products");
 
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
     }
 
+    private HttpClient MakeClient(Guid tenantId)
+    {
+        var server = (TestServer)_app.Services.GetRequiredService<IServer>();
+        var client = server.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", MakeToken(tenantId));
+        return client;
+    }
+
     private static string MakeToken(Guid tenantId)
     {
-        var key = new SymmetricSecurityKey(Convert.FromBase64String(TestSecret));
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(
             issuer: "tryum-test",
@@ -114,46 +171,5 @@ public sealed class TenantIsolationHttpTests : IClassFixture<TryumApiFactory>
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-}
-
-/// <summary>
-/// Factory: chạy API thật bằng InMemory DB + JWT test, bỏ migration/seed/ngoại lệ ngoài.
-/// </summary>
-public sealed class TryumApiFactory : WebApplicationFactory<Program>
-{
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.UseEnvironment("Production");
-
-        builder.ConfigureAppConfiguration((_, cfg) =>
-        {
-            cfg.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Jwt:SecretKey"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-                ["Jwt:Issuer"] = "tryum-test",
-                ["Jwt:Audience"] = "tryum-test-web",
-                ["Database:ApplyMigrationsOnStartup"] = "false",
-                ["OpenTelemetry:Endpoint"] = "",
-            });
-        });
-
-        builder.ConfigureServices(services =>
-        {
-            // Thay Postgres thật bằng InMemory cho test.
-            var toRemove = services.Where(d =>
-                d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>)
-                || d.ServiceType == typeof(ApplicationDbContext)
-                || d.ServiceType == typeof(IApplicationDbContext)).ToList();
-
-            foreach (var d in toRemove)
-                services.Remove(d);
-
-            services.AddDbContext<ApplicationDbContext>(o =>
-                o.UseInMemoryDatabase($"http-isolation-{Guid.NewGuid()}"));
-
-            services.AddScoped<IApplicationDbContext>(sp =>
-                sp.GetRequiredService<ApplicationDbContext>());
-        });
     }
 }
