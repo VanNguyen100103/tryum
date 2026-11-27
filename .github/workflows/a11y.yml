@@ -23,7 +23,7 @@ jobs:
       - name: Install deps + Chromium
         working-directory: scripts/a11y
         run: |
-          npm ci
+          npm install
           npx playwright install --with-deps chromium
 
       - name: Scan
