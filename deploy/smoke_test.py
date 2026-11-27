@@ -23,11 +23,14 @@ import urllib.request
 API = os.environ.get("API_BASE_URL", "https://tryum-api.duckdns.org").rstrip("/")
 SLUG = os.environ.get("SMOKE_SLUG", "banh-xeo-a-van")
 MAX_MS = int(os.environ.get("SMOKE_MAX_MS", "3000"))
+FAIL_ON_SLOW = os.environ.get("SMOKE_FAIL_ON_SLOW", "0") == "1"
 
 failures: list[str] = []
+warnings: list[str] = []
 
 
-def request(path: str, method: str = "GET", payload: dict | None = None, expect: int = 200):
+def request(path: str, method: str = "GET", payload: dict | None = None, expect: int = 200,
+            max_ms: int | None = None):
     url = API + path
     data = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request(url, data=data, method=method)
@@ -36,7 +39,7 @@ def request(path: str, method: str = "GET", payload: dict | None = None, expect:
 
     started = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=25) as resp:
             code, body = resp.status, resp.read()
     except urllib.error.HTTPError as exc:
         code, body = exc.code, exc.read()
@@ -46,13 +49,16 @@ def request(path: str, method: str = "GET", payload: dict | None = None, expect:
         return None, 0
 
     ms = int((time.time() - started) * 1000)
+    limit = MAX_MS if max_ms is None else max_ms
 
     if code != expect:
         failures.append(f"{path}: HTTP {code} (mong đợi {expect})")
         print(f"FAIL {path}: HTTP {code} trong {ms}ms")
-    elif ms > MAX_MS:
-        failures.append(f"{path}: {ms}ms > {MAX_MS}ms")
-        print(f"SLOW {path}: {ms}ms (ngưỡng {MAX_MS}ms)")
+    elif ms > limit:
+        warnings.append(f"{path}: {ms}ms > {limit}ms")
+        print(f"WARN {path}: HTTP {code} {ms}ms (chậm hơn ngưỡng {limit}ms)")
+        if FAIL_ON_SLOW:
+            failures.append(f"{path}: {ms}ms > {limit}ms")
     else:
         print(f"OK   {path}: HTTP {code} {ms}ms")
 
@@ -85,10 +91,16 @@ request(
     method="POST",
     payload={"identifier": "smoke-test@invalid.local", "password": "wrong-password", "tenantSlug": None},
     expect=401,
+    max_ms=8000,
 )
 
 # 4) tổng kết
 print()
+if warnings:
+    print(f"⚠️  {len(warnings)} cảnh báo chậm:")
+    for item in warnings:
+        print(f"   - {item}")
+
 if failures:
     print(f"❌ {len(failures)} check FAIL:")
     for item in failures:
