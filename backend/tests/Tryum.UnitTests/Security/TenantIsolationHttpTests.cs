@@ -83,29 +83,40 @@ public sealed class TenantIsolationHttpTests : IAsyncLifetime
         _app.UseMiddleware<TenantContextMiddleware>();
         _app.UseAuthorization();
 
-        // Endpoint test: áp đặt tenant theo TenantContext.Current (chính là thứ
-        // TenantContextMiddleware gán từ JWT). Global query filter của ApplicationDbContext
-        // được unit-test riêng ở TenantIsolationTests (InMemory + AsyncLocal qua TestServer
-        // có vấn đề cache filter, nên ở đây filter tường minh để test được ổn định).
+        // Endpoint test: đọc TenantContext.Current (do middleware gán từ JWT), rồi
+        // lọc theo tenant. Dùng IgnoreQueryFilters + lọc in-memory vì EF InMemory có
+        // vấn đề cache AsyncLocal khi evaluate global query filter qua TestServer
+        // (global filter đã được unit-test riêng ở TenantIsolationTests).
         _app.MapGet("/api/v1/products", (ApplicationDbContext db, HttpContext ctx) =>
-                Results.Ok(new
-                {
-                    items = db.Products.IgnoreQueryFilters()
-                        .Where(p => p.TenantId == TenantContext.Current)
-                        .OrderBy(p => p.Name)
-                        .Select(p => p.Name)
-                        .ToList(),
-                    tenant = TenantContext.Current?.ToString(),
-                    claim = ctx.User.FindFirst("tenant_id")?.Value,
-                }))
-            .RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
+        {
+            var tid = TenantContext.Current;
+            var names = db.Products.IgnoreQueryFilters()
+                .OrderBy(p => p.Name)
+                .Select(p => new { p.Name, p.TenantId })
+                .ToList()
+                .Where(x => x.TenantId == tid)
+                .Select(x => x.Name)
+                .ToList();
+
+            return Results.Ok(new
+            {
+                items = names,
+                tenant = tid?.ToString(),
+                claim = ctx.User.FindFirst("tenant_id")?.Value,
+            });
+        }).RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
 
         _app.MapGet("/api/v1/products/{id:guid}", (Guid id, ApplicationDbContext db) =>
-                db.Products.IgnoreQueryFilters()
-                    .Any(p => p.Id == id && p.TenantId == TenantContext.Current)
-                    ? Results.Ok()
-                    : Results.NotFound())
-            .RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
+        {
+            var tid = TenantContext.Current;
+            var ok = db.Products.IgnoreQueryFilters()
+                .Where(p => p.Id == id)
+                .Select(p => p.TenantId)
+                .ToList()
+                .Any(t => t == tid);
+
+            return ok ? Results.Ok() : Results.NotFound();
+        }).RequireAuthorization(AuthorizationPolicies.OwnerOrManager);
 
         await _app.StartAsync();
 
