@@ -27,43 +27,61 @@ jobs:
       - name: Restore
         run: dotnet restore backend/Tryum.slnx
 
-      - name: AI sinh unit test (Groq)
-        id: gen
-        continue-on-error: true
+      # Sinh test bằng AI + gate build/test; nếu fail thì xoá và thử lại (tối đa 2 lần).
+      - name: AI generate + gate (retry 2)
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: python3 deploy/ai_agent.py
-
-      - name: Gate — build + test
-        id: gate
-        if: steps.gen.outcome == 'success'
-        continue-on-error: true
         run: |
-          dotnet build backend/Tryum.slnx --no-restore --configuration Release
-          dotnet test backend/Tryum.slnx --no-build --configuration Release
+          set +e
+          PASS=0
+          for attempt in 1 2; do
+            echo "=== Attempt $attempt ==="
+            if ! python3 deploy/ai_agent.py; then
+              echo "agent không sinh được file ở lần $attempt"
+              continue
+            fi
 
-      - name: Commit + dispatch deploy (gate pass)
-        if: steps.gate.outcome == 'success'
+            if dotnet build backend/Tryum.slnx --no-restore --configuration Release > /tmp/build.log 2>&1 \
+               && dotnet test backend/Tryum.slnx --no-build --configuration Release > /tmp/test.log 2>&1; then
+              echo "Gate PASS ở lần $attempt"
+              PASS=1
+              break
+            else
+              echo "Gate FAIL ở lần $attempt"
+              grep -E "error|Failed |Assert" /tmp/build.log /tmp/test.log | head -20
+              rm -rf backend/tests/Tryum.UnitTests/AiGenerated
+            fi
+          done
+
+          if [ "$PASS" = "1" ]; then
+            echo "GATE=pass" >> "$GITHUB_ENV"
+          else
+            echo "GATE=fail" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit + dispatch deploy
+        if: env.GATE == 'pass'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add backend/tests/Tryum.UnitTests/AiGenerated
-          git commit -m "test: AI-generated unit tests (nightly)"
-          git push
-          gh workflow run build-api.yml --ref main
-          gh workflow run deploy-web.yml --ref main
+          if git diff --cached --quiet; then
+            echo "Không có file mới."
+          else
+            git commit -m "test: AI-generated unit tests (nightly)"
+            git push
+            gh workflow run build-api.yml --ref main
+            gh workflow run deploy-web.yml --ref main
+          fi
 
-      - name: Dọn file nếu gate fail
-        if: steps.gen.outcome == 'success' && steps.gate.outcome == 'failure'
+      - name: Báo Telegram (kết quả)
+        if: always()
         run: |
-          rm -rf backend/tests/Tryum.UnitTests/AiGenerated
+          if [ "$GATE" = "pass" ]; then
+            TEXT="ai-dev: AI sinh test PASS -> da commit + deploy."
+          else
+            TEXT="ai-dev: AI sinh test KHONG pass sau 2 lan -> da xoa, khong commit (run ${{ github.run_id }})."
+          fi
           curl -s -m 15 "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            --data-urlencode "text=🤖 ai-dev: test AI sinh ra KHÔNG compile/pass → đã xoá, không commit." > /dev/null || true
-
-      - name: Báo Telegram nếu agent lỗi
-        if: steps.gen.outcome == 'failure'
-        run: |
-          curl -s -m 15 "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            --data-urlencode "text=🤖 ai-dev: agent không sinh được test hợp lệ (xem log run ${{ github.run_id }})." > /dev/null || true
+            --data-urlencode "text=$TEXT" > /dev/null || true
