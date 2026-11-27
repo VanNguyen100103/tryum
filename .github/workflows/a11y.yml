@@ -1,0 +1,41 @@
+name: a11y
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 07:00 giờ Việt Nam = 00:00 UTC
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: L5 — Accessibility (axe-core)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install deps + Chromium
+        working-directory: scripts/a11y
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Scan
+        working-directory: scripts/a11y
+        run: node scan.mjs
+        env:
+          TRYUM_WEB_URL: https://tryum-web.nganhvan1609.workers.dev
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-report
+          path: scripts/a11y/a11y-report.md
+          if-no-files-found: ignore
