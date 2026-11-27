@@ -27,16 +27,17 @@ jobs:
       - name: Restore
         run: dotnet restore backend/Tryum.slnx
 
-      # Sinh test bằng AI + gate build/test; nếu fail thì xoá và thử lại (tối đa 2 lần).
-      - name: AI generate + gate (retry 2)
+      # Sinh test bằng AI + gate build/test. Fail -> đưa lỗi lại cho AI tự sửa (tối đa 3 lần).
+      - name: AI generate + gate (self-correct, 3 attempts)
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           set +e
           PASS=0
-          for attempt in 1 2; do
+          FEEDBACK=""
+          for attempt in 1 2 3; do
             echo "=== Attempt $attempt ==="
-            if ! python3 deploy/ai_agent.py; then
+            if ! AI_FEEDBACK="$FEEDBACK" python3 deploy/ai_agent.py; then
               echo "agent không sinh được file ở lần $attempt"
               continue
             fi
@@ -46,11 +47,12 @@ jobs:
               echo "Gate PASS ở lần $attempt"
               PASS=1
               break
-            else
-              echo "Gate FAIL ở lần $attempt"
-              grep -E "error|Failed |Assert" /tmp/build.log /tmp/test.log | head -20
-              rm -rf backend/tests/Tryum.UnitTests/AiGenerated
             fi
+
+            echo "Gate FAIL ở lần $attempt"
+            grep -E "Failed |Error Message|Assert" /tmp/test.log | head -20
+            FEEDBACK=$(grep -A2 "Error Message" /tmp/test.log | head -30)
+            rm -rf backend/tests/Tryum.UnitTests/AiGenerated
           done
 
           if [ "$PASS" = "1" ]; then
@@ -80,7 +82,7 @@ jobs:
           if [ "$GATE" = "pass" ]; then
             TEXT="ai-dev: AI sinh test PASS -> da commit + deploy."
           else
-            TEXT="ai-dev: AI sinh test KHONG pass sau 2 lan -> da xoa, khong commit (run ${{ github.run_id }})."
+            TEXT="ai-dev: AI sinh test KHONG pass sau 3 lan -> da xoa, khong commit (run ${{ github.run_id }})."
           fi
           curl -s -m 15 "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             --data-urlencode "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \

@@ -51,6 +51,15 @@ Yêu cầu bắt buộc:
 
 USER = f"File nguồn:\n\n{source}\n\nHãy viết unit test cho các hàm public trong file này."
 
+FEEDBACK = os.environ.get("AI_FEEDBACK", "").strip()
+if FEEDBACK:
+    USER += (
+        "\n\nLẦN TRƯỚC BẠN VIẾT SAI. Đây là lỗi khi chạy test:\n"
+        f"{FEEDBACK}\n\n"
+        "Hãy ĐỌC KỸ lại code nguồn rồi sửa assertion cho khớp hành vi THỰC TẾ của code. "
+        "Chú ý nhánh nào `return e164` (trả về chính input) thì phải assert đúng như vậy."
+    )
+
 payload = json.dumps({
     "model": MODEL,
     "messages": [
