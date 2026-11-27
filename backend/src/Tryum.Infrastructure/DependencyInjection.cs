@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,7 +30,10 @@ public static class DependencyInjection
             options.UseNpgsql(
                 connectionString,
                 npgsql => npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
-            ));
+            ).ConfigureWarnings(warnings => warnings.Ignore(
+                // MigrateAsync (ApplyMigrationsOnStartup) ném lỗi khi model drift nhẹ khỏi migration
+                // (đổi converter/navigation, không đổi cột). Đây chỉ là warning, không phải lỗi schema.
+                RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IApplicationDbContext>(sp =>
             sp.GetRequiredService<ApplicationDbContext>());
