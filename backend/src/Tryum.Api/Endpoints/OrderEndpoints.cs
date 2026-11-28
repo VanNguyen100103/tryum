@@ -7,6 +7,7 @@ using Tryum.Application.Common.Security;
 using Tryum.Domain.Common;
 using Tryum.Domain.Customers;
 using Tryum.Domain.Sales;
+using Tryum.Domain.Users;
 using Tryum.Infrastructure.Common;
 using Tryum.Infrastructure.Persistence;
 
@@ -20,6 +21,9 @@ public static class OrderEndpoints
 {
     /// <summary>Giới hạn số dòng / hóa đơn để tránh request quá lớn.</summary>
     private const int MaxLines = 200;
+
+    /// <summary>Tiền thừa tối đa được ghi thành công nợ (tiền thừa gửi) cho khách trong 1 hóa đơn.</summary>
+    private const decimal MaxCreditableOverpay = 500_000m;
 
     public static IEndpointRouteBuilder MapOrderEndpoints(this IEndpointRouteBuilder app)
     {
@@ -136,7 +140,18 @@ public static class OrderEndpoints
                 if (item.Quantity <= 0 || item.Quantity > 1_000_000)
                     return Results.BadRequest(new { message = $"Số lượng của \"{product.Name}\" không hợp lệ." });
 
-                var unitPrice = item.UnitPrice ?? product.SalePrice ?? 0;
+                // Giá bán mặc định là SalePrice của server; nếu client gửi unitPrice khác
+                // (đổi giá) thì chỉ Owner/Manager được phép — chặn thu ngân bán giá tuỳ ý.
+                var salePrice = product.SalePrice ?? 0;
+                var unitPrice = item.UnitPrice ?? salePrice;
+                var isPriceOverride = item.UnitPrice is not null && Round(item.UnitPrice.Value) != Round(salePrice);
+                if (isPriceOverride && !IsManagerOrOwner(http))
+                {
+                    return Results.BadRequest(new
+                    {
+                        message = $"Chỉ chủ cửa hàng hoặc quản lý mới được đổi giá bán của \"{product.Name}\".",
+                    });
+                }
                 if (unitPrice < 0)
                     return Results.BadRequest(new { message = $"Đơn giá của \"{product.Name}\" không hợp lệ." });
 
@@ -177,71 +192,7 @@ public static class OrderEndpoints
             // 1 điểm cho mỗi 10.000đ khách thực trả.
             var pointsEarned = (int)Math.Floor(total / 10_000m);
 
-            // ── Phương thức thanh toán ─────────────────────────────────────────
-            var paymentDrafts = new List<Payment>();
-            var linkedQrSessions = new List<PosQrSession>();
-            var usedQrReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var item in request.Payments ?? [])
-            {
-                if (!Enum.TryParse<PaymentMethod>(item.Method, ignoreCase: true, out var method))
-                    return Results.BadRequest(new { message = $"Phương thức thanh toán \"{item.Method}\" không hợp lệ." });
-                if (item.Amount <= 0)
-                    return Results.BadRequest(new { message = "Số tiền thanh toán phải lớn hơn 0." });
-
-                var isCash = method == PaymentMethod.Cash;
-                var reference = Clean(item.Reference);
-                PosQrSession? qrSession = null;
-
-                // QR tại quầy: dù phiên đã Paid hay còn Pending đều gắn vào hóa đơn.
-                // Pending thì webhook sau đó sẽ xác nhận khoản chuyển khoản của đơn này.
-                if (method == PaymentMethod.Transfer && !string.IsNullOrWhiteSpace(reference)
-                    && !usedQrReferences.Contains(reference))
-                {
-                    qrSession = await db.PosQrSessions.FirstOrDefaultAsync(
-                        session => session.Reference == reference
-                            && session.OrderId == null
-                            && (session.Status == PosQrStatus.Paid || session.Status == PosQrStatus.Pending),
-                        ct);
-
-                    // Chỉ gắn khi số tiền khớp; QR của đơn khác/đã đổi giỏ thì bỏ qua.
-                    if (qrSession is not null && OrderEndpoints.Round(qrSession.Amount) != OrderEndpoints.Round(item.Amount))
-                        qrSession = null;
-
-                    if (qrSession is not null)
-                    {
-                        usedQrReferences.Add(reference);
-                        linkedQrSessions.Add(qrSession);
-                    }
-                }
-
-                var isConfirmed = method != PaymentMethod.Transfer || qrSession?.Status == PosQrStatus.Paid;
-                paymentDrafts.Add(new Payment
-                {
-                    Method = method,
-                    Status = isConfirmed ? PaymentStatus.Confirmed : PaymentStatus.Pending,
-                    Amount = Round(item.Amount),
-                    Provider = method == PaymentMethod.Transfer ? "SePay" : null,
-                    ProviderTransactionId = qrSession?.Reference,
-                    Reference = qrSession?.Reference ?? reference,
-                    PaidAt = isConfirmed ? DateTimeOffset.UtcNow : null,
-                    Note = null,
-                });
-
-                // Tiền mặt được phép thu vượt (trả lại tiền thừa); ví/thẻ/chuyển khoản thì không.
-                if (!isCash && paymentDrafts.Where(payment => payment.Method != PaymentMethod.Cash)
-                        .Sum(payment => payment.Amount) > total)
-                {
-                    return Results.BadRequest(new { message = "Số tiền thanh toán không được vượt quá tổng hóa đơn." });
-                }
-            }
-
-            var paid = Round(paymentDrafts.Where(payment => payment.Status == PaymentStatus.Confirmed)
-                .Sum(payment => payment.Amount));
-            var overpay = Round(Math.Max(0, paid - total));
-            var creditOverpay = request.CreditOverpayment == true && overpay > 0;
-            if (creditOverpay && customer is null)
-                return Results.BadRequest(new { message = "Chọn khách hàng để tính tiền thừa vào công nợ." });
-
+            // ── Tạo hóa đơn trước để có order.Id cho việc claim QR nguyên tử ──────
             var order = new Order
             {
                 Code = await NextOrderCodeAsync(db, ct),
@@ -266,13 +217,107 @@ public static class OrderEndpoints
                 Subtotal = subtotal,
                 Discount = orderDiscount,
                 Total = total,
-                PaidAmount = paid,
-                ChangeAmount = creditOverpay ? 0 : overpay,
                 PointsRedeemed = pointsToRedeem,
                 PointsDiscount = pointsDiscount,
                 PointsEarned = pointsEarned,
-                Status = StatusFor(total, paid),
             };
+
+            // ── Transaction bao toàn bộ: claim QR + trừ kho + lưu hóa đơn ──────────
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+            // ── Phương thức thanh toán ─────────────────────────────────────────
+            var paymentDrafts = new List<Payment>();
+            var usedQrReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in request.Payments ?? [])
+            {
+                if (!Enum.TryParse<PaymentMethod>(item.Method, ignoreCase: true, out var method))
+                    return Results.BadRequest(new { message = $"Phương thức thanh toán \"{item.Method}\" không hợp lệ." });
+                if (item.Amount <= 0)
+                    return Results.BadRequest(new { message = "Số tiền thanh toán phải lớn hơn 0." });
+
+                var isCash = method == PaymentMethod.Cash;
+                var reference = Clean(item.Reference);
+                PosQrSession? qrSession = null;
+                var sessionWasPaid = false;
+
+                // QR tại quầy: claim NGUYÊN TỬ để 1 phiên chỉ dùng cho đúng 1 hóa đơn.
+                // Paid -> xác nhận ngay; Pending -> webhook sau xác nhận đơn này.
+                if (method == PaymentMethod.Transfer && !string.IsNullOrWhiteSpace(reference)
+                    && !usedQrReferences.Contains(reference))
+                {
+                    // Đọc trước để kiểm tra số tiền (chỉ là validation; claim mới là ranh giới).
+                    var candidate = await db.PosQrSessions.AsNoTracking()
+                        .FirstOrDefaultAsync(session => session.Reference == reference
+                            && session.OrderId == null
+                            && (session.Status == PosQrStatus.Paid || session.Status == PosQrStatus.Pending), ct);
+
+                    // Chỉ gắn khi số tiền khớp; QR của đơn khác/đã đổi giỏ thì bỏ qua.
+                    if (candidate is not null && Round(candidate.Amount) != Round(item.Amount))
+                        candidate = null;
+
+                    if (candidate is not null)
+                    {
+                        // Claim nguyên tử: chỉ 1 hóa đơn thắng được phiên này (chống double-spend).
+                        var claimed = await db.PosQrSessions
+                            .Where(session => session.Reference == reference
+                                && session.OrderId == null
+                                && (session.Status == PosQrStatus.Paid || session.Status == PosQrStatus.Pending))
+                            .ExecuteUpdateAsync(setters => setters
+                                .SetProperty(session => session.OrderId, order.Id)
+                                .SetProperty(session => session.UpdatedAt, DateTimeOffset.UtcNow), ct);
+
+                        if (claimed == 1)
+                        {
+                            qrSession = await db.PosQrSessions
+                                .FirstOrDefaultAsync(session => session.Reference == reference, ct);
+                            sessionWasPaid = qrSession?.Status == PosQrStatus.Paid;
+                            if (sessionWasPaid) qrSession!.Status = PosQrStatus.Used;
+                            usedQrReferences.Add(reference);
+                        }
+                    }
+                }
+
+                var isConfirmed = method != PaymentMethod.Transfer || sessionWasPaid;
+                paymentDrafts.Add(new Payment
+                {
+                    Method = method,
+                    Status = isConfirmed ? PaymentStatus.Confirmed : PaymentStatus.Pending,
+                    Amount = Round(item.Amount),
+                    Provider = method == PaymentMethod.Transfer ? "SePay" : null,
+                    ProviderTransactionId = qrSession?.Reference,
+                    Reference = qrSession?.Reference ?? reference,
+                    PaidAt = isConfirmed ? DateTimeOffset.UtcNow : null,
+                    Note = null,
+                });
+
+                // Tiền mặt được phép thu vượt (trả lại tiền thừa); ví/thẻ/chuyển khoản thì không.
+                if (!isCash && paymentDrafts.Where(payment => payment.Method != PaymentMethod.Cash)
+                        .Sum(payment => payment.Amount) > total)
+                {
+                    await transaction.RollbackAsync(ct);
+                    return Results.BadRequest(new { message = "Số tiền thanh toán không được vượt quá tổng hóa đơn." });
+                }
+            }
+
+            var paid = Round(paymentDrafts.Where(payment => payment.Status == PaymentStatus.Confirmed)
+                .Sum(payment => payment.Amount));
+            var overpay = Round(Math.Max(0, paid - total));
+            // Cap tiền thừa ghi công nợ + chỉ Owner/Manager được chuyển thành công nợ.
+            var creditOverpay = request.CreditOverpayment == true && overpay > 0 && overpay <= MaxCreditableOverpay;
+            if (creditOverpay && customer is null)
+            {
+                await transaction.RollbackAsync(ct);
+                return Results.BadRequest(new { message = "Chọn khách hàng để tính tiền thừa vào công nợ." });
+            }
+            if (creditOverpay && !IsManagerOrOwner(http))
+            {
+                await transaction.RollbackAsync(ct);
+                return Results.BadRequest(new { message = "Chỉ chủ cửa hàng hoặc quản lý mới được chuyển tiền thừa thành công nợ." });
+            }
+
+            order.PaidAmount = paid;
+            order.ChangeAmount = creditOverpay ? 0 : overpay;
+            order.Status = StatusFor(total, paid);
 
             // Cập nhật điểm và công nợ của khách trong cùng transaction với hóa đơn.
             if (customer is not null)
@@ -288,13 +333,6 @@ public static class OrderEndpoints
                 order.Lines.Add(line);
             }
 
-            // Gắn phiên QR vào hóa đơn: Paid -> Used; Pending -> webhook sau sẽ xác nhận đơn.
-            foreach (var qrSession in linkedQrSessions)
-            {
-                if (qrSession.Status == PosQrStatus.Paid) qrSession.Status = PosQrStatus.Used;
-                qrSession.OrderId = order.Id;
-            }
-
             foreach (var payment in paymentDrafts)
             {
                 payment.OrderId = order.Id;
@@ -302,7 +340,6 @@ public static class OrderEndpoints
             }
 
             // ── Trừ kho + lưu hóa đơn trong 1 transaction ──────────────────────
-            await using var transaction = await db.Database.BeginTransactionAsync(ct);
             foreach (var line in order.Lines)
             {
                 var affected = await db.Products
@@ -590,6 +627,9 @@ public static class OrderEndpoints
         : OrderStatus.Pending;
 
     internal static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private static bool IsManagerOrOwner(HttpContext http) =>
+        http.User.IsInRole(RoleCode.Owner.ToString()) || http.User.IsInRole(RoleCode.Manager.ToString());
 
     /// <summary>Đầu ngày theo giờ Việt Nam (UTC+7) – DateTimeOffset lưu UTC.</summary>
     private static DateTimeOffset StartOfVietnamDay(DateOnly date) =>

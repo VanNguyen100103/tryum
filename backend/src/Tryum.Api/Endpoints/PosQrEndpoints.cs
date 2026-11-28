@@ -95,7 +95,9 @@ public static class PosQrEndpoints
             await db.SaveChangesAsync(ct);
             return Results.Ok(ToResponse(session, sepayOptions.Value));
         })
-        .WithSummary("Xác nhận thủ công khi khách đã chuyển khoản nhưng webhook chưa tới")
+        // Chỉ Owner/Manager được xác nhận thủ công (ghi nhận đã nhận tiền) — chặn thu ngân tự chốt đơn chưa có tiền.
+        .RequireAuthorization(AuthorizationPolicies.OwnerOrManager)
+        .WithSummary("Xác nhận thủ công khi khách đã chuyển khoản nhưng webhook chưa tới (chỉ chủ/quản lý)")
         .Produces<PosQrResponse>();
 
         return app;
