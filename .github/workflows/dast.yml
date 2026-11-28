@@ -49,6 +49,8 @@ jobs:
           target: http://localhost:8080
           # Baseline trước = chỉ báo cáo, không fail. Sau khi rà findings sẽ chuyển true.
           fail_action: false
+          # Không tự mở GitHub issue (cần quyền issues:write); mình rà report thủ công.
+          allow_issue_writing: false
 
       - name: Nuclei scan
         run: |
