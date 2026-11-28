@@ -156,6 +156,14 @@ public static class OrderEndpoints
                     return Results.BadRequest(new { message = $"Đơn giá của \"{product.Name}\" không hợp lệ." });
 
                 var gross = Round(unitPrice * item.Quantity);
+                // Giảm giá dòng hàng cũng là đổi giá — chỉ Owner/Manager được phép.
+                if ((item.Discount ?? 0) > 0 && !IsManagerOrOwner(http))
+                {
+                    return Results.BadRequest(new
+                    {
+                        message = $"Chỉ chủ cửa hàng hoặc quản lý mới được giảm giá dòng hàng \"{product.Name}\".",
+                    });
+                }
                 var lineDiscount = Math.Clamp(item.Discount ?? 0, 0, gross);
                 var lineTotal = Round(gross - lineDiscount);
 
@@ -175,6 +183,11 @@ public static class OrderEndpoints
             }
 
             var subtotal = Round(lines.Sum(line => line.LineTotal));
+            // Giảm giá toàn hóa đơn cũng là đổi giá — chỉ Owner/Manager được phép.
+            if ((request.Discount ?? 0) > 0 && !IsManagerOrOwner(http))
+            {
+                return Results.BadRequest(new { message = "Chỉ chủ cửa hàng hoặc quản lý mới được giảm giá hóa đơn." });
+            }
             var orderDiscount = Math.Clamp(request.Discount ?? 0, 0, subtotal);
 
             // 1 điểm = 1.000đ; chỉ được dùng tối đa bằng số điểm khách có và số tiền còn lại.
@@ -388,6 +401,7 @@ public static class OrderEndpoints
         group.MapPost("/{orderId:guid}/payments", async (
             Guid orderId,
             AddPaymentRequest request,
+            HttpContext http,
             ApplicationDbContext db,
             CancellationToken ct) =>
         {
@@ -395,6 +409,16 @@ public static class OrderEndpoints
                 return Results.BadRequest(new { message = "Phương thức thanh toán không hợp lệ." });
             if (request.Amount <= 0)
                 return Results.BadRequest(new { message = "Số tiền thanh toán phải lớn hơn 0." });
+
+            // Chỉ chủ/quản lý được tự xác nhận đã nhận tiền của khoản KHÔNG dùng tiền mặt
+            // (chuyển khoản/thẻ/ví/voucher) — chặn thu ngân chốt đơn chưa có tiền thật.
+            if (request.Confirm && method != PaymentMethod.Cash && !IsManagerOrOwner(http))
+            {
+                return Results.BadRequest(new
+                {
+                    message = "Chỉ chủ cửa hàng hoặc quản lý mới được xác nhận đã nhận tiền chuyển khoản/thẻ/ví.",
+                });
+            }
 
             var order = await db.Orders.Include(row => row.Payments)
                 .FirstOrDefaultAsync(row => row.Id == orderId, ct);

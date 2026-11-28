@@ -36,8 +36,8 @@ services:
       Database__ApplyMigrationsOnStartup: "true"
       Jwt__Issuer: tryum-dast
       Jwt__Audience: tryum-web
-      # Key 32 byte base64 — chỉ cho DAST staging, không phải secret thật.
-      Jwt__SecretKey: ZGV2LW9ubHkta2V5LW5vdC1mb3ItcHJvZC0xMjM0NTY=
+      # Sinh ngẫu nhiên mỗi lần chạy staging (KHÔNG commit secret).
+      Jwt__SecretKey: ${DAST_JWT_SECRET_KEY:?thiếu DAST_JWT_SECRET_KEY}
       # Để ZAP có thể crawl đăng ký/đăng nhập mà không cần OTP/Captcha thật.
       Auth__DemoOtpInResponse: "true"
       Captcha__Required: "false"
