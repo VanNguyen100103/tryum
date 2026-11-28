@@ -69,6 +69,9 @@ jobs:
           script: |
             set -e
             cd ~/tryum
+            # Đồng bộ compose/config mới nhất (deploy/.env là file ignored nên KHÔNG bị mất).
+            git fetch --depth=1 origin main && git reset --hard origin/main \
+              || echo "WARN: không sync được repo, dùng bản hiện có"
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker pull ghcr.io/vannguyen100103/tryum-api:otel
             docker tag tryum-api:latest tryum-api:previous 2>/dev/null || true
@@ -106,6 +109,9 @@ jobs:
           script: |
             set -e
             cd ~/tryum
+            # Đồng bộ compose/config mới nhất (deploy/.env là file ignored nên KHÔNG bị mất).
+            git fetch --depth=1 origin main && git reset --hard origin/main \
+              || echo "WARN: không sync được repo, dùng bản hiện có"
             echo "$GHCR_TOKEN" | sudo -n /usr/bin/docker login ghcr.io -u "$GHCR_USER" --password-stdin
             sudo -n /usr/bin/docker pull ghcr.io/vannguyen100103/tryum-api:otel
             sudo -n /usr/bin/docker tag tryum-api:latest tryum-api:previous 2>/dev/null || true
