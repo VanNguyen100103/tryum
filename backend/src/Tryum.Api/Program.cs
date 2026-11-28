@@ -304,9 +304,9 @@ try
     app.MapMetrics("/metrics");
     app.MapHealthChecks("/health");
 
-    // Chi tiết runtime (công khai) để uptime monitor + verify nhanh Sentry đã bật chưa.
+    // Chi tiết runtime (công khai, dưới /api để Caddy route đúng) – verify Sentry đã bật.
     var runtimeEnvironment = app.Environment.EnvironmentName;
-    app.MapGet("/health/detail", () => Results.Ok(new
+    app.MapGet("/api/v1/diagnostics", () => Results.Ok(new
     {
         status = "ok",
         environment = runtimeEnvironment,
