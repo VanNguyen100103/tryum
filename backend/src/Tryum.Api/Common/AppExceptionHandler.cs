@@ -18,7 +18,14 @@ public sealed class AppExceptionHandler(ILogger<AppExceptionHandler> logger) : I
         if (exception is not AppException appException)
         {
             logger.LogError(exception, "Lỗi không xử lý được: {Message}", exception.Message);
-            // Gửi lên Sentry (nếu đã cấu hình) – đây là lỗi thật, không phải lỗi nghiệp vụ.
+            // Gửi lên Sentry (nếu đã cấu hình) kèm tenant + path để lọc theo cửa hàng.
+            SentrySdk.ConfigureScope(scope =>
+            {
+                if (Tryum.Infrastructure.Persistence.TenantContext.Current is { } tenantId)
+                    scope.SetTag("tenant_id", tenantId.ToString());
+                scope.SetTag("http.path", httpContext.Request.Path);
+                scope.SetTag("http.method", httpContext.Request.Method);
+            });
             SentrySdk.CaptureException(exception);
             return false; // để middleware mặc định xử lý (500)
         }

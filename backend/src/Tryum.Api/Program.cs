@@ -128,7 +128,6 @@ try
             options.TracesSampleRate = 0;
             options.SendDefaultPii = false;
             options.AttachStacktrace = true;
-            options.AddEventProcessor(new Tryum.Api.Observability.TenantSentryProcessor());
         });
         Log.Information("Sentry đã bật (environment={Env}).", builder.Environment.EnvironmentName);
     }

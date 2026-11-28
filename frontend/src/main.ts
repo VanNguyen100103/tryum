@@ -13,7 +13,6 @@ if (tryumConfig?.sentryDsn) {
     environment: isDevMode() ? 'development' : 'production',
     // Chỉ gửi lỗi, không gửi performance (tiết kiệm quota free tier).
     tracesSampleRate: 0,
-    sendDefaultPii: false,
     release: 'tryum-web@latest',
   });
 
