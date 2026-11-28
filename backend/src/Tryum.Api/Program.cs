@@ -11,6 +11,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Prometheus;
 using Scalar.AspNetCore;
+using Sentry;
 using Serilog;
 using Tryum.Api.Common;
 using Tryum.Api.Assistant;
@@ -302,6 +303,15 @@ try
     // ── Endpoints ─────────────────────────────────────────────────────────────
     app.MapMetrics("/metrics");
     app.MapHealthChecks("/health");
+
+    // Chi tiết runtime (công khai) để uptime monitor + verify nhanh Sentry đã bật chưa.
+    var runtimeEnvironment = app.Environment.EnvironmentName;
+    app.MapGet("/health/detail", () => Results.Ok(new
+    {
+        status = "ok",
+        environment = runtimeEnvironment,
+        sentry = SentrySdk.IsEnabled,
+    }));
     app.MapAuthEndpoints();
     app.MapProductEndpoints();
     app.MapCustomerEndpoints();
