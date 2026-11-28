@@ -45,6 +45,9 @@ jobs:
 
       - name: OWASP ZAP baseline scan
         run: |
+          # Tạo trước report file + cấp quyền ghi (container ZAP chạy user khác).
+          touch report_md.md report_json.json report_html.html
+          chmod a+w report_md.md report_json.json report_html.html
           # Chạy ZAP trực tiếp (không qua action) để tránh lỗi upload artifact flaky của action.
           docker run --rm --network host \
             -v "$PWD:/zap/wrk:rw" \
