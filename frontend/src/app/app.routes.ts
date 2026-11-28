@@ -121,11 +121,7 @@ export const routes: Routes = [
       },
       {
         path: 'cashbook',
-        loadComponent: () =>
-          import('./shared/feature-placeholder.component').then(
-            (c) => c.FeaturePlaceholderComponent,
-          ),
-        data: { featureTitle: 'Sổ quỹ' },
+        loadComponent: () => import('./cashbook/cashbook.component').then((c) => c.CashbookComponent),
         title: 'Sổ quỹ - Tryum',
       },
       {

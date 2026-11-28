@@ -80,6 +80,13 @@
 - [ ] Khách hàng: CRUD, lịch sử mua, công nợ, điểm tích lũy
 - [ ] Danh sách hóa đơn: lọc theo ngày, nhân viên, trạng thái
 
+## Phase 5.5 – Sổ quỹ (đã xong tuần này)
+- [x] Entity `CashTransaction` (thu/chi, nhóm, phương thức, đối tượng, tham chiếu hóa đơn)
+- [x] Migration `AddCashbook` + sequence `cashflow_code_seq` (mã PT/PC)
+- [x] API `/api/v1/cashbook`: danh sách (lọc loại/phương thức/ngày/tìm kiếm) + tổng thu/chi/tồn quỹ + tạo phiếu
+- [x] FE `/app/cashbook`: 3 thẻ tổng kết, bảng phiếu, tabs Tất cả/Thu/Chi, dialog thu/chi tiền
+- [x] Build xanh: backend (dotnet) + frontend (ng build)
+
 ## Phase 6 – Báo cáo & Realtime (tuần 7)
 - [ ] Dashboard: doanh thu hôm nay, số đơn, lãi gộp
 - [ ] Báo cáo doanh thu theo ngày/tháng, top sản phẩm bán chạy, tồn kho

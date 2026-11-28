@@ -7,6 +7,7 @@ using Tryum.Domain.Users;
 using Tryum.Domain.Products;
 using Tryum.Domain.Customers;
 using Tryum.Domain.Sales;
+using Tryum.Domain.Cashbook;
 
 namespace Tryum.Infrastructure.Persistence;
 
@@ -38,6 +39,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
     public DbSet<PosQrSession> PosQrSessions => Set<PosQrSession>();
+    public DbSet<CashTransaction> CashTransactions => Set<CashTransaction>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     /// <summary>
@@ -52,6 +54,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         // Sequence sinh mã hóa đơn tăng dần (HD000001) – tránh trùng khi nhiều thu ngân cùng lúc.
         modelBuilder.HasSequence<long>("order_code_seq");
+
+        // Sequence sinh mã phiếu thu/chi sổ quỹ tăng dần (PT000001 / PC000001).
+        modelBuilder.HasSequence<long>("cashflow_code_seq");
 
         // Tự động áp dụng tất cả IEntityTypeConfiguration trong assembly này
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

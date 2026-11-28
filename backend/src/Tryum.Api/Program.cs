@@ -316,6 +316,7 @@ try
     app.MapProductEndpoints();
     app.MapCustomerEndpoints();
     app.MapOrderEndpoints();
+    app.MapCashbookEndpoints();
     app.MapPaymentEndpoints();
     app.MapPosQrEndpoints();
     app.MapStoreEndpoints();

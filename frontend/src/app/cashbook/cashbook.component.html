@@ -1,0 +1,275 @@
+<section class="cashbook-page">
+  <header class="page-heading">
+    <h1>Sổ quỹ</h1>
+    <div class="toolbar-actions">
+      <button type="button" class="action action--expense" (click)="openDialog('expense')">
+        <i class="pi pi-arrow-up"></i> Chi tiền
+      </button>
+      <button type="button" class="action action--income" (click)="openDialog('income')">
+        <i class="pi pi-arrow-down"></i> Thu tiền
+      </button>
+    </div>
+  </header>
+
+  <div class="summary-row">
+    <div class="summary-card">
+      <span class="summary-label">Tổng thu</span>
+      <strong class="summary-value summary-value--income">{{ income() | number: '1.0-0' }}</strong>
+      <span class="summary-unit">đồng</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Tổng chi</span>
+      <strong class="summary-value summary-value--expense">{{ expense() | number: '1.0-0' }}</strong>
+      <span class="summary-unit">đồng</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Tồn quỹ</span>
+      <strong class="summary-value">{{ balance() | number: '1.0-0' }}</strong>
+      <span class="summary-unit">đồng</span>
+    </div>
+  </div>
+
+  <section class="table-card">
+    <div class="filter-bar">
+      <label class="search-box" aria-label="Tìm phiếu thu/chi">
+        <i class="pi pi-search"></i>
+        <input
+          type="search"
+          placeholder="Mã phiếu, đối tượng, ghi chú"
+          [ngModel]="search()"
+          (ngModelChange)="onSearch($event)"
+          name="cashbookSearch"
+        />
+      </label>
+      <div class="type-tabs">
+        <button
+          type="button"
+          [class.active]="filterType() === ''"
+          (click)="onFilterType('')"
+        >
+          Tất cả
+        </button>
+        <button
+          type="button"
+          [class.active]="filterType() === 'Income'"
+          (click)="onFilterType('Income')"
+        >
+          Thu
+        </button>
+        <button
+          type="button"
+          [class.active]="filterType() === 'Expense'"
+          (click)="onFilterType('Expense')"
+        >
+          Chi
+        </button>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Mã phiếu</th>
+            <th>Loại</th>
+            <th>Nhóm</th>
+            <th>Đối tượng</th>
+            <th class="numeric-cell">Số tiền</th>
+            <th>Phương thức</th>
+            <th>Thời gian</th>
+            <th>Người tạo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr class="empty-row">
+              <td colspan="8">
+                <div class="empty-state"><strong>Đang tải sổ quỹ…</strong></div>
+              </td>
+            </tr>
+          } @else if (error()) {
+            <tr class="empty-row">
+              <td colspan="8">
+                <div class="empty-state">
+                  <i class="pi pi-cloud empty-icon"></i><strong>Chưa kết nối được dữ liệu</strong>
+                  <p>{{ error() }}</p>
+                </div>
+              </td>
+            </tr>
+          } @else if (items().length) {
+            @for (item of items(); track item.id) {
+              <tr>
+                <td class="code-cell">{{ item.code }}</td>
+                <td>
+                  @if (item.type === 'Income') {
+                    <span class="badge badge--income">Thu</span>
+                  } @else {
+                    <span class="badge badge--expense">Chi</span>
+                  }
+                </td>
+                <td>{{ item.category || '—' }}</td>
+                <td>{{ item.partnerName || '—' }}</td>
+                <td
+                  class="numeric-cell"
+                  [class.amount-income]="item.type === 'Income'"
+                  [class.amount-expense]="item.type === 'Expense'"
+                >
+                  {{ item.type === 'Income' ? '+' : '-' }}{{ item.amount | number: '1.0-0' }}
+                </td>
+                <td>{{ methodLabel(item.method) }}</td>
+                <td>{{ item.transactedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ item.createdByName || '—' }}</td>
+              </tr>
+            }
+          } @else {
+            <tr class="empty-row">
+              <td colspan="8">
+                <div class="empty-state">
+                  <span class="empty-icon"><i class="pi pi-wallet"></i></span>
+                  <strong>Chưa có giao dịch thu/chi</strong>
+                  <p>Bấm "Thu tiền" hoặc "Chi tiền" để ghi phiếu đầu tiên.</p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="table-footer">
+      <span>{{ loading() ? 'Đang tải…' : pageStart + '–' + pageEnd + ' / ' + total() }}</span>
+      <div class="pagination">
+        <button
+          type="button"
+          [disabled]="page() <= 1 || loading()"
+          (click)="previousPage()"
+          aria-label="Trang trước"
+        >
+          <i class="pi pi-angle-left"></i>
+        </button>
+        <button
+          type="button"
+          [disabled]="page() * pageSize >= total() || loading()"
+          (click)="nextPage()"
+          aria-label="Trang sau"
+        >
+          <i class="pi pi-angle-right"></i>
+        </button>
+      </div>
+    </footer>
+  </section>
+</section>
+
+@if (dialogOpen()) {
+  <div class="dialog-backdrop" (click)="closeDialog()">
+    <section
+      class="cashbook-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cashbook-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="dialog-header">
+        <h2 id="cashbook-dialog-title">
+          {{ dialogMode() === 'Income' ? 'Thu tiền vào quỹ' : 'Chi tiền khỏi quỹ' }}
+        </h2>
+        <button class="dialog-close" type="button" aria-label="Đóng" (click)="closeDialog()">
+          <i class="pi pi-times"></i>
+        </button>
+      </header>
+
+      <div class="dialog-body">
+        <label class="field">
+          <span>Số tiền (đồng) <b>*</b></span>
+          <input
+            type="number"
+            min="1"
+            name="cashbookAmount"
+            [ngModel]="form.amount"
+            (ngModelChange)="form.amount = $event"
+            placeholder="0"
+          />
+        </label>
+
+        <div class="field">
+          <span>Nhóm thu/chi <b>*</b></span>
+          <div class="category-pills">
+            @for (
+              category of dialogMode() === 'Income' ? categories.income : categories.expense;
+              track category
+            ) {
+              <button
+                type="button"
+                [class.selected]="form.category === category"
+                (click)="selectCategory(category)"
+              >
+                {{ category }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Phương thức</span>
+          <select name="cashbookMethod" [ngModel]="form.method" (ngModelChange)="form.method = $event">
+            <option value="Cash">Tiền mặt</option>
+            <option value="Transfer">Chuyển khoản</option>
+            <option value="Card">Thẻ</option>
+            <option value="Wallet">Ví</option>
+            <option value="Other">Khác</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Đối tượng</span>
+          <input
+            name="cashbookPartner"
+            [ngModel]="form.partnerName"
+            (ngModelChange)="form.partnerName = $event"
+            placeholder="Khách hàng, nhà cung cấp, nhân viên…"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="field">
+          <span>Tham chiếu</span>
+          <input
+            name="cashbookReference"
+            [ngModel]="form.referenceCode"
+            (ngModelChange)="form.referenceCode = $event"
+            placeholder="VD: HD000123"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="field">
+          <span>Ghi chú</span>
+          <textarea
+            name="cashbookNote"
+            rows="3"
+            [ngModel]="form.note"
+            (ngModelChange)="form.note = $event"
+            placeholder="Nội dung ghi chú…"
+          ></textarea>
+        </label>
+
+        @if (formError()) {
+          <p class="form-error"><i class="pi pi-exclamation-circle"></i> {{ formError() }}</p>
+        }
+      </div>
+
+      <footer class="dialog-footer">
+        <button type="button" class="cancel" (click)="closeDialog()">Bỏ qua</button>
+        <button
+          type="button"
+          class="save"
+          [class.save--income]="dialogMode() === 'Income'"
+          [disabled]="saving()"
+          (click)="save()"
+        >
+          {{ saving() ? 'Đang lưu…' : 'Lưu phiếu' }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

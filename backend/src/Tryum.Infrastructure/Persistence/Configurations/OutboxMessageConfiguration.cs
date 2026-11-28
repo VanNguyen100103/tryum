@@ -8,7 +8,9 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
 {
     public void Configure(EntityTypeBuilder<OutboxMessage> builder)
     {
-        builder.ToTable("outbox_messages");
+        // Bảng outbox được tạo riêng bằng raw SQL (OutboxSchema.EnsureCreatedAsync),
+        // không nằm trong migrations — loại khỏi lịch sử migration để tránh bị EF "bắt" lại.
+        builder.ToTable("outbox_messages", table => table.ExcludeFromMigrations());
         builder.HasKey(message => message.Id);
         builder.Property(message => message.EventType).IsRequired();
         builder.Property(message => message.RoutingKey).IsRequired();
