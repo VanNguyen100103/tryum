@@ -1,10 +1,10 @@
 :host {
   display: block;
-  --kv-green: #00b14f;
-  --kv-green-strong: #009441;
-  --kv-green-deep: #007f38;
-  --kv-green-soft: #e6f7ee;
-  --kv-green-faint: #f0faf4;
+  --kv-brand: #0a6cff;
+  --kv-brand-strong: #0858d6;
+  --kv-brand-deep: #0647b5;
+  --kv-brand-soft: #eaf2ff;
+  --kv-brand-faint: #f3f7ff;
   --kv-red: #e5484d;
   --kv-red-soft: #fdecec;
   --kv-amber: #e8842b;
@@ -55,16 +55,16 @@
   height: 38px;
   padding: 0 16px;
   border-radius: 8px;
-  background: var(--kv-green);
+  background: var(--kv-brand);
   color: #fff;
   text-decoration: none;
   font-size: 12px;
   font-weight: 650;
-  box-shadow: 0 4px 12px #00b14f33;
+  box-shadow: 0 4px 12px #0a6cff33;
   transition: background 0.15s;
 }
 .kv-sell-btn:hover {
-  background: var(--kv-green-strong);
+  background: var(--kv-brand-strong);
 }
 
 /* ── Kết quả bán hàng hôm nay ──────────────────────────────────────────── */
@@ -111,7 +111,7 @@
   text-overflow: ellipsis;
 }
 .kv-stat--up .kv-stat__value {
-  color: var(--kv-green-strong);
+  color: var(--kv-brand-strong);
 }
 .kv-stat--up .kv-stat__value::before {
   content: '▲ ';
@@ -176,7 +176,7 @@
   font-size: 24px;
   font-weight: 750;
   letter-spacing: -0.5px;
-  color: var(--kv-green-strong);
+  color: var(--kv-brand-strong);
   line-height: 1;
 }
 .kv-chart__controls {
@@ -209,7 +209,7 @@
 }
 .kv-tab.is-active {
   background: #fff;
-  color: var(--kv-green-strong);
+  color: var(--kv-brand-strong);
   font-weight: 650;
   box-shadow: 0 1px 3px #16334d1f;
 }
@@ -242,7 +242,7 @@
   max-width: 260px;
 }
 .kv-select--branch > i:first-child {
-  color: var(--kv-green);
+  color: var(--kv-brand);
   font-size: 12px;
 }
 .kv-branch__menu {
@@ -274,11 +274,11 @@
   text-overflow: ellipsis;
 }
 .kv-branch__menu button:hover {
-  background: var(--kv-green-faint);
+  background: var(--kv-brand-faint);
 }
 .kv-branch__menu button.is-active {
-  background: var(--kv-green-soft);
-  color: var(--kv-green-strong);
+  background: var(--kv-brand-soft);
+  color: var(--kv-brand-strong);
   font-weight: 650;
 }
 
@@ -331,11 +331,11 @@
   width: min(68%, 26px);
   min-height: 3px;
   border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, #23c96f, #00a84c);
+  background: linear-gradient(180deg, #4d94ff, #0a6cff);
   transition: height 0.25s ease;
 }
 .kv-bar:hover {
-  background: linear-gradient(180deg, #31d67e, #00b14f);
+  background: linear-gradient(180deg, #5ba0ff, #1a78ff);
 }
 .kv-bar__label {
   position: absolute;
@@ -363,7 +363,7 @@
   color: #3a4a61;
 }
 .kv-chart__legend i {
-  color: var(--kv-green);
+  color: var(--kv-brand);
 }
 .kv-chart__note {
   color: #9aa5b4;
@@ -422,8 +422,8 @@
   font-weight: 650;
 }
 .kv-rank__badge.is-top {
-  background: var(--kv-green-soft);
-  color: var(--kv-green-strong);
+  background: var(--kv-brand-soft);
+  color: var(--kv-brand-strong);
 }
 .kv-rank__name {
   flex: none;
@@ -447,7 +447,7 @@
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #23c96f, #00a84c);
+  background: linear-gradient(90deg, #4d94ff, #0a6cff);
 }
 .kv-rank__amount {
   flex: none;
@@ -484,8 +484,8 @@
   font-size: 16px;
 }
 .kv-promo__icon--green {
-  background: var(--kv-green-soft);
-  color: var(--kv-green-strong);
+  background: var(--kv-brand-soft);
+  color: var(--kv-brand-strong);
 }
 .kv-promo__icon--blue {
   background: var(--kv-blue-soft);
@@ -582,7 +582,7 @@
 .kv-alert__body button {
   border: 0;
   background: transparent;
-  color: var(--kv-green-strong);
+  color: var(--kv-brand-strong);
   font: inherit;
   font-size: 10px;
   font-weight: 650;
@@ -634,8 +634,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--kv-green-faint);
-  color: var(--kv-green-strong);
+  background: var(--kv-brand-faint);
+  color: var(--kv-brand-strong);
   font-size: 12px;
 }
 .kv-activity__copy {
@@ -672,17 +672,17 @@
   height: 44px;
   padding: 0 18px;
   border-radius: 22px;
-  background: var(--kv-green);
+  background: var(--kv-brand);
   color: #fff;
   text-decoration: none;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.2px;
-  box-shadow: 0 8px 20px #00b14f45;
+  box-shadow: 0 8px 20px #0a6cff45;
   transition: background 0.15s, transform 0.15s;
 }
 .kv-support:hover {
-  background: var(--kv-green-strong);
+  background: var(--kv-brand-strong);
   transform: translateY(-1px);
 }
 .kv-support i {
