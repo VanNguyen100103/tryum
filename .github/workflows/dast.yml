@@ -63,13 +63,13 @@ jobs:
 
       - name: Nuclei scan
         run: |
-          docker run --rm --network host ghcr.io/projectdiscovery/nuclei:latest \
+          docker run --rm --network host projectdiscovery/nuclei:latest \
             -u http://localhost:8080 \
             -severity low,medium,high,critical \
             -timeout 8 \
             -retries 1 \
             -no-interactsh \
-            -o nuclei-report.txt 2>&1 | tail -50
+            -o nuclei-report.txt
           echo "--- nuclei-report.txt ---"
           cat nuclei-report.txt 2>/dev/null || echo "(không có finding)"
 
