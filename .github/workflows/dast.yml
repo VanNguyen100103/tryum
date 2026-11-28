@@ -44,13 +44,18 @@ jobs:
           fi
 
       - name: OWASP ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.12.0
-        with:
-          target: http://localhost:8080
-          # Baseline trước = chỉ báo cáo, không fail. Sau khi rà findings sẽ chuyển true.
-          fail_action: false
-          # Không tự mở GitHub issue (cần quyền issues:write); mình rà report thủ công.
-          allow_issue_writing: false
+        run: |
+          # Chạy ZAP trực tiếp (không qua action) để tránh lỗi upload artifact flaky của action.
+          docker run --rm --network host \
+            -v "$PWD:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+              -t http://localhost:8080 \
+              -J report_json.json \
+              -w report_md.md \
+              -r report_html.html
+          echo "--- ZAP report (markdown) ---"
+          cat report_md.md
 
       - name: Nuclei scan
         run: |
