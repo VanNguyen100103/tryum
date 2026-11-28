@@ -1921,3 +1921,28 @@
     </section>
   </div>
 }
+
+<!-- ── Hiệu ứng Giao dịch thành công (khi webhook xác nhận tiền về) ─────── -->
+@if (paymentSuccess(); as success) {
+  <div
+    class="pay-success-overlay"
+    role="status"
+    aria-live="assertive"
+    (click)="dismissPaymentSuccess()"
+  >
+    <div class="pay-success-card" (click)="$event.stopPropagation()">
+      <div class="pay-success-ring">
+        <svg viewBox="0 0 52 52" class="pay-success-check" aria-hidden="true">
+          <circle class="pay-success-circle" cx="26" cy="26" r="23" />
+          <path class="pay-success-tick" d="M15 27.5l7.5 7.5L37 19" />
+        </svg>
+      </div>
+      <strong class="pay-success-title">Giao dịch thành công</strong>
+      <span class="pay-success-amount">{{ fmt(success.amount) }} đ</span>
+      @if (success.reference) {
+        <small class="pay-success-ref">Nội dung: {{ success.reference }}</small>
+      }
+      <small class="pay-success-hint">Tiền đã vào tài khoản cửa hàng</small>
+    </div>
+  </div>
+}

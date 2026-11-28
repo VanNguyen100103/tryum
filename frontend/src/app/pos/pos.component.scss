@@ -3456,3 +3456,154 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Hiệu ứng Giao dịch thành công ─────────────────────────────────────── */
+.pay-success-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  animation: pay-fade-in 0.18s ease-out both;
+  cursor: pointer;
+}
+
+.pay-success-card {
+  width: min(340px, calc(100vw - 32px));
+  padding: 28px 26px 22px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  animation: pay-pop 0.42s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  cursor: default;
+}
+
+.pay-success-ring {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 42%, #eafbf1 0%, #d6f7e3 55%, #c3efd5 100%);
+  animation: pay-ring-pulse 1.5s ease-out 0.4s 2;
+}
+
+.pay-success-check {
+  width: 66px;
+  height: 66px;
+}
+
+.pay-success-circle {
+  fill: none;
+  stroke: #16a34a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 145;
+  stroke-dashoffset: 145;
+  transform-origin: 26px 26px;
+  transform: rotate(-90deg);
+  animation: pay-draw-circle 0.55s ease-out 0.08s forwards;
+}
+
+.pay-success-tick {
+  fill: none;
+  stroke: #16a34a;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: pay-draw-tick 0.32s ease-out 0.5s forwards;
+}
+
+.pay-success-title {
+  color: #0f2a19;
+  font-size: 17px;
+  font-weight: 750;
+  animation: pay-rise 0.35s ease-out 0.35s both;
+}
+
+.pay-success-amount {
+  color: #16a34a;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  animation: pay-rise 0.35s ease-out 0.45s both;
+}
+
+.pay-success-ref {
+  color: #5b6b7f;
+  font-size: 12px;
+  animation: pay-rise 0.35s ease-out 0.55s both;
+}
+
+.pay-success-hint {
+  margin-top: 6px;
+  color: #8a97a8;
+  font-size: 11px;
+  animation: pay-rise 0.35s ease-out 0.6s both;
+}
+
+@keyframes pay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pay-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.86) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes pay-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pay-draw-circle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pay-draw-tick {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pay-ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}

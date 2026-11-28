@@ -443,6 +443,10 @@ export class PosComponent implements OnInit, OnDestroy {
   readonly lastPrintedOrder = signal<SalesOrder | null>(null);
   readonly store = signal<StoreInfo | null>(null);
 
+  /** Hiệu ứng "Giao dịch thành công" khi tiền về (webhook SePay) hoặc xác nhận chuyển khoản. */
+  readonly paymentSuccess = signal<{ amount: number; reference: string | null } | null>(null);
+  private paymentSuccessTimer: ReturnType<typeof setTimeout> | null = null;
+
   private clockTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
@@ -455,6 +459,7 @@ export class PosComponent implements OnInit, OnDestroy {
     if (this.searchTimer) clearTimeout(this.searchTimer);
     if (this.customerSearchTimer) clearTimeout(this.customerSearchTimer);
     if (this.clockTimer) clearInterval(this.clockTimer);
+    if (this.paymentSuccessTimer) clearTimeout(this.paymentSuccessTimer);
     this.stopQr(true);
     this.stopTransferQr();
     this.stopPolling();
@@ -465,6 +470,20 @@ export class PosComponent implements OnInit, OnDestroy {
 
   fmt(value: number | null | undefined): string {
     return this.money.format(Math.round(value ?? 0));
+  }
+
+  /** Bật hiệu ứng "Giao dịch thành công" — tự tắt sau 3.5s hoặc bấm để tắt. */
+  showPaymentSuccess(amount: number, reference: string | null): void {
+    if (!amount || amount <= 0) return;
+    if (this.paymentSuccessTimer) clearTimeout(this.paymentSuccessTimer);
+    this.paymentSuccess.set({ amount, reference: reference ?? null });
+    this.paymentSuccessTimer = setTimeout(() => this.paymentSuccess.set(null), 3500);
+  }
+
+  dismissPaymentSuccess(): void {
+    if (this.paymentSuccessTimer) clearTimeout(this.paymentSuccessTimer);
+    this.paymentSuccessTimer = null;
+    this.paymentSuccess.set(null);
   }
 
   toNumber(value: unknown): number {
@@ -1421,6 +1440,7 @@ export class PosComponent implements OnInit, OnDestroy {
     ]);
     this.draftAmount.set(Math.max(0, this.total() - this.draftAllocated()));
     this.lastQrReceived.set(received);
+    this.showPaymentSuccess(received, session.reference);
 
     if (this.draftRemaining() <= 0) {
       this.stopQr(true);
@@ -1496,7 +1516,13 @@ export class PosComponent implements OnInit, OnDestroy {
     this.transferQrPoll = setInterval(() => {
       this.sales.getPosQr(sessionId).subscribe({
         next: (session) => {
-          if (session.status === 'Paid') this.stopTransferQrTimers();
+          if (session.status === 'Paid') {
+            this.stopTransferQrTimers();
+            this.showPaymentSuccess(
+              session.transferredAmount ?? session.amount,
+              session.reference,
+            );
+          }
           this.transferQr.set(session);
         },
         error: () => this.stopTransferQrTimers(),
@@ -1524,6 +1550,10 @@ export class PosComponent implements OnInit, OnDestroy {
       next: (confirmed) => {
         this.stopTransferQrTimers();
         this.transferQr.set(confirmed);
+        this.showPaymentSuccess(
+          confirmed.transferredAmount ?? confirmed.amount,
+          confirmed.reference,
+        );
         this.toast.add({ severity: 'success', summary: 'Đã xác nhận chuyển khoản' });
       },
       error: (error: unknown) => {
