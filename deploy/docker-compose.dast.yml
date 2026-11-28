@@ -41,6 +41,8 @@ services:
       # Để ZAP có thể crawl đăng ký/đăng nhập mà không cần OTP/Captcha thật.
       Auth__DemoOtpInResponse: "true"
       Captcha__Required: "false"
+      # SMS provider "Log" = không gửi thật, chỉ ghi log (tránh fail-fast khi thiếu SmsGate creds).
+      Sms__Provider: Log
       Cors__AllowedOrigins__0: http://localhost:8080
     ports:
       - "8080:8080"
