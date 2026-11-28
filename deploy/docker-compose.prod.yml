@@ -146,6 +146,9 @@ services:
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-tryum-api}
       OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-service.namespace=tryum,deployment.environment=production}
       Metrics__Token: ${METRICS_TOKEN:-}
+      # ── Sentry: bắt lỗi runtime (DSN là key ghi-only, công khai như frontend) ──
+      Sentry__Dsn: ${SENTRY_DSN:-https://48676ac8f7c67455ad0c29ccda371f3d@o4512506436124672.ingest.de.sentry.io/4512506558546000}
+      Sentry__Release: ${SENTRY_RELEASE:-tryum-api@latest}
     networks: [internal]
     # Không expose port: chỉ Caddy gọi nội bộ qua network "internal".
 

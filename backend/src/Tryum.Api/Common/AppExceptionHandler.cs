@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics;
+using Sentry;
 using Tryum.Application.Common.Exceptions;
 
 namespace Tryum.Api.Common;
@@ -17,6 +18,8 @@ public sealed class AppExceptionHandler(ILogger<AppExceptionHandler> logger) : I
         if (exception is not AppException appException)
         {
             logger.LogError(exception, "Lỗi không xử lý được: {Message}", exception.Message);
+            // Gửi lên Sentry (nếu đã cấu hình) – đây là lỗi thật, không phải lỗi nghiệp vụ.
+            SentrySdk.CaptureException(exception);
             return false; // để middleware mặc định xử lý (500)
         }
 

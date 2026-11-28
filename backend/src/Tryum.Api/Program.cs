@@ -115,6 +115,28 @@ try
     builder.Services.AddHostedService<OutboxPublisher>();
     builder.Services.AddExceptionHandler<AppExceptionHandler>();
 
+    // ── Sentry: bắt lỗi runtime (chỉ bật khi có Sentry:Dsn) ────────────────────
+    var sentryDsn = builder.Configuration["Sentry:Dsn"];
+    if (!string.IsNullOrWhiteSpace(sentryDsn))
+    {
+        builder.WebHost.UseSentry(options =>
+        {
+            options.Dsn = sentryDsn;
+            options.Environment = builder.Environment.EnvironmentName;
+            options.Release = builder.Configuration["Sentry:Release"];
+            // Chỉ gửi lỗi, không gửi performance (tiết kiệm quota free tier).
+            options.TracesSampleRate = 0;
+            options.SendDefaultPii = false;
+            options.AttachStacktrace = true;
+            options.AddEventProcessor(new Tryum.Api.Observability.TenantSentryProcessor());
+        });
+        Log.Information("Sentry đã bật (environment={Env}).", builder.Environment.EnvironmentName);
+    }
+    else
+    {
+        Log.Information("Sentry tắt (không có Sentry:Dsn).");
+    }
+
     // ── JWT ───────────────────────────────────────────────────────────────────
     var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
         ?? throw new InvalidOperationException("Thiếu cấu hình Jwt trong appsettings.");
