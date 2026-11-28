@@ -21,7 +21,9 @@ interface ScreenDoc {
     <main class="docs">
       <header class="docs__head">
         <h1>Tài liệu màn hình</h1>
-        <p>Danh sách các màn hình của Tryum (web + PWA). Ảnh chụp màn hình sẽ được cập nhật tự động.</p>
+        <p>
+          Danh sách các màn hình của Tryum (web + PWA). Ảnh chụp màn hình sẽ được cập nhật tự động.
+        </p>
       </header>
 
       <section class="docs__grid">
@@ -67,7 +69,9 @@ interface ScreenDoc {
         border: 1px solid #e5eaf1;
         border-radius: 10px;
         padding: 16px;
-        transition: box-shadow 0.15s ease, transform 0.15s ease;
+        transition:
+          box-shadow 0.15s ease,
+          transform 0.15s ease;
       }
       .screen:hover {
         box-shadow: 0 6px 18px rgba(29, 38, 53, 0.08);
@@ -122,16 +126,61 @@ interface ScreenDoc {
 export class DocsComponent {
   screens: ScreenDoc[] = [
     { title: 'Trang chủ', route: '/', desc: 'Giới thiệu sản phẩm, đăng ký dùng thử.', done: true },
-    { title: 'Đăng nhập', route: '/auth/login', desc: 'Đăng nhập bằng SĐT/email theo cửa hàng.', done: true },
-    { title: 'Đăng ký', route: '/auth/register', desc: 'Tạo cửa hàng mới + tài khoản chủ.', done: true },
-    { title: 'Dashboard', route: '/app/dashboard', desc: 'Tổng quan doanh thu, đơn hàng, tồn kho.', done: true },
-    { title: 'Bán hàng (POS)', route: '/app/pos', desc: 'Tính tiền nhanh, quét QR, in hóa đơn.', done: true },
-    { title: 'Hàng hóa', route: '/app/products', desc: 'Quản lý danh mục, nhập Excel, quản lý ảnh.', done: true },
-    { title: 'Khách hàng', route: '/app/customers', desc: 'Khách hàng, điểm tích lũy, công nợ.', done: true },
+    {
+      title: 'Đăng nhập',
+      route: '/auth/login',
+      desc: 'Đăng nhập bằng SĐT/email theo cửa hàng.',
+      done: true,
+    },
+    {
+      title: 'Đăng ký',
+      route: '/auth/register',
+      desc: 'Tạo cửa hàng mới + tài khoản chủ.',
+      done: true,
+    },
+    {
+      title: 'Dashboard',
+      route: '/app/dashboard',
+      desc: 'Tổng quan doanh thu, đơn hàng, tồn kho.',
+      done: true,
+    },
+    {
+      title: 'Bán hàng (POS)',
+      route: '/app/pos',
+      desc: 'Tính tiền nhanh, quét QR, in hóa đơn.',
+      done: true,
+    },
+    {
+      title: 'Hàng hóa',
+      route: '/app/products',
+      desc: 'Quản lý danh mục, nhập Excel, quản lý ảnh.',
+      done: true,
+    },
+    {
+      title: 'Khách hàng',
+      route: '/app/customers',
+      desc: 'Khách hàng, điểm tích lũy, công nợ.',
+      done: true,
+    },
     { title: 'Kho', route: '/app/inventory', desc: 'Kiểm kho, nhập xuất hàng hóa.', done: true },
-    { title: 'Bán online', route: '/app/online', desc: 'Đăng bài Facebook, AI tạo nội dung.', done: true },
+    {
+      title: 'Bán online',
+      route: '/app/online',
+      desc: 'Đăng bài Facebook, AI tạo nội dung.',
+      done: true,
+    },
     { title: 'Báo cáo', route: '/app/reports', desc: 'Báo cáo bán hàng, lợi nhuận.', done: true },
-    { title: 'Cài đặt', route: '/app/settings', desc: 'Cấu hình cửa hàng, thanh toán, vận chuyển.', done: true },
-    { title: 'Nhân viên / Sổ quỹ / Thuế', route: '/app/*', desc: 'Tính năng đang phát triển.', done: false },
+    {
+      title: 'Cài đặt',
+      route: '/app/settings',
+      desc: 'Cấu hình cửa hàng, thanh toán, vận chuyển.',
+      done: true,
+    },
+    {
+      title: 'Nhân viên / Sổ quỹ / Thuế',
+      route: '/app/*',
+      desc: 'Tính năng đang phát triển.',
+      done: false,
+    },
   ];
 }
