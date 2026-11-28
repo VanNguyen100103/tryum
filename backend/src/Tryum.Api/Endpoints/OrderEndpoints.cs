@@ -145,11 +145,15 @@ public static class OrderEndpoints
                 var salePrice = product.SalePrice ?? 0;
                 var unitPrice = item.UnitPrice ?? salePrice;
                 var isPriceOverride = item.UnitPrice is not null && Round(item.UnitPrice.Value) != Round(salePrice);
-                if (isPriceOverride && !IsManagerOrOwner(http))
+                // Sản phẩm chưa có giá bán (SalePrice null/0): thu ngân không được tự đặt giá.
+                var isUnpriced = salePrice <= 0;
+                if ((isPriceOverride || isUnpriced) && !IsManagerOrOwner(http))
                 {
                     return Results.BadRequest(new
                     {
-                        message = $"Chỉ chủ cửa hàng hoặc quản lý mới được đổi giá bán của \"{product.Name}\".",
+                        message = isUnpriced
+                            ? $"Sản phẩm \"{product.Name}\" chưa có giá bán — chỉ chủ cửa hàng hoặc quản lý mới được đặt giá."
+                            : $"Chỉ chủ cửa hàng hoặc quản lý mới được đổi giá bán của \"{product.Name}\".",
                     });
                 }
                 if (unitPrice < 0)
@@ -433,7 +437,8 @@ public static class OrderEndpoints
             var pendingTransfer = method == PaymentMethod.Transfer && confirmed
                 ? order.Payments
                     .Where(payment => payment.Method == PaymentMethod.Transfer
-                        && payment.Status == PaymentStatus.Pending)
+                        && payment.Status == PaymentStatus.Pending
+                        && payment.TenantId == order.TenantId)
                     .OrderBy(payment => payment.CreatedAt)
                     .FirstOrDefault()
                 : null;
