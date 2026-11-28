@@ -64,7 +64,7 @@
   font-weight: 550;
 }
 .shop-context i {
-  color: #0877df;
+  color: #00b14f;
   font-size: 14px;
 }
 .utility-divider {
@@ -85,8 +85,8 @@
   font-size: 15px;
 }
 .utility-button:hover {
-  background: #edf4ff;
-  color: #0757c7;
+  background: #e6f7ee;
+  color: #009441;
 }
 .user-control {
   position: relative;
@@ -148,7 +148,7 @@
   height: 31px;
   border-radius: 50%;
   color: #fff;
-  background: #1764d8;
+  background: #00b14f;
   font-size: 11px;
   font-weight: 700;
 }
@@ -181,7 +181,7 @@
   justify-content: space-between;
   gap: 18px;
   padding: 0 max(24px, calc((100vw - 1600px) / 2));
-  background: #0648c9;
+  background: #00b14f;
   color: #fff;
 }
 .primary-nav__items {
@@ -216,11 +216,11 @@
 }
 .nav-link:hover,
 .nav-group.is-open > .nav-link {
-  background: #155ad3;
+  background: #12bb5c;
 }
 .nav-link.is-active {
   color: #fff;
-  background: #07389f;
+  background: #009441;
   font-weight: 650;
 }
 .nav-link--button {
@@ -281,8 +281,8 @@
   font-size: 12px;
 }
 .nav-column a:hover {
-  background: #eaf1fc;
-  color: #0757c7;
+  background: #e6f7ee;
+  color: #009441;
 }
 .nav-option--disabled {
   color: #9aa4b2;
@@ -303,14 +303,14 @@
   padding: 0 17px;
   border-radius: 7px;
   background: #fff;
-  color: #0648c9;
+  color: #00b14f;
   text-decoration: none;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 .sales-action:hover {
-  background: #eaf2ff;
+  background: #e6f7ee;
 }
 .menu-dismiss {
   position: fixed;
